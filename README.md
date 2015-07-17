@@ -5,31 +5,31 @@ Just now it has possibility to open tif image as mutable bitmap, read count of d
 
 ## Usage
 #Read directory count of image:
-```java
+```Java
 TiffBitmapFactory.getDirectoryCount(String path_to_file)
 ```
 
 #Open file: 
-```java
+```Java
 TiffBitmapFactory.decodePath(String path_to_file)
 ```
-```java
+```Java
 TiffBitmapFactory.decodeFile(File file)
 ```
 
 #Additional usage:
 <p>TiffBitmapFactory class contains inner class Options that allow to tune some parameters</p>
-```java
+```Java
 Options.inJustDecodeBounds
 ```
 if set to true will return blank bitmap with width, height and decode config
 
-```java
+```Java
 Options.inSampleSize
 ```
 set sample size for decoding. if sample size > 1 than image will be reduced
 
-```java
+```Java
 Options.directoryCount
 ```
 set directory to read from image
