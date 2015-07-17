@@ -77,6 +77,10 @@ public class TiffBitmapFactory {
             inJustDecodeBounds = false;
             inSampleSize = 1;
             inDirectoryCount = 1;
+
+            outWidth = -1;
+            outHeight = -1;
+            outDirectoryCount = -1;
         }
 
         /**
@@ -105,16 +109,16 @@ public class TiffBitmapFactory {
         public int inDirectoryCount;
 
         /**
-         * Not use in current revision. Bitmap always decode with ARGB_8888
-         *
          * If this is non-null, the decoder will try to decode into this
          * internal configuration. If it is null, or the request cannot be met,
          * the decoder will try to pick the best matching config based on the
          * system's screen depth, and characteristics of the original image such
          * as if it has per-pixel alpha (requiring a config that also does).
          *
-         * Image are loaded with the {@link Bitmap.Config#ARGB_8888} config by
-         * default.
+         * <p>Image are loaded with the {@link Bitmap.Config#ARGB_8888} config by
+         * default.</p>
+         *
+         * <p>In current version supported are {@link Bitmap.Config#ARGB_8888} and {@link Bitmap.Config#ALPHA_8}</p>
          */
         public Bitmap.Config inPreferredConfig = Bitmap.Config.ARGB_8888;
 
@@ -126,7 +130,7 @@ public class TiffBitmapFactory {
          *
          * <p>outWidth will be set to -1 if there is an error trying to decode.</p>
          */
-        public int outWidth = -1;
+        public int outWidth;
 
         /**
          * The resulting height of the bitmap. If {@link #inJustDecodeBounds} is
@@ -136,7 +140,7 @@ public class TiffBitmapFactory {
          *
          * <p>outHeight will be set to -1 if there is an error trying to decode.</p>
          */
-        public int outHeight = -1;
+        public int outHeight;
 
         /**
          * The count of directory in image file.
@@ -144,6 +148,6 @@ public class TiffBitmapFactory {
          * <p>outDirectoryCount will be set to 0 if {@link #inJustDecodeBounds} is
          * set to false and image decoded successful.</p>
          */
-        public int outDirectoryCount = -1;
+        public int outDirectoryCount;
     }
 }

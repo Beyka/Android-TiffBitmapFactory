@@ -31,6 +31,10 @@ int getDyrectoryCount();
 
 jobject createBitmap(JNIEnv *, int, int, jobject);
 
+jint * createBitmapARGB8888(JNIEnv *, int, unsigned int *, int *, int *);
+
+jbyte * createBitmapAlpha8(JNIEnv *, int, unsigned int *, int *, int *);
+
 jobject createBlankBitmap(JNIEnv *, int width, int height);
 
 void releaseImage(JNIEnv *);
