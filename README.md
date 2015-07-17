@@ -43,3 +43,9 @@ options.inDirectoryCount = dirCount;
 Bitmap bmp = TiffBitmapFactory.decodeFile(file, options);
 ```
 
+### Build
+To build native part of library use [Android-NDK-bundle-10](https://developer.android.com/tools/sdk/ndk/index.html) or higher.
+<p>Go to tiffbitmapfactory folder and run</p>
+'''
+ndk-build NDK_PROJECT_PATH=src/main
+'''
