@@ -4,12 +4,12 @@ TiffBitmapFactory is an Android library that allow open *.tif image files on And
 Just now it has possibility to open tif image as mutable bitmap, read count of directory in file, apply sample rate for bitmap decoding.
 
 ## Usage
-#Read directory count of image:
+###Read directory count of image:
 ```Java
 TiffBitmapFactory.getDirectoryCount(String path_to_file)
 ```
 
-#Open file: 
+###Open file: 
 ```Java
 TiffBitmapFactory.decodePath(String path_to_file)
 ```
@@ -17,7 +17,7 @@ TiffBitmapFactory.decodePath(String path_to_file)
 TiffBitmapFactory.decodeFile(File file)
 ```
 
-#Additional usage:
+###Additional usage:
 <p>TiffBitmapFactory class contains inner class Options that allow to tune some parameters</p>
 ```Java
 Options.inJustDecodeBounds
