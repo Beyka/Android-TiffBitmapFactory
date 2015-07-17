@@ -13,6 +13,8 @@ Open file:
 
 Additional usage:
 TiffBitmapFactory class contains inner class Options that allow to tune some parameters
-*<p>Options.inJustDecodeBounds</p> - if set to true will return blank bitmap with width, height and decode config
-*<p>Options.inSampleSize</p> - set sample size for decoding. if sample size > 1 than image will be reduced
-*<p>Options.directoryCount</p> - set directory to read from image
+<p>Options.inJustDecodeBounds</p> if set to true will return blank bitmap with width, height and decode config
+
+<p>Options.inSampleSize</p> set sample size for decoding. if sample size > 1 than image will be reduced
+
+<p>Options.directoryCount</p> set directory to read from image
