@@ -6,19 +6,16 @@ extern "C" {
 
 #include "NativeTiffBitmapFactory.h"
 
-int colorMask = 0xFF;
-
-int ARGB_8888 = 5;
-int ALPHA_8 = 1;
+int const colorMask = 0xFF;
+int const ARGB_8888 = 5;
+int const ALPHA_8 = 1;
 
 TIFF *image;
 int origwidth = 0;
 int origheight = 0;
-
 jobject preferedConfig;
 
 JNIEXPORT jobject
-
 JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
         (JNIEnv *env, jclass clazz, jstring path, jobject options) {
 
@@ -75,11 +72,8 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
     TIFFGetField(image, TIFFTAG_IMAGEWIDTH, &origwidth);
     TIFFGetField(image, TIFFTAG_IMAGELENGTH, &origheight);
 
-    LOGII("Width", origwidth);
-    LOGII("Height", origheight);
-
     jobject java_bitmap = NULL;
-    //If need only bounds - return blank bitmap
+    //If need only bounds - return null but fill Options object
     if (inJustDecodeBounds) {
         jclass jBitmapOptionsClass = env->FindClass(
                 "org/beyka/tiffbitmapfactory/TiffBitmapFactory$Options");
@@ -115,13 +109,12 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
         return NULL;
     }
 
-
     int origBufferSize = origwidth * origheight;
 
-    unsigned int *buffer = (unsigned int *) _TIFFmalloc(origBufferSize * sizeof(unsigned int));
+    unsigned int *origBuffer = (unsigned int *) _TIFFmalloc(origBufferSize * sizeof(unsigned int));
 
-    if (buffer == NULL) {
-        LOGE("Can\'t allocate memory for buffer");
+    if (origBuffer == NULL) {
+        LOGE("Can\'t allocate memory for origBuffer");
         return NULL;
     }
 
@@ -132,7 +125,7 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
         dirRead++;
     }
 
-    TIFFReadRGBAImageOriented(image, origwidth, origheight, buffer, ORIENTATION_TOPLEFT, 0);
+    TIFFReadRGBAImageOriented(image, origwidth, origheight, origBuffer, ORIENTATION_TOPLEFT, 0);
 
     // Convert ABGR to ARGB
     int i = 0;
@@ -140,8 +133,8 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     int tmp = 0;
     for (i = 0; i < origheight; i++) {
         for (j = 0; j < origwidth; j++) {
-            tmp = buffer[j + origwidth * i];
-            buffer[j + origwidth * i] =
+            tmp = origBuffer[j + origwidth * i];
+            origBuffer[j + origwidth * i] =
                     (tmp & 0xff000000) | ((tmp & 0x00ff0000) >> 16) | (tmp & 0x0000ff00) |
                     ((tmp & 0xff) << 16);
         }
@@ -150,11 +143,11 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     int bitmapwidth = origwidth;
     int bitmapheight = origheight;
 
-    void *bytes = NULL;
+    void *processedBuffer = NULL;
     if (configInt == ARGB_8888) {
-        bytes = createBitmapARGB8888(env, inSampleSize, buffer, &bitmapwidth, &bitmapheight);
+        processedBuffer = createBitmapARGB8888(env, inSampleSize, origBuffer, &bitmapwidth, &bitmapheight);
     } else if (configInt == ALPHA_8) {
-        bytes = createBitmapAlpha8(env, inSampleSize, buffer, &bitmapwidth, &bitmapheight);
+        processedBuffer = createBitmapAlpha8(env, inSampleSize, origBuffer, &bitmapwidth, &bitmapheight);
     }
 
     //Create mutable bitmap
@@ -176,21 +169,21 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     int pixelsCount = bitmapwidth * bitmapheight;
 
     if (configInt == ARGB_8888) {
-        memcpy(bitmapPixels, (jint *) bytes, sizeof(jint) * pixelsCount);
+        memcpy(bitmapPixels, (jint *) processedBuffer, sizeof(jint) * pixelsCount);
     } else if (configInt == ALPHA_8) {
-        memcpy(bitmapPixels, (jbyte *) bytes, sizeof(jbyte) * pixelsCount);
+        memcpy(bitmapPixels, (jbyte *) processedBuffer, sizeof(jbyte) * pixelsCount);
     }
 
     AndroidBitmap_unlockPixels(env, java_bitmap);
 
     //remove array
     if (configInt == ARGB_8888) {
-        delete[] (jint *) bytes;
+        delete[] (jint *) processedBuffer;
     } else if (configInt == ALPHA_8) {
-        delete[] (jbyte *) bytes;
+        delete[] (jbyte *) processedBuffer;
     }
 
-    //remove memory
+    //remove Bitmap class object
     env->DeleteLocalRef(bitmapClass);
 
     //Fill options
@@ -206,6 +199,7 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
                                                                  "outDirectoryCount", "I");
     env->SetIntField(options, gOptions_outDirectoryCountFieldId, 0);
 
+    //Remove Bitmap Options class objet
     env->DeleteLocalRef(jBitmapOptionsClass);
 
     return java_bitmap;
@@ -213,13 +207,13 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
 
 jint *createBitmapARGB8888(JNIEnv *env, int inSampleSize, unsigned int *buffer, int *bitmapwidth,
                            int *bitmapheight) {
-    jint *bytes = NULL;
+    jint *pixels = NULL;
     if (inSampleSize > 1) {
         *bitmapwidth = origwidth / inSampleSize;
         *bitmapheight = origheight / inSampleSize;
-        int bufferSize = *bitmapwidth * *bitmapheight;
-        bytes = (jint *) malloc(sizeof(jint) * bufferSize);
-        if (bytes == NULL) {
+        int pixelsBufferSize = *bitmapwidth * *bitmapheight;
+        pixels = (jint *) malloc(sizeof(jint) * pixelsBufferSize);
+        if (pixels == NULL) {
             LOGE("Can\'t allocate memory for temp buffer");
             return NULL;
         }
@@ -329,15 +323,15 @@ jint *createBitmapARGB8888(JNIEnv *env, int inSampleSize, unsigned int *buffer, 
 
                     crPix = (alpha << 24) | (red << 16) | (green << 8) | (blue);
 
-                    bytes[j * *bitmapwidth + i] = crPix;
+                    pixels[j * *bitmapwidth + i] = crPix;
                 }
             }
         }
     }
     else {
         int bufferSize = *bitmapwidth * *bitmapheight;
-        bytes = (jint *) malloc(sizeof(jint) * bufferSize);
-        memcpy(bytes, buffer, bufferSize * sizeof(jint));
+        pixels = (jint *) malloc(sizeof(jint) * bufferSize);
+        memcpy(pixels, buffer, bufferSize * sizeof(jint));
     }
 
     //Close Buffer
@@ -345,18 +339,18 @@ jint *createBitmapARGB8888(JNIEnv *env, int inSampleSize, unsigned int *buffer, 
         _TIFFfree(buffer);
         buffer = NULL;
     }
-    return bytes;
+    return pixels;
 }
 
 jbyte *createBitmapAlpha8(JNIEnv *env, int inSampleSize, unsigned int *buffer, int *bitmapwidth,
                           int *bitmapheight) {
-    jbyte *bytes = NULL;
+    jbyte *pixels = NULL;
 //    if (inSampleSize > 1) {
     *bitmapwidth = origwidth / inSampleSize;
     *bitmapheight = origheight / inSampleSize;
-    int bufferSize = *bitmapwidth * *bitmapheight;
-    bytes = (jbyte *) malloc(sizeof(jbyte) * bufferSize);
-    if (bytes == NULL) {
+    int pixelsBufferSize = *bitmapwidth * *bitmapheight;
+    pixels = (jbyte *) malloc(sizeof(jbyte) * pixelsBufferSize);
+    if (pixels == NULL) {
         LOGE("Can\'t allocate memory for temp buffer");
         return NULL;
     }
@@ -369,122 +363,75 @@ jbyte *createBitmapAlpha8(JNIEnv *env, int inSampleSize, unsigned int *buffer, i
                 int sum = 1;
 
                 int alpha = colorMask & crPix >> 24;
-//                    int red = colorMask & crPix >> 16;
-//                    int green = colorMask & crPix >> 8;
-//                    int blue = colorMask & crPix;
 
                 //using kernel 3x3
 
                 //topleft
                 if (i1 - 1 >= 0 && j1 - 1 >= 0) {
                     crPix = buffer[(j1 - 1) * origwidth + i1 - 1];
-//                        red += colorMask & crPix >> 16;
-//                        green += colorMask & crPix >> 8;
-//                        blue += colorMask & crPix;
                     alpha += colorMask & crPix >> 24;
                     sum++;
                 }
                 //top
                 if (j1 - 1 >= 0) {
                     crPix = buffer[(j1 - 1) * origwidth + i1];
-//                        red += colorMask & crPix >> 16;
-//                        green += colorMask & crPix >> 8;
-//                        blue += colorMask & crPix;
                     alpha += colorMask & crPix >> 24;
                     sum++;
                 }
                 // topright
                 if (i1 + 1 < origwidth && j1 - 1 >= 0) {
                     crPix = buffer[(j1 - 1) * origwidth + i1 + 1];
-//                        red += colorMask & crPix >> 16;
-//                        green += colorMask & crPix >> 8;
-//                        blue += colorMask & crPix;
                     alpha += colorMask & crPix >> 24;
                     sum++;
                 }
                 //right
                 if (i1 + 1 < origwidth) {
                     crPix = buffer[j1 * origwidth + i1 + 1];
-//                        red += colorMask & crPix >> 16;
-//                        green += colorMask & crPix >> 8;
-//                        blue += colorMask & crPix;
                     alpha += colorMask & crPix >> 24;
                     sum++;
                 }
                 //bottomright
                 if (i1 + 1 < origwidth && j1 + 1 < origheight) {
                     crPix = buffer[(j1 + 1) * origwidth + i1 + 1];
-//                        red += colorMask & crPix >> 16;
-//                        green += colorMask & crPix >> 8;
-//                        blue += colorMask & crPix;
                     alpha += colorMask & crPix >> 24;
                     sum++;
                 }
                 //bottom
                 if (j1 + 1 < origheight) {
                     crPix = buffer[(j1 + 1) * origwidth + i1 + 1];
-//                        red += colorMask & crPix >> 16;
-//                        green += colorMask & crPix >> 8;
-//                        blue += colorMask & crPix;
                     alpha += colorMask & crPix >> 24;
                     sum++;
                 }
                 //bottomleft
                 if (i1 - 1 >= 0 && j1 + 1 < origheight) {
                     crPix = buffer[(j1 + 1) * origwidth + i1 - 1];
-//                        red += colorMask & crPix >> 16;
-//                        green += colorMask & crPix >> 8;
-//                        blue += colorMask & crPix;
                     alpha += colorMask & crPix >> 24;
                     sum++;
                 }
                 //left
                 if (i1 - 1 >= 0) {
                     crPix = buffer[j1 * origwidth + i1 - 1];
-//                        red += colorMask & crPix >> 16;
-//                        green += colorMask & crPix >> 8;
-//                        blue += colorMask & crPix;
                     alpha += colorMask & crPix >> 24;
                     sum++;
                 }
 
-//                    red /= sum;
-//                    if (red > 255) red = 255;
-//                    if (red < 0) red = 0;
-//
-//                    green /= sum;
-//                    if (green > 255) green = 255;
-//                    if (green < 0) green = 0;
-//
-//                    blue /= sum;
-//                    if (blue > 255) blue = 255;
-//                    if (blue < 0) blue = 0;
-
-                alpha /= sum;///= sum;
+                alpha /= sum;
                 if (alpha > 255) alpha = 255;
                 if (alpha < 0) alpha = 0;
 
                 jbyte curPix = alpha;
-//                    crPix = (alpha << 24) | (red << 16) | (green << 8) | (blue);
 
-                bytes[j * *bitmapwidth + i] = curPix;
+                pixels[j * *bitmapwidth + i] = curPix;
             }
         }
     }
-//    }
-//    else
-//    {
-//        int bufferSize = *bitmapwidth * *bitmapheight;
-//        bytes = (unsigned int *) malloc(sizeof(unsigned int) * bufferSize);
-//        memcpy(bytes, buffer, bufferSize * sizeof(unsigned int));
-//    }
 
     //Close Buffer
     if (buffer) {
         _TIFFfree(buffer);
         buffer = NULL;
     }
-    return bytes;
+    return pixels;
 }
 
 jobject createBlankBitmap(JNIEnv *env, int width, int height) {
@@ -506,7 +453,7 @@ void releaseImage(JNIEnv * env) {
         image = NULL;
     }
 
-    //Release global ref
+    //Release global reference for Bitmap.Config
     if (preferedConfig) {
         env->DeleteGlobalRef(preferedConfig);
         preferedConfig = NULL;

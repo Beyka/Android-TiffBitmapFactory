@@ -27,16 +27,34 @@ extern "C" {
 JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
   (JNIEnv *, jclass, jstring, jobject);
 
+/*
+ * Return count of directory in image
+ */
 int getDyrectoryCount();
 
+/*
+ * Create java bitmap object
+ */
 jobject createBitmap(JNIEnv *, int, int, jobject);
 
+/*
+ * Create java bitmap object with config ARGB_8888
+ */
 jint * createBitmapARGB8888(JNIEnv *, int, unsigned int *, int *, int *);
-
+/*
+ * Create java bitmap object with config ALPHA_8
+ */
 jbyte * createBitmapAlpha8(JNIEnv *, int, unsigned int *, int *, int *);
 
+/*
+ * Create blank java bitmap object with config ARGB_8888 and width and height calculated
+ * from original width and height and inSampleSize
+ */
 jobject createBlankBitmap(JNIEnv *, int width, int height);
 
+/*
+ * Release references and objects
+ */
 void releaseImage(JNIEnv *);
 
 #ifdef __cplusplus
