@@ -1,6 +1,8 @@
 # Android-TiffBitmapFactory
 TiffBitmapFactory is an Android library that allow open *.tif image files on Android devices.
 
+For decoding *.tif files it uses native library [libtiff](https://github.com/dumganhar/libtiff)
+
 Just now it has possibility to open tif image as mutable bitmap, read count of directory in file, apply sample rate for bitmap decoding and choose directory to decode.
 
 ### Usage
