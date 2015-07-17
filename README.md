@@ -3,33 +3,41 @@ TiffBitmapFactory is an Android library that allow open *.tif image files on And
 
 Just now it has possibility to open tif image as mutable bitmap, read count of directory in file, apply sample rate for bitmap decoding.
 
-## Usage
-###Read directory count of image:
+### Usage
 ```Java
-TiffBitmapFactory.getDirectoryCount(String path_to_file)
+File file = new File("sdcard/image.tif");
+
+//Read data about image to Options object
+TiffBitmapFactory.Options options = new TiffBitmapFactory.Options();
+options.inJustDecodeBounds = true;
+TiffBitmapFactory.decodeFile(file, options);
+
+int dirCount = options.outDirectoryCount;
+int width = options.outWidth;
+int height = options.outHeight;
+
+//Change sample size if width or height bigger than required width or height
+int inSampleSize = 1;
+if (height > reqHeight || width > reqWidth) {
+
+    final int halfHeight = height / 2;
+    final int halfWidth = width / 2;
+
+    // Calculate the largest inSampleSize value that is a power of 2 and keeps both
+    // height and width larger than the requested height and width.
+    while ((halfHeight / inSampleSize) > reqHeight
+                    && (halfWidth / inSampleSize) > reqWidth) {
+        inSampleSize *= 2;
+    }
+}
+
+//Set calculated parameters to Options  object
+options.inJustDecodeBounds = false;
+options.inSampleSize = inSampleSize;
+//Set last directory of image to decode
+options.inDirectoryCount = dirCount;
+
+//Decode bitmap
+Bitmap bmp = TiffBitmapFactory.decodeFile(file, options);
 ```
 
-###Open file: 
-```Java
-TiffBitmapFactory.decodePath(String path_to_file)
-```
-```Java
-TiffBitmapFactory.decodeFile(File file)
-```
-
-###Additional usage:
-<p>TiffBitmapFactory class contains inner class Options that allow to tune some parameters</p>
-```Java
-Options.inJustDecodeBounds
-```
-if set to true will return blank bitmap with width, height and decode config
-
-```Java
-Options.inSampleSize
-```
-set sample size for decoding. if sample size > 1 than image will be reduced
-
-```Java
-Options.directoryCount
-```
-set directory to read from image
