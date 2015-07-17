@@ -27,15 +27,9 @@ extern "C" {
 JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
   (JNIEnv *, jclass, jstring, jobject);
 
-/*
- * Class:     com_example_beyka_tiffexample_TiffBitmapFactory
- * Method:    nativeDecodePath
- * Signature: (Ljava/lang/String;)I
- */
-JNIEXPORT jint JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeGetDirectoryCount
-        (JNIEnv *, jclass, jstring);
+int getDyrectoryCount();
 
-jobject createBitmap(JNIEnv *, int, int);
+jobject createBitmap(JNIEnv *, int, int, jobject);
 
 jobject createBlankBitmap(JNIEnv *, int width, int height);
 

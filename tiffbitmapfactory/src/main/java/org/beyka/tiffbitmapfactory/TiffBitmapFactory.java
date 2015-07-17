@@ -13,31 +13,60 @@ public class TiffBitmapFactory {
         System.loadLibrary("tifffactory");
     }
 
+    /**
+     * Decode file to bitmap with default options. If the specified file name is null,
+     * or cannot be decoded into a bitmap, the function returns null.
+     * @param file - file to decode
+     * @return The decoded bitmap, or null if the image data could not be
+     *         decoded
+     */
     public static Bitmap decodeFile(File file) {
         return nativeDecodePath(file.getAbsolutePath(), new Options());
     }
 
+    /**
+     * Decode file to bitmap with specified options. If the specified file name is null,
+     * or cannot be decoded into a bitmap, the function returns null.
+     * @param file - file to decode
+     * @param options - options for decoding
+     * @return The decoded bitmap, or null if the image data could not be
+     *         decoded, or, if options is non-null, if options requested only the
+     *         size be returned (in options.outWidth, options.outHeight, options.outDirectoryCount)
+     */
     public static Bitmap decodeFile(File file, Options options) {
         return nativeDecodePath(file.getAbsolutePath(), options);
     }
 
+    /**
+     * Decode path to bitmap with default options. If the specified file name is null,
+     * or cannot be decoded into a bitmap, the function returns null.
+     * @param path - file to decode
+     * @return The decoded bitmap, or null if the image data could not be
+     *         decoded
+     */
     public static Bitmap decodePath(String path) {
         return nativeDecodePath(path, new Options());
     }
 
+    /**
+     * Decode path to bitmap with specified options. If the specified file name is null,
+     * or cannot be decoded into a bitmap, the function returns null.
+     * @param path - file to decode
+     * @param options - options for decoding
+     * @return The decoded bitmap, or null if the image data could not be
+     *         decoded, or, if options is non-null, if options requested only the
+     *         size be returned (in options.outWidth, options.outHeight, options.outDirectoryCount)
+     */
     public static Bitmap decodePath(String path, Options options) {
         options.inPreferredConfig = Bitmap.Config.ARGB_8888;
         return nativeDecodePath(path, options);
     }
 
-    public static int getDirectoryCount(String path) {
-        return nativeGetDirectoryCount(path);
-    }
-
     private static native Bitmap nativeDecodePath(String path, Options options);
 
-    private static native int nativeGetDirectoryCount(String path);
-
+    /**
+     * Options class to specify decoding parameters
+     */
     public static final class Options {
 
         /**
@@ -47,7 +76,7 @@ public class TiffBitmapFactory {
         public Options() {
             inJustDecodeBounds = false;
             inSampleSize = 1;
-            directoryCount = 1;
+            inDirectoryCount = 1;
         }
 
         /**
@@ -70,10 +99,10 @@ public class TiffBitmapFactory {
         public int inSampleSize;
 
         /**
-         * Set directory to extract from bitmap. Default value is 1.
-         * To get number of directories in file use {@link #getDirectoriesSize(String)}
+         * Set directory to extract from image. Default value is 1.
+         * To get number of directories in file see {@link #outDirectoryCount}
          */
-        public int directoryCount;
+        public int inDirectoryCount;
 
         /**
          * Not use in current revision. Bitmap always decode with ARGB_8888
@@ -88,5 +117,33 @@ public class TiffBitmapFactory {
          * default.
          */
         public Bitmap.Config inPreferredConfig = Bitmap.Config.ARGB_8888;
+
+        /**
+         * The resulting width of the bitmap. If {@link #inJustDecodeBounds} is
+         * set to false, this will be width of the output bitmap after any
+         * scaling is applied. If true, it will be the width of the input image
+         * without any accounting for scaling.
+         *
+         * <p>outWidth will be set to -1 if there is an error trying to decode.</p>
+         */
+        public int outWidth = -1;
+
+        /**
+         * The resulting height of the bitmap. If {@link #inJustDecodeBounds} is
+         * set to false, this will be height of the output bitmap after any
+         * scaling is applied. If true, it will be the height of the input image
+         * without any accounting for scaling.
+         *
+         * <p>outHeight will be set to -1 if there is an error trying to decode.</p>
+         */
+        public int outHeight = -1;
+
+        /**
+         * The count of directory in image file.
+         * <p>outDirectoryCount will be set to -1 if there is an error trying to decode.</p>
+         * <p>outDirectoryCount will be set to 0 if {@link #inJustDecodeBounds} is
+         * set to false and image decoded successful.</p>
+         */
+        public int outDirectoryCount = -1;
     }
 }

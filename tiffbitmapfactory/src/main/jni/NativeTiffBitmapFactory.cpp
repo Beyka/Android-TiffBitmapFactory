@@ -29,7 +29,7 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
                                                                 "inJustDecodeBounds", "Z");
     jboolean inJustDecodeBounds = env->GetBooleanField(options, gOptions_justDecodeBoundsFieldID);
 
-    jfieldID gOptions_DirectoryCountFieldID = env->GetFieldID(jBitmapOptionsClass, "directoryCount",
+    jfieldID gOptions_DirectoryCountFieldID = env->GetFieldID(jBitmapOptionsClass, "inDirectoryCount",
                                                               "I");
     jint directoryCount = env->GetIntField(options, gOptions_DirectoryCountFieldID);
 
@@ -76,9 +76,21 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
     jobject java_bitmap = NULL;
     //If need only bounds - return blank bitmap
     if (inJustDecodeBounds) {
-        java_bitmap = createBlankBitmap(env, origwidth, origheight);
+        jclass jBitmapOptionsClass = env->FindClass(
+                "org/beyka/tiffbitmapfactory/TiffBitmapFactory$Options");
+        jfieldID gOptions_outWidthFieldId = env->GetFieldID(jBitmapOptionsClass, "outWidth", "I");
+        env->SetIntField(options, gOptions_outWidthFieldId, origwidth);
+
+        jfieldID gOptions_outHeightFieldId = env->GetFieldID(jBitmapOptionsClass, "outHeight", "I");
+        env->SetIntField(options, gOptions_outHeightFieldId, origheight);
+
+        jfieldID gOptions_outDirectoryCountFieldId = env->GetFieldID(jBitmapOptionsClass, "outDirectoryCount", "I");
+        int dircount = getDyrectoryCount();
+        env->SetIntField(options, gOptions_outDirectoryCountFieldId, dircount);
+
+        env->DeleteLocalRef(jBitmapOptionsClass);
     } else {
-        java_bitmap = createBitmap(env, inSampleSize, directoryCount);
+        java_bitmap = createBitmap(env, inSampleSize, directoryCount, options);
     }
 
     releaseImage(env);
@@ -86,7 +98,7 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
     return java_bitmap;
 }
 
-jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber) {
+jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject options) {
     int origBufferSize = origwidth * origheight;
 
     unsigned int *buffer = (unsigned int *) _TIFFmalloc(origBufferSize * sizeof(unsigned int));
@@ -283,6 +295,20 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber) {
     //remove memory
     env->DeleteLocalRef(bitmapClass);
 
+    //Fill options
+    jclass jBitmapOptionsClass = env->FindClass(
+            "org/beyka/tiffbitmapfactory/TiffBitmapFactory$Options");
+    jfieldID gOptions_outWidthFieldId = env->GetFieldID(jBitmapOptionsClass, "outWidth", "I");
+    env->SetIntField(options, gOptions_outWidthFieldId, bitmapwidth);
+
+    jfieldID gOptions_outHeightFieldId = env->GetFieldID(jBitmapOptionsClass, "outHeight", "I");
+    env->SetIntField(options, gOptions_outHeightFieldId, bitmapheight);
+
+    jfieldID gOptions_outDirectoryCountFieldId = env->GetFieldID(jBitmapOptionsClass, "outDirectoryCount", "I");
+    env->SetIntField(options, gOptions_outDirectoryCountFieldId, 0);
+
+    env->DeleteLocalRef(jBitmapOptionsClass);
+
     return java_bitmap;
 }
 
@@ -312,29 +338,11 @@ void releaseImage(JNIEnv * env) {
     }
 }
 
-JNIEXPORT jint
-JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeGetDirectoryCount
-        (JNIEnv *env, jclass clazz, jstring path) {
-
-    //Open image and read data;
-    const char *strPath = NULL;
-    strPath = env->GetStringUTFChars(path, 0);
-    LOGIS("nativeTiffOpen", strPath);
-
-    image = TIFFOpen(strPath, "r");
-    env->ReleaseStringUTFChars(path, strPath);
-    if (image == NULL) {
-        LOGES("Can\'t open bitmap", strPath);
-        return -1;
-    }
-
-    jint dircount = 0;
+int getDyrectoryCount() {
+    int dircount = 0;
     do {
         dircount++;
     } while (TIFFReadDirectory(image));
-
-    releaseImage(env);
-
     return dircount;
 }
 
