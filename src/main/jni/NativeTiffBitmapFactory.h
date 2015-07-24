@@ -47,6 +47,11 @@ jint * createBitmapARGB8888(JNIEnv *, int, unsigned int *, int *, int *);
 jbyte * createBitmapAlpha8(JNIEnv *, int, unsigned int *, int *, int *);
 
 /*
+ * Create java bitmap object with config RGB_565
+ */
+unsigned short *createBitmapRGB565(JNIEnv *, int, unsigned int *, int *, int *);
+
+/*
  * Create blank java bitmap object with config ARGB_8888 and width and height calculated
  * from original width and height and inSampleSize
  */

@@ -9,6 +9,7 @@ extern "C" {
 int const colorMask = 0xFF;
 int const ARGB_8888 = 5;
 int const ALPHA_8 = 1;
+int const RGB_565 = 3;
 
 TIFF *image;
 int origwidth = 0;
@@ -103,7 +104,7 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     jclass configClass = env->FindClass("android/graphics/Bitmap$Config");
     jfieldID nativeIntFieldID = env->GetFieldID(configClass, "nativeInt", "I");
     jint configInt = env->GetIntField(preferedConfig, nativeIntFieldID);
-    if (configInt != ARGB_8888 && configInt != ALPHA_8) {
+    if (configInt != ARGB_8888 && configInt != ALPHA_8 && configInt != RGB_565) {
         //TODO Drop exception
         LOGE("Selected Config not supported yet");
         return NULL;
@@ -148,6 +149,8 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
         processedBuffer = createBitmapARGB8888(env, inSampleSize, origBuffer, &bitmapwidth, &bitmapheight);
     } else if (configInt == ALPHA_8) {
         processedBuffer = createBitmapAlpha8(env, inSampleSize, origBuffer, &bitmapwidth, &bitmapheight);
+    } else if (configInt == RGB_565) {
+        processedBuffer = createBitmapRGB565(env, inSampleSize, origBuffer, &bitmapwidth, &bitmapheight);
     }
 
     //Create mutable bitmap
@@ -172,6 +175,8 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
         memcpy(bitmapPixels, (jint *) processedBuffer, sizeof(jint) * pixelsCount);
     } else if (configInt == ALPHA_8) {
         memcpy(bitmapPixels, (jbyte *) processedBuffer, sizeof(jbyte) * pixelsCount);
+    } else if (configInt == RGB_565) {
+        memcpy(bitmapPixels, (unsigned short *) processedBuffer, sizeof(unsigned short) * pixelsCount);
     }
 
     AndroidBitmap_unlockPixels(env, java_bitmap);
@@ -181,6 +186,8 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
         delete[] (jint *) processedBuffer;
     } else if (configInt == ALPHA_8) {
         delete[] (jbyte *) processedBuffer;
+    } else if (configInt == RGB_565) {
+        delete [] (unsigned short *) processedBuffer;
     }
 
     //remove Bitmap class object
@@ -423,6 +430,122 @@ jbyte *createBitmapAlpha8(JNIEnv *env, int inSampleSize, unsigned int *buffer, i
 
                 pixels[j * *bitmapwidth + i] = curPix;
             }
+        }
+    }
+
+    //Close Buffer
+    if (buffer) {
+        _TIFFfree(buffer);
+        buffer = NULL;
+    }
+    return pixels;
+}
+
+unsigned short *createBitmapRGB565(JNIEnv *env, int inSampleSize, unsigned int *buffer, int *bitmapwidth,
+                           int *bitmapheight) {
+    unsigned short *pixels = NULL;
+
+    *bitmapwidth = origwidth / inSampleSize;
+    *bitmapheight = origheight / inSampleSize;
+    int pixelsBufferSize = *bitmapwidth * *bitmapheight;
+    pixels = (unsigned short *) malloc(sizeof(unsigned short ) * pixelsBufferSize);
+    if (pixels == NULL) {
+        LOGE("Can\'t allocate memory for temp buffer");
+        return NULL;
+    }
+
+    for (int i = 0, i1 = 0; i < *bitmapwidth; i++, i1 += inSampleSize) {
+        for (int j = 0, j1 = 0; j < *bitmapheight; j++, j1 += inSampleSize) {
+            unsigned int crPix = buffer[j1 * origwidth + i1];
+            int sum = 1;
+            int red = colorMask & crPix >> 16;
+            int green = colorMask & crPix >> 8;
+            int blue = colorMask & crPix;
+
+            //topleft
+            if (i1 - 1 >= 0 && j1 - 1 >= 0) {
+                crPix = buffer[(j1 - 1) * origwidth + i1 - 1];
+                red += colorMask & crPix >> 16;
+                green += colorMask & crPix >> 8;
+                blue += colorMask & crPix;
+                sum++;
+            }
+            //top
+            if (j1 - 1 >= 0) {
+                crPix = buffer[(j1 - 1) * origwidth + i1];
+                red += colorMask & crPix >> 16;
+                green += colorMask & crPix >> 8;
+                blue += colorMask & crPix;
+                sum++;
+            }
+            // topright
+            if (i1 + 1 < origwidth && j1 - 1 >= 0) {
+                crPix = buffer[(j1 - 1) * origwidth + i1 + 1];
+                red += colorMask & crPix >> 16;
+                green += colorMask & crPix >> 8;
+                blue += colorMask & crPix;
+                sum++;
+            }
+            //right
+            if (i1 + 1 < origwidth) {
+                crPix = buffer[j1 * origwidth + i1 + 1];
+                red += colorMask & crPix >> 16;
+                green += colorMask & crPix >> 8;
+                blue += colorMask & crPix;
+                sum++;
+            }
+            //bottomright
+            if (i1 + 1 < origwidth && j1 + 1 < origheight) {
+                crPix = buffer[(j1 + 1) * origwidth + i1 + 1];
+                red += colorMask & crPix >> 16;
+                green += colorMask & crPix >> 8;
+                blue += colorMask & crPix;
+                sum++;
+            }
+            //bottom
+            if (j1 + 1 < origheight) {
+                crPix = buffer[(j1 + 1) * origwidth + i1 + 1];
+                red += colorMask & crPix >> 16;
+                green += colorMask & crPix >> 8;
+                blue += colorMask & crPix;
+                sum++;
+            }
+            //bottomleft
+            if (i1 - 1 >= 0 && j1 + 1 < origheight) {
+                crPix = buffer[(j1 + 1) * origwidth + i1 - 1];
+                red += colorMask & crPix >> 16;
+                green += colorMask & crPix >> 8;
+                blue += colorMask & crPix;
+                sum++;
+            }
+            //left
+            if (i1 - 1 >= 0) {
+                crPix = buffer[j1 * origwidth + i1 - 1];
+                red += colorMask & crPix >> 16;
+                green += colorMask & crPix >> 8;
+                blue += colorMask & crPix;
+                sum++;
+            }
+
+            red /= sum;
+            if (red > 255) red = 255;
+            if (red < 0) red = 0;
+
+            green /= sum;
+            if (green > 255) green = 255;
+            if (green < 0) green = 0;
+
+            blue /= sum;
+            if (blue > 255) blue = 255;
+            if (blue < 0) blue = 0;
+
+            unsigned char  B = (blue >> 3);
+            unsigned char  G = (green >> 2);
+            unsigned char  R = (red >> 3);
+
+            unsigned short curPix = (R << 11) | (G << 5) | B;
+
+            pixels[j * *bitmapwidth + i] = curPix;
         }
     }
 
