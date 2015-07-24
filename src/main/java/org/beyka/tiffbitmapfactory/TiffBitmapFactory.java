@@ -118,7 +118,7 @@ public class TiffBitmapFactory {
          * <p>Image are loaded with the {@link Bitmap.Config#ARGB_8888} config by
          * default.</p>
          *
-         * <p>In current version supported are {@link Bitmap.Config#ARGB_8888} and {@link Bitmap.Config#ALPHA_8}</p>
+         * <p>In current version supported are {@link Bitmap.Config#ARGB_8888}, {@link Bitmap.Config#ALPHA_8} and {@link Bitmap.Config#RGB_565}</p>
          */
         public Bitmap.Config inPreferredConfig = Bitmap.Config.ARGB_8888;
 
