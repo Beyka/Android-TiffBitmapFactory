@@ -129,17 +129,17 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     TIFFReadRGBAImageOriented(image, origwidth, origheight, origBuffer, ORIENTATION_TOPLEFT, 0);
 
     // Convert ABGR to ARGB
-    int i = 0;
-    int j = 0;
-    int tmp = 0;
-    for (i = 0; i < origheight; i++) {
-        for (j = 0; j < origwidth; j++) {
-            tmp = origBuffer[j + origwidth * i];
-            origBuffer[j + origwidth * i] =
-                    (tmp & 0xff000000) | ((tmp & 0x00ff0000) >> 16) | (tmp & 0x0000ff00) |
-                    ((tmp & 0xff) << 16);
-        }
-    }
+//    int i = 0;
+//    int j = 0;
+//    int tmp = 0;
+//    for (i = 0; i < origheight; i++) {
+//        for (j = 0; j < origwidth; j++) {
+//            tmp = origBuffer[j + origwidth * i];
+//            origBuffer[j + origwidth * i] =
+//                    (tmp & 0xff000000) | ((tmp & 0x00ff0000) >> 16) | (tmp & 0x0000ff00) |
+//                    ((tmp & 0xff) << 16);
+//        }
+//    }
 
     int bitmapwidth = origwidth;
     int bitmapheight = origheight;
@@ -458,72 +458,72 @@ unsigned short *createBitmapRGB565(JNIEnv *env, int inSampleSize, unsigned int *
         for (int j = 0, j1 = 0; j < *bitmapheight; j++, j1 += inSampleSize) {
             unsigned int crPix = buffer[j1 * origwidth + i1];
             int sum = 1;
-            int red = colorMask & crPix >> 16;
+            int blue = colorMask & crPix >> 16;
             int green = colorMask & crPix >> 8;
-            int blue = colorMask & crPix;
+            int red = colorMask & crPix;
 
             //topleft
             if (i1 - 1 >= 0 && j1 - 1 >= 0) {
                 crPix = buffer[(j1 - 1) * origwidth + i1 - 1];
-                red += colorMask & crPix >> 16;
+                blue += colorMask & crPix >> 16;
                 green += colorMask & crPix >> 8;
-                blue += colorMask & crPix;
+                red += colorMask & crPix;
                 sum++;
             }
             //top
             if (j1 - 1 >= 0) {
                 crPix = buffer[(j1 - 1) * origwidth + i1];
-                red += colorMask & crPix >> 16;
+                blue += colorMask & crPix >> 16;
                 green += colorMask & crPix >> 8;
-                blue += colorMask & crPix;
+                red += colorMask & crPix;
                 sum++;
             }
             // topright
             if (i1 + 1 < origwidth && j1 - 1 >= 0) {
                 crPix = buffer[(j1 - 1) * origwidth + i1 + 1];
-                red += colorMask & crPix >> 16;
+                blue += colorMask & crPix >> 16;
                 green += colorMask & crPix >> 8;
-                blue += colorMask & crPix;
+                red += colorMask & crPix;
                 sum++;
             }
             //right
             if (i1 + 1 < origwidth) {
                 crPix = buffer[j1 * origwidth + i1 + 1];
-                red += colorMask & crPix >> 16;
+                blue += colorMask & crPix >> 16;
                 green += colorMask & crPix >> 8;
-                blue += colorMask & crPix;
+                red += colorMask & crPix;
                 sum++;
             }
             //bottomright
             if (i1 + 1 < origwidth && j1 + 1 < origheight) {
                 crPix = buffer[(j1 + 1) * origwidth + i1 + 1];
-                red += colorMask & crPix >> 16;
+                blue += colorMask & crPix >> 16;
                 green += colorMask & crPix >> 8;
-                blue += colorMask & crPix;
+                red += colorMask & crPix;
                 sum++;
             }
             //bottom
             if (j1 + 1 < origheight) {
                 crPix = buffer[(j1 + 1) * origwidth + i1 + 1];
-                red += colorMask & crPix >> 16;
+                blue += colorMask & crPix >> 16;
                 green += colorMask & crPix >> 8;
-                blue += colorMask & crPix;
+                red += colorMask & crPix;
                 sum++;
             }
             //bottomleft
             if (i1 - 1 >= 0 && j1 + 1 < origheight) {
                 crPix = buffer[(j1 + 1) * origwidth + i1 - 1];
-                red += colorMask & crPix >> 16;
+                blue += colorMask & crPix >> 16;
                 green += colorMask & crPix >> 8;
-                blue += colorMask & crPix;
+                red += colorMask & crPix;
                 sum++;
             }
             //left
             if (i1 - 1 >= 0) {
                 crPix = buffer[j1 * origwidth + i1 - 1];
-                red += colorMask & crPix >> 16;
+                blue += colorMask & crPix >> 16;
                 green += colorMask & crPix >> 8;
-                blue += colorMask & crPix;
+                red += colorMask & crPix;
                 sum++;
             }
 
