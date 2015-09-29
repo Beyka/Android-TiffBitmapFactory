@@ -49,3 +49,5 @@ To build native part of library use [Android-NDK-bundle-10](https://developer.an
 ```
 ndk-build NDK_PROJECT_PATH=src/main
 ```
+
+<p>To contact me use email leshabey 'at' gmail.com</p>
