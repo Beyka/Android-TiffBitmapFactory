@@ -74,6 +74,7 @@ public class TiffBitmapFactory {
          * the same result from the decoder as if null were passed.
          */
         public Options() {
+            inSwapRedBlueColors = false;
             inJustDecodeBounds = false;
             inSampleSize = 1;
             inDirectoryCount = 1;
@@ -82,6 +83,13 @@ public class TiffBitmapFactory {
             outHeight = -1;
             outDirectoryCount = -1;
         }
+
+        /**
+         * If set to true, the decoder will swap red and blue colors.
+         * <p>Note: If you use this option then your image has wrong encoding</p>
+         * <p>Default value is false</p>
+         */
+        public boolean inSwapRedBlueColors;
 
         /**
          * If set to true, the decoder will return null (no bitmap), but

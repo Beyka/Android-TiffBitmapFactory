@@ -15,8 +15,10 @@ TIFF *image;
 int origwidth = 0;
 int origheight = 0;
 jobject preferedConfig;
+jboolean invertRedAndBlue = false;
 
 JNIEXPORT jobject
+
 JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
         (JNIEnv *env, jclass clazz, jstring path, jobject options) {
 
@@ -30,6 +32,10 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
     jfieldID gOptions_justDecodeBoundsFieldID = env->GetFieldID(jBitmapOptionsClass,
                                                                 "inJustDecodeBounds", "Z");
     jboolean inJustDecodeBounds = env->GetBooleanField(options, gOptions_justDecodeBoundsFieldID);
+
+    jfieldID gOptions_invertRedAndBlueFieldID = env->GetFieldID(jBitmapOptionsClass,
+                                                                "inSwapRedBlueColors", "Z");
+    invertRedAndBlue = env->GetBooleanField(options, gOptions_invertRedAndBlueFieldID);
 
     jfieldID gOptions_DirectoryCountFieldID = env->GetFieldID(jBitmapOptionsClass,
                                                               "inDirectoryCount",
@@ -129,28 +135,33 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     TIFFReadRGBAImageOriented(image, origwidth, origheight, origBuffer, ORIENTATION_TOPLEFT, 0);
 
     // Convert ABGR to ARGB
-//    int i = 0;
-//    int j = 0;
-//    int tmp = 0;
-//    for (i = 0; i < origheight; i++) {
-//        for (j = 0; j < origwidth; j++) {
-//            tmp = origBuffer[j + origwidth * i];
-//            origBuffer[j + origwidth * i] =
-//                    (tmp & 0xff000000) | ((tmp & 0x00ff0000) >> 16) | (tmp & 0x0000ff00) |
-//                    ((tmp & 0xff) << 16);
-//        }
-//    }
+    if (invertRedAndBlue) {
+        int i = 0;
+        int j = 0;
+        int tmp = 0;
+        for (i = 0; i < origheight; i++) {
+            for (j = 0; j < origwidth; j++) {
+                tmp = origBuffer[j + origwidth * i];
+                origBuffer[j + origwidth * i] =
+                        (tmp & 0xff000000) | ((tmp & 0x00ff0000) >> 16) | (tmp & 0x0000ff00) |
+                        ((tmp & 0xff) << 16);
+            }
+        }
+    }
 
     int bitmapwidth = origwidth;
     int bitmapheight = origheight;
 
     void *processedBuffer = NULL;
     if (configInt == ARGB_8888) {
-        processedBuffer = createBitmapARGB8888(env, inSampleSize, origBuffer, &bitmapwidth, &bitmapheight);
+        processedBuffer = createBitmapARGB8888(env, inSampleSize, origBuffer, &bitmapwidth,
+                                               &bitmapheight);
     } else if (configInt == ALPHA_8) {
-        processedBuffer = createBitmapAlpha8(env, inSampleSize, origBuffer, &bitmapwidth, &bitmapheight);
+        processedBuffer = createBitmapAlpha8(env, inSampleSize, origBuffer, &bitmapwidth,
+                                             &bitmapheight);
     } else if (configInt == RGB_565) {
-        processedBuffer = createBitmapRGB565(env, inSampleSize, origBuffer, &bitmapwidth, &bitmapheight);
+        processedBuffer = createBitmapRGB565(env, inSampleSize, origBuffer, &bitmapwidth,
+                                             &bitmapheight);
     }
 
     //Create mutable bitmap
@@ -176,7 +187,8 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     } else if (configInt == ALPHA_8) {
         memcpy(bitmapPixels, (jbyte *) processedBuffer, sizeof(jbyte) * pixelsCount);
     } else if (configInt == RGB_565) {
-        memcpy(bitmapPixels, (unsigned short *) processedBuffer, sizeof(unsigned short) * pixelsCount);
+        memcpy(bitmapPixels, (unsigned short *) processedBuffer,
+               sizeof(unsigned short) * pixelsCount);
     }
 
     AndroidBitmap_unlockPixels(env, java_bitmap);
@@ -187,7 +199,7 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     } else if (configInt == ALPHA_8) {
         delete[] (jbyte *) processedBuffer;
     } else if (configInt == RGB_565) {
-        delete [] (unsigned short *) processedBuffer;
+        delete[] (unsigned short *) processedBuffer;
     }
 
     //remove Bitmap class object
@@ -441,14 +453,15 @@ jbyte *createBitmapAlpha8(JNIEnv *env, int inSampleSize, unsigned int *buffer, i
     return pixels;
 }
 
-unsigned short *createBitmapRGB565(JNIEnv *env, int inSampleSize, unsigned int *buffer, int *bitmapwidth,
-                           int *bitmapheight) {
+unsigned short *createBitmapRGB565(JNIEnv *env, int inSampleSize, unsigned int *buffer,
+                                   int *bitmapwidth,
+                                   int *bitmapheight) {
     unsigned short *pixels = NULL;
 
     *bitmapwidth = origwidth / inSampleSize;
     *bitmapheight = origheight / inSampleSize;
     int pixelsBufferSize = *bitmapwidth * *bitmapheight;
-    pixels = (unsigned short *) malloc(sizeof(unsigned short ) * pixelsBufferSize);
+    pixels = (unsigned short *) malloc(sizeof(unsigned short) * pixelsBufferSize);
     if (pixels == NULL) {
         LOGE("Can\'t allocate memory for temp buffer");
         return NULL;
@@ -539,9 +552,9 @@ unsigned short *createBitmapRGB565(JNIEnv *env, int inSampleSize, unsigned int *
             if (blue > 255) blue = 255;
             if (blue < 0) blue = 0;
 
-            unsigned char  B = (blue >> 3);
-            unsigned char  G = (green >> 2);
-            unsigned char  R = (red >> 3);
+            unsigned char B = (blue >> 3);
+            unsigned char G = (green >> 2);
+            unsigned char R = (red >> 3);
 
             unsigned short curPix = (R << 11) | (G << 5) | B;
 
