@@ -65,7 +65,7 @@ if (height > reqHeight || width > reqWidth) {
 options.inJustDecodeBounds = false;
 options.inSampleSize = inSampleSize;
 
-//Decode bitmap from first directory
+//Decode bitmap from second directory
 Bitmap secondBmp = TiffBitmapFactory.decodeFile(file, options);
 
 ```
