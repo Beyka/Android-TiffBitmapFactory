@@ -76,6 +76,13 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
         return NULL;
     }
 
+    //Go to directory
+    int dirRead = 1;
+    while (dirRead < directoryCount) {
+        TIFFReadDirectory(image);
+        dirRead++;
+    }
+
     TIFFGetField(image, TIFFTAG_IMAGEWIDTH, &origwidth);
     TIFFGetField(image, TIFFTAG_IMAGELENGTH, &origheight);
 
@@ -123,13 +130,6 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     if (origBuffer == NULL) {
         LOGE("Can\'t allocate memory for origBuffer");
         return NULL;
-    }
-
-    //Go to directory
-    int dirRead = 1;
-    while (dirRead < directoryNumber) {
-        TIFFReadDirectory(image);
-        dirRead++;
     }
 
     TIFFReadRGBAImageOriented(image, origwidth, origheight, origBuffer, ORIENTATION_TOPLEFT, 0);
