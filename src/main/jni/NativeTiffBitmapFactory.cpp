@@ -18,6 +18,7 @@ jobject preferedConfig;
 jboolean invertRedAndBlue = false;
 
 JNIEXPORT jobject
+
 JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
         (JNIEnv *env, jclass clazz, jstring path, jobject options) {
 
@@ -37,9 +38,10 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
     invertRedAndBlue = env->GetBooleanField(options, gOptions_invertRedAndBlueFieldID);
 
     jfieldID gOptions_DirectoryCountFieldID = env->GetFieldID(jBitmapOptionsClass,
-                                                              "inDirectoryCount",
+                                                              "inDirectoryNumber",
                                                               "I");
     jint directoryCount = env->GetIntField(options, gOptions_DirectoryCountFieldID);
+    LOGII("param directoryCount", directoryCount);
 
     jfieldID gOptions_PreferedConfigFieldID = env->GetFieldID(jBitmapOptionsClass,
                                                               "inPreferredConfig",
@@ -47,7 +49,8 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
     jobject config = env->GetObjectField(options, gOptions_PreferedConfigFieldID);
     if (config == NULL) {
         LOGI("config is NULL, creating default options");
-        jclass bitmapConfig = env->FindClass("org/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageConfig");
+        jclass bitmapConfig = env->FindClass(
+                "org/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageConfig");
         jfieldID argb8888FieldID = env->GetStaticFieldID(bitmapConfig, "ARGB_8888",
                                                          "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageConfig;");
         config = env->GetStaticObjectField(bitmapConfig, argb8888FieldID);
@@ -58,10 +61,8 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
     env->DeleteLocalRef(config);
 
 
-    //if directory number < 1 set it to 1
-    if (directoryCount < 1) directoryCount = 1;
-
-    env->DeleteLocalRef(jBitmapOptionsClass);
+    //if directory number < 0 set it to 0
+    if (directoryCount < 0) directoryCount = 0;
 
     //Open image and read data;
     const char *strPath = NULL;
@@ -75,34 +76,40 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
         return NULL;
     }
 
-    //Go to directory
-    int dirRead = 1;
-    while (dirRead < directoryCount) {
-        TIFFReadDirectory(image);
-        dirRead++;
-    }
+    jobject java_bitmap = NULL;
 
+    TIFFSetDirectory(image, 0);
+
+    jfieldID gOptions_outDirectoryCountFieldId = env->GetFieldID(jBitmapOptionsClass,
+                                                                 "outDirectoryCount", "I");
+    int dircount = getDyrectoryCount();
+    LOGII("dircount", dircount);
+    env->SetIntField(options, gOptions_outDirectoryCountFieldId, dircount);
+
+    TIFFSetDirectory(image, directoryCount);
+    LOGII("Set dir to ", directoryCount);
     TIFFGetField(image, TIFFTAG_IMAGEWIDTH, &origwidth);
     TIFFGetField(image, TIFFTAG_IMAGELENGTH, &origheight);
+    LOGII("Width", origwidth);
+    LOGII("Height", origheight);
 
-    jobject java_bitmap = NULL;
-    //If need only bounds - return null but fill Options object
-    if (inJustDecodeBounds) {
-        jclass jBitmapOptionsClass = env->FindClass(
-                "org/beyka/tiffbitmapfactory/TiffBitmapFactory$Options");
-        jfieldID gOptions_outWidthFieldId = env->GetFieldID(jBitmapOptionsClass, "outWidth", "I");
-        env->SetIntField(options, gOptions_outWidthFieldId, origwidth);
+    jfieldID gOptions_OutCurDirNumberFieldID = env->GetFieldID(jBitmapOptionsClass,
+                                                               "outCurDirectoryNumber",
+                                                               "I");
+    env->SetIntField(options, gOptions_OutCurDirNumberFieldID, directoryCount);
 
-        jfieldID gOptions_outHeightFieldId = env->GetFieldID(jBitmapOptionsClass, "outHeight", "I");
-        env->SetIntField(options, gOptions_outHeightFieldId, origheight);
+    jfieldID gOptions_outWidthFieldId = env->GetFieldID(jBitmapOptionsClass, "outWidth", "I");
+    env->SetIntField(options, gOptions_outWidthFieldId, origwidth);
 
-        jfieldID gOptions_outDirectoryCountFieldId = env->GetFieldID(jBitmapOptionsClass,
-                                                                     "outDirectoryCount", "I");
-        int dircount = getDyrectoryCount();
-        env->SetIntField(options, gOptions_outDirectoryCountFieldId, dircount);
+    jfieldID gOptions_outHeightFieldId = env->GetFieldID(jBitmapOptionsClass, "outHeight", "I");
+    env->SetIntField(options, gOptions_outHeightFieldId, origheight);
 
-        env->DeleteLocalRef(jBitmapOptionsClass);
-    } else {
+    env->DeleteLocalRef(jBitmapOptionsClass);
+
+    if (!inJustDecodeBounds) {
+        TIFFSetDirectory(image, directoryCount);
+        TIFFGetField(image, TIFFTAG_IMAGEWIDTH, &origwidth);
+        TIFFGetField(image, TIFFTAG_IMAGELENGTH, &origheight);
         java_bitmap = createBitmap(env, inSampleSize, directoryCount, options);
     }
 
@@ -113,7 +120,8 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
 
 jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject options) {
     //Read Config from options. Use ordinal field from ImageConfig class
-    jclass configClass = env->FindClass("org/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageConfig");
+    jclass configClass = env->FindClass(
+            "org/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageConfig");
     jfieldID ordinalFieldID = env->GetFieldID(configClass, "ordinal", "I");
     jint configInt = env->GetIntField(preferedConfig, ordinalFieldID);
 
@@ -140,7 +148,9 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
         return NULL;
     }
 
-    if (0 == TIFFReadRGBAImageOriented(image, origwidth, origheight, origBuffer, ORIENTATION_TOPLEFT, 0)) {
+    if (0 ==
+        TIFFReadRGBAImageOriented(image, origwidth, origheight, origBuffer, ORIENTATION_TOPLEFT,
+                                  0)) {
         LOGE("Error reading image."); //// + path
         return NULL;
     }
@@ -171,7 +181,7 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
         processedBuffer = createBitmapARGB8888(env, inSampleSize, origBuffer, &bitmapwidth,
                                                &bitmapheight);
         bitmapConfigField = env->GetStaticFieldID(bitmapConfigClass, "ARGB_8888",
-                                                 "Landroid/graphics/Bitmap$Config;");
+                                                  "Landroid/graphics/Bitmap$Config;");
     } else if (configInt == ALPHA_8) {
         processedBuffer = createBitmapAlpha8(env, inSampleSize, origBuffer, &bitmapwidth,
                                              &bitmapheight);

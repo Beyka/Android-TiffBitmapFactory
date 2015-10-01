@@ -118,7 +118,7 @@ public class TiffBitmapFactory {
             inSwapRedBlueColors = false;
             inJustDecodeBounds = false;
             inSampleSize = 1;
-            inDirectoryCount = 1;
+            inDirectoryNumber = 0;
 
             outWidth = -1;
             outHeight = -1;
@@ -155,12 +155,14 @@ public class TiffBitmapFactory {
          * Set directory to extract from image. Default value is 1.
          * To get number of directories in file see {@link #outDirectoryCount}
          */
-        public int inDirectoryCount;
+        public int inDirectoryNumber;
 
         /**
          * If this is non-null, the decoder will try to decode into this
          * internal configuration. If it is null, or the request cannot be met,
          * the decoder will use {@link ImageConfig#ARGB_8888} configuration.
+         *
+         * <p>Numeration starts with 0</p>
          *
          * <p>Image are loaded with the {@link ImageConfig#ARGB_8888} config by
          * default.</p>
@@ -188,6 +190,12 @@ public class TiffBitmapFactory {
          * <p>outHeight will be set to -1 if there is an error trying to decode.</p>
          */
         public int outHeight;
+
+        /**
+         * The number of current directory.
+         * <p>curDirectoryNumber will be set to -1 if there is an error trying to decode.</p>
+         */
+        public int outCurDirectoryNumber;
 
         /**
          * The count of directory in image file.
