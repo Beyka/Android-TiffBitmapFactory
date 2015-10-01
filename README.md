@@ -36,11 +36,38 @@ if (height > reqHeight || width > reqWidth) {
 //Set calculated parameters to Options  object
 options.inJustDecodeBounds = false;
 options.inSampleSize = inSampleSize;
-//Set last directory of image to decode
-options.inDirectoryCount = dirCount;
 
-//Decode bitmap
+//Decode bitmap from first directory
 Bitmap bmp = TiffBitmapFactory.decodeFile(file, options);
+
+//Decode bitmap from last directory
+options.inDirectoryCount = dirCount;
+options.inJustDecodeBounds = true;
+TiffBitmapFactory.decodeFile(file, options);
+int width = options.outWidth;
+int height = options.outHeight;
+//Change sample size if width or height bigger than required width or height
+int inSampleSize = 1;
+if (height > reqHeight || width > reqWidth) {
+
+    final int halfHeight = height / 2;
+    final int halfWidth = width / 2;
+
+    // Calculate the largest inSampleSize value that is a power of 2 and keeps both
+    // height and width larger than the requested height and width.
+    while ((halfHeight / inSampleSize) > reqHeight
+                    && (halfWidth / inSampleSize) > reqWidth) {
+        inSampleSize *= 2;
+    }
+}
+
+//Set calculated parameters to Options  object
+options.inJustDecodeBounds = false;
+options.inSampleSize = inSampleSize;
+
+//Decode bitmap from first directory
+Bitmap secondBmp = TiffBitmapFactory.decodeFile(file, options);
+
 ```
 
 ### Build
