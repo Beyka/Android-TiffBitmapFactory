@@ -7,9 +7,9 @@ extern "C" {
 #include "NativeTiffBitmapFactory.h"
 
 int const colorMask = 0xFF;
-int const ARGB_8888 = 5;
-int const ALPHA_8 = 1;
-int const RGB_565 = 3;
+int const ARGB_8888 = 2;
+int const RGB_565 = 4;
+int const ALPHA_8 = 8;
 
 TIFF *image;
 int origwidth = 0;
@@ -18,7 +18,6 @@ jobject preferedConfig;
 jboolean invertRedAndBlue = false;
 
 JNIEXPORT jobject
-
 JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
         (JNIEnv *env, jclass clazz, jstring path, jobject options) {
 
@@ -44,13 +43,13 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
 
     jfieldID gOptions_PreferedConfigFieldID = env->GetFieldID(jBitmapOptionsClass,
                                                               "inPreferredConfig",
-                                                              "Landroid/graphics/Bitmap$Config;");
+                                                              "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageConfig;");
     jobject config = env->GetObjectField(options, gOptions_PreferedConfigFieldID);
     if (config == NULL) {
         LOGI("config is NULL, creating default options");
-        jclass bitmapConfig = env->FindClass("android/graphics/Bitmap$Config");
+        jclass bitmapConfig = env->FindClass("org/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageConfig");
         jfieldID argb8888FieldID = env->GetStaticFieldID(bitmapConfig, "ARGB_8888",
-                                                         "Landroid/graphics/Bitmap$Config;");
+                                                         "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageConfig;");
         config = env->GetStaticObjectField(bitmapConfig, argb8888FieldID);
         env->DeleteLocalRef(bitmapConfig);
     }
@@ -113,10 +112,11 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
 }
 
 jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject options) {
-    //Read Config from options. Use nativeInt field from Config class
-    jclass configClass = env->FindClass("android/graphics/Bitmap$Config");
-    jfieldID nativeIntFieldID = env->GetFieldID(configClass, "nativeInt", "I");
-    jint configInt = env->GetIntField(preferedConfig, nativeIntFieldID);
+    //Read Config from options. Use ordinal field from ImageConfig class
+    jclass configClass = env->FindClass("org/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageConfig");
+    jfieldID ordinalFieldID = env->GetFieldID(configClass, "ordinal", "I");
+    jint configInt = env->GetIntField(preferedConfig, ordinalFieldID);
+
     if (configInt != ARGB_8888 && configInt != ALPHA_8 && configInt != RGB_565) {
         //TODO Drop exception
         LOGE("Selected Config not supported yet");
@@ -163,16 +163,25 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     int bitmapwidth = origwidth;
     int bitmapheight = origheight;
 
+    //Class and field for Bitmap.Config
+    jclass bitmapConfigClass = env->FindClass("android/graphics/Bitmap$Config");
+    jfieldID bitmapConfigField = NULL;
     void *processedBuffer = NULL;
     if (configInt == ARGB_8888) {
         processedBuffer = createBitmapARGB8888(env, inSampleSize, origBuffer, &bitmapwidth,
                                                &bitmapheight);
+        bitmapConfigField = env->GetStaticFieldID(bitmapConfigClass, "ARGB_8888",
+                                                 "Landroid/graphics/Bitmap$Config;");
     } else if (configInt == ALPHA_8) {
         processedBuffer = createBitmapAlpha8(env, inSampleSize, origBuffer, &bitmapwidth,
                                              &bitmapheight);
+        bitmapConfigField = env->GetStaticFieldID(bitmapConfigClass, "ALPHA_8",
+                                                  "Landroid/graphics/Bitmap$Config;");
     } else if (configInt == RGB_565) {
         processedBuffer = createBitmapRGB565(env, inSampleSize, origBuffer, &bitmapwidth,
                                              &bitmapheight);
+        bitmapConfigField = env->GetStaticFieldID(bitmapConfigClass, "RGB_565",
+                                                  "Landroid/graphics/Bitmap$Config;");
     }
 
     //Create mutable bitmap
@@ -180,8 +189,13 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     jmethodID methodid = env->GetStaticMethodID(bitmapClass, "createBitmap",
                                                 "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
 
+    //BitmapConfig
+    jobject config = env->GetStaticObjectField(bitmapConfigClass, bitmapConfigField);
+
     jobject java_bitmap = env->CallStaticObjectMethod(bitmapClass, methodid, bitmapwidth,
-                                                      bitmapheight, preferedConfig);
+                                                      bitmapheight, config);
+
+    env->DeleteLocalRef(config);
 
     //Copy data to bitmap
     int ret;

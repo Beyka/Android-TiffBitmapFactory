@@ -10,7 +10,48 @@ import java.io.File;
 public class TiffBitmapFactory {
 
     static {
+        System.loadLibrary("tiff");
         System.loadLibrary("tifffactory");
+    }
+
+    public enum ImageConfig {
+        /**
+         * Each pixel is stored on 4 bytes. Each channel (RGB and alpha
+         * for translucency) is stored with 8 bits of precision (256
+         * possible values.)
+         *
+         * This configuration is very flexible and offers the best
+         * quality. It should be used whenever possible.
+         */
+        ARGB_8888 (2),
+        /**
+         * Each pixel is stored on 2 bytes and only the RGB channels are
+         * encoded: red is stored with 5 bits of precision (32 possible
+         * values), green is stored with 6 bits of precision (64 possible
+         * values) and blue is stored with 5 bits of precision.
+         *
+         * This configuration can produce slight visual artifacts depending
+         * on the configuration of the source. For instance, without
+         * dithering, the result might show a greenish tint. To get better
+         * results dithering should be applied.
+         *
+         * This configuration may be useful when using opaque bitmaps
+         * that do not require high color fidelity.
+         */
+        RGB_565 (4),
+        /**
+         * Each pixel is stored as a single translucency (alpha) channel.
+         * This is very useful to efficiently store masks for instance.
+         * No color information is stored.
+         * With this configuration, each pixel requires 1 byte of memory.
+         */
+        ALPHA_8 (8);
+
+
+        final int ordinal;
+        ImageConfig(int ordinal) {
+            this.ordinal = ordinal;
+        }
     }
 
     /**
@@ -58,7 +99,7 @@ public class TiffBitmapFactory {
      *         size be returned (in options.outWidth, options.outHeight, options.outDirectoryCount)
      */
     public static Bitmap decodePath(String path, Options options) {
-        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+        options.inPreferredConfig = ImageConfig.ARGB_8888;
         return nativeDecodePath(path, options);
     }
 
@@ -119,16 +160,14 @@ public class TiffBitmapFactory {
         /**
          * If this is non-null, the decoder will try to decode into this
          * internal configuration. If it is null, or the request cannot be met,
-         * the decoder will try to pick the best matching config based on the
-         * system's screen depth, and characteristics of the original image such
-         * as if it has per-pixel alpha (requiring a config that also does).
+         * the decoder will use {@link ImageConfig#ARGB_8888} configuration.
          *
-         * <p>Image are loaded with the {@link Bitmap.Config#ARGB_8888} config by
+         * <p>Image are loaded with the {@link ImageConfig#ARGB_8888} config by
          * default.</p>
          *
-         * <p>In current version supported are {@link Bitmap.Config#ARGB_8888}, {@link Bitmap.Config#ALPHA_8} and {@link Bitmap.Config#RGB_565}</p>
+         * <p>In current version supported are {@link ImageConfig#ARGB_8888}, {@link ImageConfig#ALPHA_8} and {@link ImageConfig#RGB_565}</p>
          */
-        public Bitmap.Config inPreferredConfig = Bitmap.Config.ARGB_8888;
+        public ImageConfig inPreferredConfig = ImageConfig.ARGB_8888;
 
         /**
          * The resulting width of the bitmap. If {@link #inJustDecodeBounds} is
