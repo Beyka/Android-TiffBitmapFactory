@@ -5,6 +5,8 @@ For decoding *.tif files it uses native library [libtiff](https://github.com/dum
 
 Just now it has possibility to open tif image as mutable bitmap, read count of directory in file, apply sample rate for bitmap decoding and choose directory to decode.
 
+Minimum Android API level 8
+
 ### Usage
 ```Java
 File file = new File("/sdcard/image.tif");
