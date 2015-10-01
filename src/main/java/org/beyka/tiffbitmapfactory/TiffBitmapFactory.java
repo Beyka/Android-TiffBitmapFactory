@@ -103,7 +103,7 @@ public class TiffBitmapFactory {
         return nativeDecodePath(path, options);
     }
 
-    private static native Bitmap nativeDecodePath(String path, Options options);
+    private static synchronized native Bitmap nativeDecodePath(String path, Options options);
 
     /**
      * Options class to specify decoding parameters
