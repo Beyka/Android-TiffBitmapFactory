@@ -123,6 +123,14 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
         return NULL;
     }
 
+    int bitdepth = 0;
+    TIFFGetField(image, TIFFTAG_BITSPERSAMPLE, &bitdepth);
+    if (bitdepth != 1 && bitdepth != 4 && bitdepth != 8 && bitdepth != 16) {
+        //TODO Drop exception
+        LOGE("Only 1, 4, 8, and 16 bits per sample supported");
+        return NULL;
+    }
+
     int origBufferSize = origwidth * origheight;
 
     unsigned int *origBuffer = (unsigned int *) _TIFFmalloc(origBufferSize * sizeof(unsigned int));
@@ -132,7 +140,10 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
         return NULL;
     }
 
-    TIFFReadRGBAImageOriented(image, origwidth, origheight, origBuffer, ORIENTATION_TOPLEFT, 0);
+    if (0 == TIFFReadRGBAImageOriented(image, origwidth, origheight, origBuffer, ORIENTATION_TOPLEFT, 0)) {
+        LOGE("Error reading image."); //// + path
+        return NULL;
+    }
 
     // Convert ABGR to ARGB
     if (invertRedAndBlue) {
