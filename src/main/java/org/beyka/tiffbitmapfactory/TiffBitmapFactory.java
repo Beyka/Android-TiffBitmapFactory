@@ -152,7 +152,7 @@ public class TiffBitmapFactory {
         public int inSampleSize;
 
         /**
-         * Set directory to extract from image. Default value is 1.
+         * Set directory to extract from image. Default value is 0.
          * To get number of directories in file see {@link #outDirectoryCount}
          */
         public int inDirectoryNumber;
