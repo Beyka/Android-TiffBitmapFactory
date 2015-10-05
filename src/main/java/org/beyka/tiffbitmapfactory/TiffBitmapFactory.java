@@ -14,6 +14,18 @@ public class TiffBitmapFactory {
         System.loadLibrary("tifffactory");
     }
 
+    public enum ImageOrientation {
+        ORIENTATION_TOPLEFT,
+        ORIENTATION_TOPRIGHT,
+        ORIENTATION_BOTRIGHT,
+        ORIENTATION_BOTLEFT,
+        ORIENTATION_LEFTTOP,
+        ORIENTATION_RIGHTTOP,
+        ORIENTATION_RIGHTBOT,
+        ORIENTATION_LEFTBOT,
+        UNAVAILABLE;
+    }
+
     public enum ImageConfig {
         /**
          * Each pixel is stored on 4 bytes. Each channel (RGB and alpha
@@ -123,6 +135,7 @@ public class TiffBitmapFactory {
             outWidth = -1;
             outHeight = -1;
             outDirectoryCount = -1;
+            outImageOrientation = ImageOrientation.UNAVAILABLE;
         }
 
         /**
@@ -204,5 +217,12 @@ public class TiffBitmapFactory {
          * set to false and image decoded successful.</p>
          */
         public int outDirectoryCount;
+
+        /**
+         * This parameter returns orientation of decoded image
+         * <p>For storing orientation uses {@link org.beyka.tiffbitmapfactory.TiffBitmapFactory.ImageOrientation ImageOrientation} enum</p>
+         * <p>If image wasn't decoded successful this parameter will be equal to {@link ImageOrientation#UNAVAILABLE}</p>
+         */
+        public ImageOrientation outImageOrientation;
     }
 }

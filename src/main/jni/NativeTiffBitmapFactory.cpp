@@ -14,6 +14,7 @@ int const ALPHA_8 = 8;
 TIFF *image;
 int origwidth = 0;
 int origheight = 0;
+short origorientation;
 jobject preferedConfig;
 jboolean invertRedAndBlue = false;
 
@@ -83,15 +84,71 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
     jfieldID gOptions_outDirectoryCountFieldId = env->GetFieldID(jBitmapOptionsClass,
                                                                  "outDirectoryCount", "I");
     int dircount = getDyrectoryCount();
-    LOGII("dircount", dircount);
     env->SetIntField(options, gOptions_outDirectoryCountFieldId, dircount);
 
     TIFFSetDirectory(image, directoryCount);
-    LOGII("Set dir to ", directoryCount);
     TIFFGetField(image, TIFFTAG_IMAGEWIDTH, &origwidth);
     TIFFGetField(image, TIFFTAG_IMAGELENGTH, &origheight);
-    LOGII("Width", origwidth);
-    LOGII("Height", origheight);
+
+    //Getting image orientation and createing ImageOrientation enum
+    TIFFGetField(image, TIFFTAG_ORIENTATION, &origorientation);
+    jclass gOptions_ImageOrientationClass = env->FindClass(
+            "org/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation");
+    jfieldID gOptions_ImageOrientationFieldId = NULL;
+    switch (origorientation) {
+        case ORIENTATION_TOPLEFT :
+            gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
+                                                                     "ORIENTATION_TOPLEFT",
+                                                                     "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation;");
+            break;
+        case ORIENTATION_TOPRIGHT :
+            gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
+                                                                     "ORIENTATION_TOPRIGHT",
+                                                                     "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation;");
+            break;
+        case ORIENTATION_BOTRIGHT :
+            gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
+                                                                     "ORIENTATION_BOTRIGHT",
+                                                                     "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation;");
+            break;
+        case ORIENTATION_BOTLEFT :
+            gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
+                                                                     "ORIENTATION_BOTLEFT",
+                                                                     "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation;");
+            break;
+        case ORIENTATION_LEFTTOP :
+            gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
+                                                                     "ORIENTATION_LEFTTOP",
+                                                                     "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation;");
+            break;
+        case ORIENTATION_RIGHTTOP :
+            gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
+                                                                     "ORIENTATION_RIGHTTOP",
+                                                                     "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation;");
+            break;
+        case ORIENTATION_RIGHTBOT :
+            gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
+                                                                     "ORIENTATION_RIGHTBOT",
+                                                                     "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation;");
+            break;
+        case ORIENTATION_LEFTBOT :
+            gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
+                                                                     "ORIENTATION_LEFTBOT",
+                                                                     "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation;");
+            break;
+    }
+    if (gOptions_ImageOrientationFieldId != NULL) {
+        jobject gOptions_ImageOrientationObj = env->GetStaticObjectField(
+                gOptions_ImageOrientationClass,
+                gOptions_ImageOrientationFieldId);
+
+        //Set outImageOrientation field to options object
+        jfieldID gOptions_outImageOrientationField = env->GetFieldID(jBitmapOptionsClass,
+                                                                     "outImageOrientation",
+                                                                     "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation;");
+        env->SetObjectField(options, gOptions_outImageOrientationField,
+                            gOptions_ImageOrientationObj);
+    }
 
     jfieldID gOptions_OutCurDirNumberFieldID = env->GetFieldID(jBitmapOptionsClass,
                                                                "outCurDirectoryNumber",
