@@ -41,8 +41,8 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
     jfieldID gOptions_DirectoryCountFieldID = env->GetFieldID(jBitmapOptionsClass,
                                                               "inDirectoryNumber",
                                                               "I");
-    jint directoryCount = env->GetIntField(options, gOptions_DirectoryCountFieldID);
-    LOGII("param directoryCount", directoryCount);
+    jint inDirectoryNumber = env->GetIntField(options, gOptions_DirectoryCountFieldID);
+    LOGII("param directoryCount", inDirectoryNumber);
 
     jfieldID gOptions_PreferedConfigFieldID = env->GetFieldID(jBitmapOptionsClass,
                                                               "inPreferredConfig",
@@ -58,12 +58,10 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
         env->DeleteLocalRef(bitmapConfig);
     }
     preferedConfig = env->NewGlobalRef(config);
-
     env->DeleteLocalRef(config);
 
-
     //if directory number < 0 set it to 0
-    if (directoryCount < 0) directoryCount = 0;
+    if (inDirectoryNumber < 0) inDirectoryNumber = 0;
 
     //Open image and read data;
     const char *strPath = NULL;
@@ -79,14 +77,32 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
 
     jobject java_bitmap = NULL;
 
+    writeDataToOptions(env, options, inDirectoryNumber);
+
+    if (!inJustDecodeBounds) {
+        TIFFSetDirectory(image, inDirectoryNumber);
+        TIFFGetField(image, TIFFTAG_IMAGEWIDTH, &origwidth);
+        TIFFGetField(image, TIFFTAG_IMAGELENGTH, &origheight);
+        java_bitmap = createBitmap(env, inSampleSize, inDirectoryNumber, options);
+    }
+
+    releaseImage(env);
+
+    return java_bitmap;
+}
+
+void writeDataToOptions(JNIEnv *env, jobject options, int directoryNumber) {
     TIFFSetDirectory(image, 0);
 
-    jfieldID gOptions_outDirectoryCountFieldId = env->GetFieldID(jBitmapOptionsClass,
+    jclass jOptionsClass = env->FindClass(
+            "org/beyka/tiffbitmapfactory/TiffBitmapFactory$Options");
+
+    jfieldID gOptions_outDirectoryCountFieldId = env->GetFieldID(jOptionsClass,
                                                                  "outDirectoryCount", "I");
     int dircount = getDyrectoryCount();
     env->SetIntField(options, gOptions_outDirectoryCountFieldId, dircount);
 
-    TIFFSetDirectory(image, directoryCount);
+    TIFFSetDirectory(image, directoryNumber);
     TIFFGetField(image, TIFFTAG_IMAGEWIDTH, &origwidth);
     TIFFGetField(image, TIFFTAG_IMAGELENGTH, &origheight);
 
@@ -143,36 +159,25 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
                 gOptions_ImageOrientationFieldId);
 
         //Set outImageOrientation field to options object
-        jfieldID gOptions_outImageOrientationField = env->GetFieldID(jBitmapOptionsClass,
+        jfieldID gOptions_outImageOrientationField = env->GetFieldID(jOptionsClass,
                                                                      "outImageOrientation",
                                                                      "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation;");
         env->SetObjectField(options, gOptions_outImageOrientationField,
                             gOptions_ImageOrientationObj);
     }
 
-    jfieldID gOptions_OutCurDirNumberFieldID = env->GetFieldID(jBitmapOptionsClass,
+    jfieldID gOptions_OutCurDirNumberFieldID = env->GetFieldID(jOptionsClass,
                                                                "outCurDirectoryNumber",
                                                                "I");
-    env->SetIntField(options, gOptions_OutCurDirNumberFieldID, directoryCount);
+    env->SetIntField(options, gOptions_OutCurDirNumberFieldID, directoryNumber);
 
-    jfieldID gOptions_outWidthFieldId = env->GetFieldID(jBitmapOptionsClass, "outWidth", "I");
+    jfieldID gOptions_outWidthFieldId = env->GetFieldID(jOptionsClass, "outWidth", "I");
     env->SetIntField(options, gOptions_outWidthFieldId, origwidth);
 
-    jfieldID gOptions_outHeightFieldId = env->GetFieldID(jBitmapOptionsClass, "outHeight", "I");
+    jfieldID gOptions_outHeightFieldId = env->GetFieldID(jOptionsClass, "outHeight", "I");
     env->SetIntField(options, gOptions_outHeightFieldId, origheight);
 
-    env->DeleteLocalRef(jBitmapOptionsClass);
-
-    if (!inJustDecodeBounds) {
-        TIFFSetDirectory(image, directoryCount);
-        TIFFGetField(image, TIFFTAG_IMAGEWIDTH, &origwidth);
-        TIFFGetField(image, TIFFTAG_IMAGELENGTH, &origheight);
-        java_bitmap = createBitmap(env, inSampleSize, directoryCount, options);
-    }
-
-    releaseImage(env);
-
-    return java_bitmap;
+    env->DeleteLocalRef(jOptionsClass);
 }
 
 jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject options) {

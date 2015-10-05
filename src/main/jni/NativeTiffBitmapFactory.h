@@ -33,6 +33,11 @@ JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nat
 int getDyrectoryCount();
 
 /*
+ * Fill out fields in Options object
+ */
+void writeDataToOptions(JNIEnv *, jobject, int);
+
+/*
  * Create java bitmap object
  */
 jobject createBitmap(JNIEnv *, int, int, jobject);
