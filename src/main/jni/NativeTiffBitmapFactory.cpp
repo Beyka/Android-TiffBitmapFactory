@@ -14,7 +14,7 @@ int const ALPHA_8 = 8;
 TIFF *image;
 int origwidth = 0;
 int origheight = 0;
-short origorientation;
+short origorientation = 0;
 jobject preferedConfig;
 jboolean invertRedAndBlue = false;
 
@@ -22,6 +22,14 @@ JNIEXPORT jobject
 
 JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
         (JNIEnv *env, jclass clazz, jstring path, jobject options) {
+
+    //Drop some global variables
+    origorientation = 0;
+    origwidth = 0;
+    origheight = 0;
+    preferedConfig = NULL;
+    invertRedAndBlue = false;
+    image = NULL;
 
     //Get options
     jclass jBitmapOptionsClass = env->FindClass(
@@ -108,6 +116,10 @@ void writeDataToOptions(JNIEnv *env, jobject options, int directoryNumber) {
 
     //Getting image orientation and createing ImageOrientation enum
     TIFFGetField(image, TIFFTAG_ORIENTATION, &origorientation);
+    //If orientation field is empty - use ORIENTATION_TOPLEFT
+    if (origorientation == 0) {
+        origorientation = ORIENTATION_TOPLEFT;
+    }
     jclass gOptions_ImageOrientationClass = env->FindClass(
             "org/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation");
     jfieldID gOptions_ImageOrientationFieldId = NULL;
