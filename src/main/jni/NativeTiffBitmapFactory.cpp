@@ -327,13 +327,7 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     AndroidBitmap_unlockPixels(env, java_bitmap);
 
     //remove array
-    if (configInt == ARGB_8888) {
-        delete[] (jint *) processedBuffer;
-    } else if (configInt == ALPHA_8) {
-        delete[] (jbyte *) processedBuffer;
-    } else if (configInt == RGB_565) {
-        delete[] (unsigned short *) processedBuffer;
-    }
+    free(processedBuffer);
 
     //remove Bitmap class object
     env->DeleteLocalRef(bitmapClass);
@@ -470,7 +464,7 @@ jint *createBitmapARGB8888(JNIEnv *env, int inSampleSize, unsigned int *buffer, 
     }
 
     if (origorientation > 4) {
-        unsigned int size = *bitmapheight * *bitmapwidth - 1;
+        unsigned int size = pixelsBufferSize - 1;
         jint t;
         unsigned long long next;
         unsigned long long cycleBegin;
@@ -528,7 +522,7 @@ jint *createBitmapARGB8888(JNIEnv *env, int inSampleSize, unsigned int *buffer, 
                 }
                 break;
         }
-        delete[] barray;
+        free(barray);
     }
 
     return pixels;
@@ -624,7 +618,7 @@ jbyte *createBitmapAlpha8(JNIEnv *env, int inSampleSize, unsigned int *buffer, i
     }
 
     if (origorientation > 4) {
-        unsigned int size = *bitmapheight * *bitmapwidth - 1;
+        unsigned int size = pixelsBufferSize - 1;
         jbyte t;
         unsigned long long next;
         unsigned long long cycleBegin;
@@ -682,7 +676,7 @@ jbyte *createBitmapAlpha8(JNIEnv *env, int inSampleSize, unsigned int *buffer, i
                 }
                 break;
         }
-        delete[] barray;
+        free(barray);
     }
     return pixels;
 }
@@ -803,7 +797,7 @@ unsigned short *createBitmapRGB565(JNIEnv *env, int inSampleSize, unsigned int *
     }
 
     if (origorientation > 4) {
-        unsigned int size = *bitmapheight * *bitmapwidth - 1;
+        unsigned int size = pixelsBufferSize - 1;
         unsigned short t;
         unsigned long long next;
         unsigned long long cycleBegin;
@@ -861,7 +855,7 @@ unsigned short *createBitmapRGB565(JNIEnv *env, int inSampleSize, unsigned int *
                 }
                 break;
         }
-        delete[] barray;
+        free(barray);
     }
 
     return pixels;
