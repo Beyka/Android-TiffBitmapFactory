@@ -5,6 +5,7 @@ extern "C" {
 #endif
 
 #include "NativeTiffBitmapFactory.h"
+#include "readTiffIncremental.h"
 
 int const colorMask = 0xFF;
 int const ARGB_8888 = 2;
@@ -17,6 +18,7 @@ int origheight = 0;
 short origorientation = 0;
 jobject preferedConfig;
 jboolean invertRedAndBlue = false;
+int availableMemory = -1;
 
 JNIEXPORT jobject
 
@@ -29,6 +31,7 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
     origheight = 0;
     preferedConfig = NULL;
     invertRedAndBlue = false;
+    availableMemory = -1;
     image = NULL;
 
     //Get options
@@ -51,6 +54,11 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
                                                               "I");
     jint inDirectoryNumber = env->GetIntField(options, gOptions_DirectoryCountFieldID);
     LOGII("param directoryCount", inDirectoryNumber);
+    
+    jfieldID gOptions_AvailableMemoryFieldID = env->GetFieldID(jBitmapOptionsClass,
+                                                              "inAvailableMemory",
+                                                              "I");
+    availableMemory = env->GetIntField(options, gOptions_AvailableMemoryFieldID);
 
     jfieldID gOptions_PreferedConfigFieldID = env->GetFieldID(jBitmapOptionsClass,
                                                               "inPreferredConfig",
@@ -225,20 +233,40 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
         return NULL;
     }
 
-    int origBufferSize = origwidth * origheight;
-
-    unsigned int *origBuffer = (unsigned int *) _TIFFmalloc(origBufferSize * sizeof(unsigned int));
-
-    if (origBuffer == NULL) {
-        LOGE("Can\'t allocate memory for origBuffer");
-        return NULL;
+    // Estimate the memory required when the entire file is read in: 
+    // original file size plus two copies of sampled file plus a little extra to be conservative.
+    int origBufferSize = origwidth * origheight * sizeof(unsigned int);
+    int estimatedMemory = origBufferSize + 2 * (origBufferSize / (inSampleSize * inSampleSize));
+    estimatedMemory = 11 * estimatedMemory / 10; // 10% extra.
+    
+    unsigned int *origBuffer = NULL;
+    
+    // Test memory requirement.
+    if ((availableMemory > 0) && (estimatedMemory > availableMemory)) {
+        // Large memory is required. Read file incrementally and sample it.
+        int returnCode = readTiffIncremental(image, (unsigned char**) &origBuffer, inSampleSize, availableMemory);
+        if (returnCode != 0) {
+            LOGE("ReadTiffIncremental failed.");
+            return NULL;
+        }
+        // File is now sampled. Adjust image and sample size variables.
+        origwidth = origwidth / inSampleSize;
+	origheight = origheight / inSampleSize;
+        inSampleSize = 1;
     }
+    else {
+        origBuffer = (unsigned int *) _TIFFmalloc(origBufferSize);
+        if (origBuffer == NULL) {
+            LOGE("Can\'t allocate memory for origBuffer");
+            return NULL;
+        }
 
-    if (0 ==
-        TIFFReadRGBAImageOriented(image, origwidth, origheight, origBuffer, ORIENTATION_TOPLEFT,
-                                  0)) {
-        LOGE("Error reading image."); //// + path
-        return NULL;
+        if (0 ==
+            TIFFReadRGBAImageOriented(image, origwidth, origheight, origBuffer, ORIENTATION_TOPLEFT, 0)) {
+	    free(origBuffer);
+            LOGE("Error reading image.");
+            return NULL;
+        }
     }
 
     // Convert ABGR to ARGB
@@ -341,134 +369,143 @@ jint *createBitmapARGB8888(JNIEnv *env, int inSampleSize, unsigned int *buffer, 
     *bitmapwidth = origwidth / inSampleSize;
     *bitmapheight = origheight / inSampleSize;
     int pixelsBufferSize = *bitmapwidth * *bitmapheight;
-    pixels = (jint *) malloc(sizeof(jint) * pixelsBufferSize);
-    if (pixels == NULL) {
-        LOGE("Can\'t allocate memory for temp buffer");
-        return NULL;
+    
+    if (inSampleSize == 1) {
+        // Use buffer as is.
+        pixels = (jint*) buffer;
     }
     else {
-        for (int i = 0, i1 = 0; i < *bitmapwidth; i++, i1 += inSampleSize) {
-            for (int j = 0, j1 = 0; j < *bitmapheight; j++, j1 += inSampleSize) {
+        // Sample the buffer.
+        pixels = (jint *) malloc(sizeof(jint) * pixelsBufferSize);
+        if (pixels == NULL) {
+            LOGE("Can\'t allocate memory for temp buffer");
+            return NULL;
+        }
+        else {
+            for (int i = 0, i1 = 0; i < *bitmapwidth; i++, i1 += inSampleSize) {
+                for (int j = 0, j1 = 0; j < *bitmapheight; j++, j1 += inSampleSize) {
 
-                //Apply filter to pixel
-                jint crPix = buffer[j1 * origwidth + i1];
-                int sum = 1;
+                    //Apply filter to pixel
+                    jint crPix = buffer[j1 * origwidth + i1];
+                    int sum = 1;
 
-                int alpha = colorMask & crPix >> 24;
-                int red = colorMask & crPix >> 16;
-                int green = colorMask & crPix >> 8;
-                int blue = colorMask & crPix;
+                    int alpha = colorMask & crPix >> 24;
+                    int red = colorMask & crPix >> 16;
+                    int green = colorMask & crPix >> 8;
+                    int blue = colorMask & crPix;
 
-                //using kernel 3x3
+                    //using kernel 3x3
 
-                //topleft
-                if (i1 - 1 >= 0 && j1 - 1 >= 0) {
-                    crPix = buffer[(j1 - 1) * origwidth + i1 - 1];
-                    red += colorMask & crPix >> 16;
-                    green += colorMask & crPix >> 8;
-                    blue += colorMask & crPix;
-                    alpha += colorMask & crPix >> 24;
-                    sum++;
+                    //topleft
+                    if (i1 - 1 >= 0 && j1 - 1 >= 0) {
+                        crPix = buffer[(j1 - 1) * origwidth + i1 - 1];
+                        red += colorMask & crPix >> 16;
+                        green += colorMask & crPix >> 8;
+                        blue += colorMask & crPix;
+                        alpha += colorMask & crPix >> 24;
+                        sum++;
+                    }
+                    //top
+                    if (j1 - 1 >= 0) {
+                        crPix = buffer[(j1 - 1) * origwidth + i1];
+                        red += colorMask & crPix >> 16;
+                        green += colorMask & crPix >> 8;
+                        blue += colorMask & crPix;
+                        alpha += colorMask & crPix >> 24;
+                        sum++;
+                    }
+                    // topright
+                    if (i1 + 1 < origwidth && j1 - 1 >= 0) {
+                        crPix = buffer[(j1 - 1) * origwidth + i1 + 1];
+                        red += colorMask & crPix >> 16;
+                        green += colorMask & crPix >> 8;
+                        blue += colorMask & crPix;
+                        alpha += colorMask & crPix >> 24;
+                        sum++;
+                    }
+                    //right
+                    if (i1 + 1 < origwidth) {
+                        crPix = buffer[j1 * origwidth + i1 + 1];
+                        red += colorMask & crPix >> 16;
+                        green += colorMask & crPix >> 8;
+                        blue += colorMask & crPix;
+                        alpha += colorMask & crPix >> 24;
+                        sum++;
+                    }
+                    //bottomright
+                    if (i1 + 1 < origwidth && j1 + 1 < origheight) {
+                        crPix = buffer[(j1 + 1) * origwidth + i1 + 1];
+                        red += colorMask & crPix >> 16;
+                        green += colorMask & crPix >> 8;
+                        blue += colorMask & crPix;
+                        alpha += colorMask & crPix >> 24;
+                        sum++;
+                    }
+                    //bottom
+                    if (j1 + 1 < origheight) {
+                        crPix = buffer[(j1 + 1) * origwidth + i1 + 1];
+                        red += colorMask & crPix >> 16;
+                        green += colorMask & crPix >> 8;
+                        blue += colorMask & crPix;
+                        alpha += colorMask & crPix >> 24;
+                        sum++;
+                    }
+                    //bottomleft
+                    if (i1 - 1 >= 0 && j1 + 1 < origheight) {
+                        crPix = buffer[(j1 + 1) * origwidth + i1 - 1];
+                        red += colorMask & crPix >> 16;
+                        green += colorMask & crPix >> 8;
+                        blue += colorMask & crPix;
+                        alpha += colorMask & crPix >> 24;
+                        sum++;
+                    }
+                    //left
+                    if (i1 - 1 >= 0) {
+                        crPix = buffer[j1 * origwidth + i1 - 1];
+                        red += colorMask & crPix >> 16;
+                        green += colorMask & crPix >> 8;
+                        blue += colorMask & crPix;
+                        alpha += colorMask & crPix >> 24;
+                        sum++;
+                    }
+
+                    red /= sum;
+                    if (red > 255) red = 255;
+                    if (red < 0) red = 0;
+
+                    green /= sum;
+                    if (green > 255) green = 255;
+                    if (green < 0) green = 0;
+
+                    blue /= sum;
+                    if (blue > 255) blue = 255;
+                    if (blue < 0) blue = 0;
+
+                    alpha /= sum;///= sum;
+                    if (alpha > 255) alpha = 255;
+                    if (alpha < 0) alpha = 0;
+
+                    crPix = (alpha << 24) | (red << 16) | (green << 8) | (blue);
+
+                    pixels[j * *bitmapwidth + i] = crPix;
                 }
-                //top
-                if (j1 - 1 >= 0) {
-                    crPix = buffer[(j1 - 1) * origwidth + i1];
-                    red += colorMask & crPix >> 16;
-                    green += colorMask & crPix >> 8;
-                    blue += colorMask & crPix;
-                    alpha += colorMask & crPix >> 24;
-                    sum++;
-                }
-                // topright
-                if (i1 + 1 < origwidth && j1 - 1 >= 0) {
-                    crPix = buffer[(j1 - 1) * origwidth + i1 + 1];
-                    red += colorMask & crPix >> 16;
-                    green += colorMask & crPix >> 8;
-                    blue += colorMask & crPix;
-                    alpha += colorMask & crPix >> 24;
-                    sum++;
-                }
-                //right
-                if (i1 + 1 < origwidth) {
-                    crPix = buffer[j1 * origwidth + i1 + 1];
-                    red += colorMask & crPix >> 16;
-                    green += colorMask & crPix >> 8;
-                    blue += colorMask & crPix;
-                    alpha += colorMask & crPix >> 24;
-                    sum++;
-                }
-                //bottomright
-                if (i1 + 1 < origwidth && j1 + 1 < origheight) {
-                    crPix = buffer[(j1 + 1) * origwidth + i1 + 1];
-                    red += colorMask & crPix >> 16;
-                    green += colorMask & crPix >> 8;
-                    blue += colorMask & crPix;
-                    alpha += colorMask & crPix >> 24;
-                    sum++;
-                }
-                //bottom
-                if (j1 + 1 < origheight) {
-                    crPix = buffer[(j1 + 1) * origwidth + i1 + 1];
-                    red += colorMask & crPix >> 16;
-                    green += colorMask & crPix >> 8;
-                    blue += colorMask & crPix;
-                    alpha += colorMask & crPix >> 24;
-                    sum++;
-                }
-                //bottomleft
-                if (i1 - 1 >= 0 && j1 + 1 < origheight) {
-                    crPix = buffer[(j1 + 1) * origwidth + i1 - 1];
-                    red += colorMask & crPix >> 16;
-                    green += colorMask & crPix >> 8;
-                    blue += colorMask & crPix;
-                    alpha += colorMask & crPix >> 24;
-                    sum++;
-                }
-                //left
-                if (i1 - 1 >= 0) {
-                    crPix = buffer[j1 * origwidth + i1 - 1];
-                    red += colorMask & crPix >> 16;
-                    green += colorMask & crPix >> 8;
-                    blue += colorMask & crPix;
-                    alpha += colorMask & crPix >> 24;
-                    sum++;
-                }
-
-                red /= sum;
-                if (red > 255) red = 255;
-                if (red < 0) red = 0;
-
-                green /= sum;
-                if (green > 255) green = 255;
-                if (green < 0) green = 0;
-
-                blue /= sum;
-                if (blue > 255) blue = 255;
-                if (blue < 0) blue = 0;
-
-                alpha /= sum;///= sum;
-                if (alpha > 255) alpha = 255;
-                if (alpha < 0) alpha = 0;
-
-                crPix = (alpha << 24) | (red << 16) | (green << 8) | (blue);
-
-                pixels[j * *bitmapwidth + i] = crPix;
             }
+        }
+
+        //Close Buffer
+        if (buffer) {
+            _TIFFfree(buffer);
+            buffer = NULL;
         }
     }
 
-    //Close Buffer
-    if (buffer) {
-        _TIFFfree(buffer);
-        buffer = NULL;
-    }
-
     if (origorientation > 4) {
-        unsigned int size = pixelsBufferSize - 1;
+        unsigned int size = *bitmapheight * *bitmapwidth - 1;
         jint t;
         unsigned long long next;
         unsigned long long cycleBegin;
         bool *barray = (bool *) malloc(sizeof(bool) * pixelsBufferSize);
+	for (int x = 0; x < size; x++) { barray[x] = false; }
         barray[0] = barray[size] = true;
         unsigned long long k = 1;
 
@@ -618,11 +655,12 @@ jbyte *createBitmapAlpha8(JNIEnv *env, int inSampleSize, unsigned int *buffer, i
     }
 
     if (origorientation > 4) {
-        unsigned int size = pixelsBufferSize - 1;
+        unsigned int size = *bitmapheight * *bitmapwidth - 1;
         jbyte t;
         unsigned long long next;
         unsigned long long cycleBegin;
         bool *barray = (bool *) malloc(sizeof(bool) * pixelsBufferSize);
+	for (int x = 0; x < size; x++) { barray[x] = false; }
         barray[0] = barray[size] = true;
         unsigned long long k = 1;
 
@@ -797,11 +835,12 @@ unsigned short *createBitmapRGB565(JNIEnv *env, int inSampleSize, unsigned int *
     }
 
     if (origorientation > 4) {
-        unsigned int size = pixelsBufferSize - 1;
+        unsigned int size = *bitmapheight * *bitmapwidth - 1;
         unsigned short t;
         unsigned long long next;
         unsigned long long cycleBegin;
         bool *barray = (bool *) malloc(sizeof(bool) * pixelsBufferSize);
+	for (int x = 0; x < size; x++) { barray[x] = false; }
         barray[0] = barray[size] = true;
         unsigned long long k = 1;
 
