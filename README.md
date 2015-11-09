@@ -67,3 +67,6 @@ To build native part of library use [Android-NDK-bundle-10](https://developer.an
 ndk-build NDK_PROJECT_PATH=src/main
 ```
 
+Special thanks to dennis508@yahoo.com for providing of incremental reading of TIFF file
+
+
