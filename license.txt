@@ -1,0 +1,27 @@
+Create a bitmap of large Tiff Files without reading the entire file into memory.
+Modifications Copyright 2015 by Dennis Damico, dennis508@yahoo.com
+
+ This code is based on Android-TiffBitmapFactory
+ https://github.com/Beyka/Android-TiffBitmapFactory
+ Copyright Alexey Bey <leshabey@gmail.com> 
+
+ This code is based on tifffastcrop v1.3.4
+ http://www.imnc.in2p3.fr/pagesperso/deroulers/software/largetifftools/
+ Copyright (c) 2013-2015 Christophe Deroulers
+ Portions are based on libtiff's tiffcp code. tiffcp is:
+ Copyright (c) 1988-1997 Sam Leffler
+ Copyright (c) 1991-1997 Silicon Graphics, Inc.
+ Distributed under the GNU General Public License v3 -- contact the author for commercial use 
+ 
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, version 3.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ 
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ 

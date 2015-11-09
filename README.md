@@ -1,7 +1,9 @@
 # Android-TiffBitmapFactory
-TiffBitmapFactory is an Android library that allow open *.tif(See [Wikipedia](https://en.wikipedia.org/wiki/Tagged_Image_File_Format)) image files on Android devices.
+TiffBitmapFactory is an Android library that allows opening of *.tif (See [Wikipedia](https://en.wikipedia.org/wiki/Tagged_Image_File_Format)) image files on Android devices.
 
-For decoding *.tif files it uses native library [libtiff](https://github.com/dumganhar/libtiff)
+This fork enables large Tiff files to be read and sampled incrementally. The caller specifies how much memory is available for processing. If there is sufficient memory the entire file is read in at once, sampled, and the bitmap is created. If there is insufficient memory, the file is read a Tile or Strip at a time, sampled, and the bitmap is created.
+
+For decoding *.tif files it uses the native library [libtiff](https://github.com/dumganhar/libtiff)
 
 Just now it has possibility to open tif image as mutable bitmap, read count of directory in file, apply sample rate for bitmap decoding and choose directory to decode.
 
@@ -42,6 +44,10 @@ for (int i = 0; i < dirCount; i++) {
     }
     options.inJustDecodeBounds = false;
     options.inSampleSize = inSampleSize;
+    
+    // Specify the amount of memory available for the final bitmap and temporary storage.
+    options.inAvailableMemory = 20000000; // bytes
+    
     Bitmap bmp = TiffBitmapFactory.decodeFile(file, options);
     processBitmap(bmp);
 }
@@ -54,4 +60,3 @@ To build native part of library use [Android-NDK-bundle-10](https://developer.an
 ndk-build NDK_PROJECT_PATH=src/main
 ```
 
-<p>To contact me use email leshabey 'at' gmail.com</p>

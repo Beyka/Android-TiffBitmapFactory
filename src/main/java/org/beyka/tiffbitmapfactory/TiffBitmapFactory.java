@@ -131,6 +131,7 @@ public class TiffBitmapFactory {
             inJustDecodeBounds = false;
             inSampleSize = 1;
             inDirectoryNumber = 0;
+            inAvailableMemory = -1;
 
             outWidth = -1;
             outHeight = -1;
@@ -169,6 +170,12 @@ public class TiffBitmapFactory {
          * To get number of directories in file see {@link #outDirectoryCount}
          */
         public int inDirectoryNumber;
+        
+        /**
+         * Number of bytes that may be allocated during the Tiff file operations.
+         * -1 means memory is unlimited.
+         */
+        public int inAvailableMemory;
 
         /**
          * If this is non-null, the decoder will try to decode into this
