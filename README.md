@@ -53,6 +53,13 @@ for (int i = 0; i < dirCount; i++) {
 }
 ```
 
+In case you open realy heavy images and to avoid crashes of application you can use inAvailableMemory option:
+```Java
+TiffBitmapFactory.Options options = new TiffBitmapFactory.Options();
+options.inAvailableMemory = 1024 * 1024 * 10; //10 mb
+Bitmap bmp = TiffBitmapFactory.decodeFile(file, options);
+```
+
 ### Build
 To build native part of library use [Android-NDK-bundle-10](https://developer.android.com/tools/sdk/ndk/index.html) or higher.
 <p>Go to tiffbitmapfactory folder and run</p>
