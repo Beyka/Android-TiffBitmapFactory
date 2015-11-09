@@ -16,6 +16,7 @@ extern "C" {
 #endif
     
 #include <tiffio.h>
+#include "readTiffIncremental.h"
 
 // Return codes.
 #define EXIT_SUCCESS              0

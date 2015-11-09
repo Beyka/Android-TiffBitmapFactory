@@ -1,7 +1,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-  
+
 /**
  * Read a Tiff file in an incremental fashion.
 */

@@ -238,20 +238,23 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     int origBufferSize = origwidth * origheight * sizeof(unsigned int);
     int estimatedMemory = origBufferSize + 2 * (origBufferSize / (inSampleSize * inSampleSize));
     estimatedMemory = 11 * estimatedMemory / 10; // 10% extra.
+    LOGII("estimatedMemory", estimatedMemory);
     
     unsigned int *origBuffer = NULL;
     
     // Test memory requirement.
     if ((availableMemory > 0) && (estimatedMemory > availableMemory)) {
+        LOGI("Large memory is required. Read file incrementally and sample it");
         // Large memory is required. Read file incrementally and sample it.
         int returnCode = readTiffIncremental(image, (unsigned char**) &origBuffer, inSampleSize, availableMemory);
+        LOGII("return code", returnCode);
         if (returnCode != 0) {
             LOGE("ReadTiffIncremental failed.");
             return NULL;
         }
         // File is now sampled. Adjust image and sample size variables.
         origwidth = origwidth / inSampleSize;
-	origheight = origheight / inSampleSize;
+	    origheight = origheight / inSampleSize;
         inSampleSize = 1;
     }
     else {
@@ -263,7 +266,7 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
 
         if (0 ==
             TIFFReadRGBAImageOriented(image, origwidth, origheight, origBuffer, ORIENTATION_TOPLEFT, 0)) {
-	    free(origBuffer);
+	        free(origBuffer);
             LOGE("Error reading image.");
             return NULL;
         }

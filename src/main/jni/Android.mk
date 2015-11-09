@@ -69,6 +69,8 @@ ifeq ($(TARGET_ARCH),arm)
 else
 	ifeq ($(TARGET_ARCH),x86)
 		LOCAL_LDLIBS += $(LOCAL_PATH)/libs/libjpeg-x86.a
+	else
+		LOCAL_LDLIBS += $(LOCAL_PATH)/libs/libjpeg-mips.a
 	endif
 endif
 
