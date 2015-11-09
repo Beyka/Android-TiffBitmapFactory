@@ -82,6 +82,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := tifffactory
 LOCAL_CFLAGS := -DANDROID_NDK
 LOCAL_SRC_FILES := \
+	NativeExceptions.cpp \
 	readTiffIncremental.cpp \
 	NativeTiffBitmapFactory.cpp
 LOCAL_LDLIBS := -ldl -llog -ljnigraphics

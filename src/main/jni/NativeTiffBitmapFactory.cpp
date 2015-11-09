@@ -6,6 +6,7 @@ extern "C" {
 
 #include "NativeTiffBitmapFactory.h"
 #include "readTiffIncremental.h"
+#include "NativeExceptions.h"
 
 int const colorMask = 0xFF;
 int const ARGB_8888 = 2;
@@ -87,6 +88,7 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
     image = TIFFOpen(strPath, "r");
     env->ReleaseStringUTFChars(path, strPath);
     if (image == NULL) {
+        throw_no_such_file_exception(env, path);
         LOGES("Can\'t open bitmap", strPath);
         return NULL;
     }
@@ -99,7 +101,7 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
         TIFFSetDirectory(image, inDirectoryNumber);
         TIFFGetField(image, TIFFTAG_IMAGEWIDTH, &origwidth);
         TIFFGetField(image, TIFFTAG_IMAGELENGTH, &origheight);
-        java_bitmap = createBitmap(env, inSampleSize, inDirectoryNumber, options);
+        java_bitmap = createBitmap(env, inSampleSize, inDirectoryNumber, options, path);
     }
 
     releaseImage(env);
@@ -212,24 +214,19 @@ void writeDataToOptions(JNIEnv *env, jobject options, int directoryNumber) {
     env->DeleteLocalRef(jOptionsClass);
 }
 
-jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject options) {
+jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject options, jstring path) {
     //Read Config from options. Use ordinal field from ImageConfig class
     jclass configClass = env->FindClass(
             "org/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageConfig");
     jfieldID ordinalFieldID = env->GetFieldID(configClass, "ordinal", "I");
     jint configInt = env->GetIntField(preferedConfig, ordinalFieldID);
 
-    if (configInt != ARGB_8888 && configInt != ALPHA_8 && configInt != RGB_565) {
-        //TODO Drop exception
-        LOGE("Selected Config not supported yet");
-        return NULL;
-    }
-
     int bitdepth = 0;
     TIFFGetField(image, TIFFTAG_BITSPERSAMPLE, &bitdepth);
     if (bitdepth != 1 && bitdepth != 4 && bitdepth != 8 && bitdepth != 16) {
         //TODO Drop exception
         LOGE("Only 1, 4, 8, and 16 bits per sample supported");
+        throw_read_file_exception(env, path);
         return NULL;
     }
 
@@ -246,9 +243,10 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     if ((availableMemory > 0) && (estimatedMemory > availableMemory)) {
         LOGI("Large memory is required. Read file incrementally and sample it");
         // Large memory is required. Read file incrementally and sample it.
-        int returnCode = readTiffIncremental(image, (unsigned char**) &origBuffer, inSampleSize, availableMemory);
+        int returnCode = readTiffIncremental(env, image, (unsigned char**) &origBuffer, inSampleSize, availableMemory, path);
         LOGII("return code", returnCode);
         if (returnCode != 0) {
+            releaseImage(env);
             LOGE("ReadTiffIncremental failed.");
             return NULL;
         }

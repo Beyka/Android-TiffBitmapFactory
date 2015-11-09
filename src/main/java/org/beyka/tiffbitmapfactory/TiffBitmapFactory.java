@@ -2,6 +2,10 @@ package org.beyka.tiffbitmapfactory;
 
 import android.graphics.Bitmap;
 
+import org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException;
+import org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException;
+import org.beyka.tiffbitmapfactory.exceptions.ReadTiffException;
+
 import java.io.File;
 
 /**
@@ -72,8 +76,11 @@ public class TiffBitmapFactory {
      * @param file - file to decode
      * @return The decoded bitmap, or null if the image data could not be
      *         decoded
+     *
+     * @throws org.beyka.tiffbitmapfactory.exceptions.ReadTiffException when error occure while decoding image
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException when {@code file} not exist
      */
-    public static Bitmap decodeFile(File file) {
+    public static Bitmap decodeFile(File file) throws NoSuchFileException, ReadTiffException {
         return nativeDecodePath(file.getAbsolutePath(), new Options());
     }
 
@@ -84,9 +91,12 @@ public class TiffBitmapFactory {
      * @param options - options for decoding
      * @return The decoded bitmap, or null if the image data could not be
      *         decoded, or, if options is non-null, if options requested only the
-     *         size be returned (in options.outWidth, options.outHeight, options.outDirectoryCount)
+     *         size be returned (in {@link Options#outWidth}, {@link Options#outHeight}, {@link Options#outDirectoryCount})
+     * @throws org.beyka.tiffbitmapfactory.exceptions.ReadTiffException when error occure while decoding image
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException when {@code file} not exist
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when {@link Options#inAvailableMemory} not enought to decode image
      */
-    public static Bitmap decodeFile(File file, Options options) {
+    public static Bitmap decodeFile(File file, Options options) throws NoSuchFileException, ReadTiffException, NotEnoughtMemoryException {
         return nativeDecodePath(file.getAbsolutePath(), options);
     }
 
@@ -96,8 +106,11 @@ public class TiffBitmapFactory {
      * @param path - file to decode
      * @return The decoded bitmap, or null if the image data could not be
      *         decoded
+     *
+     * @throws org.beyka.tiffbitmapfactory.exceptions.ReadTiffException when error occure while decoding image
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException when {@code path} not exist
      */
-    public static Bitmap decodePath(String path) {
+    public static Bitmap decodePath(String path) throws NoSuchFileException, ReadTiffException {
         return nativeDecodePath(path, new Options());
     }
 
@@ -108,9 +121,13 @@ public class TiffBitmapFactory {
      * @param options - options for decoding
      * @return The decoded bitmap, or null if the image data could not be
      *         decoded, or, if options is non-null, if options requested only the
-     *         size be returned (in options.outWidth, options.outHeight, options.outDirectoryCount)
+     *         size be returned (in {@link Options#outWidth}, {@link Options#outHeight}, {@link Options#outDirectoryCount})
+     *
+     * @throws org.beyka.tiffbitmapfactory.exceptions.ReadTiffException when error occure while decoding image
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException when {@code path} not exist
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when {@link Options#inAvailableMemory} not enought to decode image
      */
-    public static Bitmap decodePath(String path, Options options) {
+    public static Bitmap decodePath(String path, Options options) throws NoSuchFileException, ReadTiffException, NotEnoughtMemoryException {
         options.inPreferredConfig = ImageConfig.ARGB_8888;
         return nativeDecodePath(path, options);
     }

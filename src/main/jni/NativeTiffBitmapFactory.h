@@ -40,7 +40,7 @@ void writeDataToOptions(JNIEnv *, jobject, int);
 /*
  * Create java bitmap object
  */
-jobject createBitmap(JNIEnv *, int, int, jobject);
+jobject createBitmap(JNIEnv *, int, int, jobject, jstring path);
 
 /*
  * Create java bitmap object with config ARGB_8888

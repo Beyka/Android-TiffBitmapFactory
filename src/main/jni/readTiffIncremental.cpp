@@ -301,7 +301,7 @@ cpStrips2Strip(TIFF* TIFFin, unsigned char* inBuf, uint32 outSampleSize,
  * @return Success or Error code. Success == 0.
  */
 int
-readTiffIncremental(TIFF* in, unsigned char** outBuf, uint32 inSampleSize, int32 availableMemoryBytes) {
+readTiffIncremental(JNIEnv *env, TIFF* in, unsigned char** outBuf, uint32 inSampleSize, int32 availableMemoryBytes, jstring path) {
     // Get input file information.
     uint32 fileImageWidth;
     uint32 fileImageHeight;
@@ -343,12 +343,14 @@ readTiffIncremental(TIFF* in, unsigned char** outBuf, uint32 inSampleSize, int32
     
     // Check memory requests against limit.
     if (availableMemoryBytes <= (inBufSize + outBufSize + tempBufSize)) {
+        throw_not_enought_memory_exception(env, availableMemoryBytes);
         return (ERROR_MEMORY);
     }
     
     // Allocate input buffer.
     inBuf = (unsigned char*)_TIFFmalloc(inBufSize);
     if (!inBuf) {
+        throw_not_enought_memory_exception(env, availableMemoryBytes);
         return (ERROR_MEMORY);
     }
     
@@ -356,6 +358,7 @@ readTiffIncremental(TIFF* in, unsigned char** outBuf, uint32 inSampleSize, int32
     *outBuf = (unsigned char*) _TIFFmalloc(outBufSize);
     if (!*outBuf) {
         _TIFFfree(inBuf);
+        throw_not_enought_memory_exception(env, availableMemoryBytes);
         return (ERROR_MEMORY);
     }
     // Last byte of output buffer for overflow protection.
@@ -366,6 +369,7 @@ readTiffIncremental(TIFF* in, unsigned char** outBuf, uint32 inSampleSize, int32
     if (!tempBuf) {
         _TIFFfree(inBuf);
         _TIFFfree(*outBuf);
+        throw_not_enought_memory_exception(env, availableMemoryBytes);
         return (ERROR_MEMORY);
     }
 
@@ -384,6 +388,9 @@ readTiffIncremental(TIFF* in, unsigned char** outBuf, uint32 inSampleSize, int32
         _TIFFfree(inBuf);
         _TIFFfree(*outBuf);
         _TIFFfree(tempBuf);
+
+        throw_read_file_exception(env, path);
+
         return (success);
     }
     
