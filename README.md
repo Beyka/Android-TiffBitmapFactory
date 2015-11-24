@@ -9,6 +9,20 @@ Just now it has possibility to open tif image as mutable bitmap, read count of d
 
 Minimum Android API level 8
 
+### Installation
+Just add to your gradle dependencies :
+```
+compile 'com.github.beyka:androidtiffbitmapfactory:0.6'
+```
+And do not forget to add WRITE_EXTERNAL_STORAGE permission to main project manifest
+
+### Build from sources
+To build native part of library use [Android-NDK-bundle-10](https://developer.android.com/tools/sdk/ndk/index.html) or higher.
+<p>Go to tiffbitmapfactory folder and run</p>
+```
+ndk-build NDK_PROJECT_PATH=src/main
+```
+
 ### Usage
 ```Java
 File file = new File("/sdcard/image.tif");
@@ -58,13 +72,6 @@ In case you open realy heavy images and to avoid crashes of application you can 
 TiffBitmapFactory.Options options = new TiffBitmapFactory.Options();
 options.inAvailableMemory = 1024 * 1024 * 10; //10 mb
 Bitmap bmp = TiffBitmapFactory.decodeFile(file, options);
-```
-
-### Build
-To build native part of library use [Android-NDK-bundle-10](https://developer.android.com/tools/sdk/ndk/index.html) or higher.
-<p>Go to tiffbitmapfactory folder and run</p>
-```
-ndk-build NDK_PROJECT_PATH=src/main
 ```
 
 Special thanks to dennis508 for providing of incremental reading of TIFF file
