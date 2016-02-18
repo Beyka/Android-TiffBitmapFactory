@@ -1,6 +1,6 @@
 APP_STL := stlport_static
 
-APP_MODULES      := tiff tifffactory
+APP_MODULES      := tiff tifffactory tiffsaver
 
 APP_PLATFORM=android-8
 

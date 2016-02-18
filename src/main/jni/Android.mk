@@ -89,3 +89,15 @@ LOCAL_LDLIBS := -ldl -llog -ljnigraphics
 LOCAL_LDFLAGS +=-ljnigraphics
 LOCAL_SHARED_LIBRARIES := tiff
 include $(BUILD_SHARED_LIBRARY)
+
+###############################################################
+include $(CLEAR_VARS)
+LOCAL_MODULE := tiffsaver
+LOCAL_CFLAGS := -DANDROID_NDK
+LOCAL_SRC_FILES := \
+	NativeExceptions.cpp \
+	NativeTiffSaver.cpp
+LOCAL_LDLIBS := -ldl -llog -ljnigraphics
+LOCAL_LDFLAGS +=-ljnigraphics
+LOCAL_SHARED_LIBRARIES := tiff
+include $(BUILD_SHARED_LIBRARY)
