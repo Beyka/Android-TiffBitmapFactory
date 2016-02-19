@@ -24,7 +24,7 @@ extern "C" {
  * Signature: (Ljava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_org_beyka_tiffbitmapfactory_TiffSaver_save
-  (JNIEnv *, jclass, jstring, jintArray, jint, jint);
+  (JNIEnv *, jclass, jstring, jintArray, jobject, jint, jint);
 
 #ifdef __cplusplus
 }
