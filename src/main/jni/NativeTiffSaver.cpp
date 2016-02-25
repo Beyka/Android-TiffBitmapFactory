@@ -105,8 +105,12 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffSaver_save
         TIFFSetField(output_image, TIFFTAG_ORIENTATION, orientationInt);
 
         //Write additiona tags
-        TIFFSetField(output_image, TIFFTAG_ARTIST, "Beyka");
-        TIFFSetField(output_image, TIFFTAG_COPYRIGHT, "Beyka & co");
+        if (authorString) {
+            TIFFSetField(output_image, TIFFTAG_ARTIST, authorString);
+        }
+        if (copyrightString) {
+            TIFFSetField(output_image, TIFFTAG_COPYRIGHT, copyrightString);
+        }
 
         // Write the information to the file
         int ret = TIFFWriteEncodedStrip(output_image, 0, &array[0], img_width*img_height * 4);
