@@ -1,11 +1,12 @@
 # Android-TiffBitmapFactory
-TiffBitmapFactory is an Android library that allows opening of *.tif (See [Wikipedia](https://en.wikipedia.org/wiki/Tagged_Image_File_Format)) image files on Android devices.
+TiffBitmapFactory is an Android library that allows opening and saving images in *.tif format (See [Wikipedia](https://en.wikipedia.org/wiki/Tagged_Image_File_Format)) on Android devices.
 
 This fork enables large Tiff files to be read and sampled incrementally. The caller specifies how much memory is available for processing. If there is sufficient memory the entire file is read in at once, sampled, and the bitmap is created. If there is insufficient memory, the file is read a Tile or Strip at a time, sampled, and the bitmap is created.
 
-For decoding *.tif files it uses the native library [libtiff](https://github.com/dumganhar/libtiff)
+For decoding and encoding *.tif files it uses the native library [libtiff](https://github.com/dumganhar/libtiff)
 
 Just now it has possibility to open tif image as mutable bitmap, read count of directory in file, apply sample rate for bitmap decoding and choose directory to decode.
+While saving there is available few(most popular) compression mods and some additiona fields that can be writen to file, like author or copyright.
 
 Minimum Android API level 8
 
@@ -24,6 +25,7 @@ ndk-build NDK_PROJECT_PATH=src/main
 ```
 
 ### Usage
+#### Opening tiff file
 ```Java
 File file = new File("/sdcard/image.tif");
 
@@ -72,6 +74,24 @@ In case you open realy heavy images and to avoid crashes of application you can 
 TiffBitmapFactory.Options options = new TiffBitmapFactory.Options();
 options.inAvailableMemory = 1024 * 1024 * 10; //10 mb
 Bitmap bmp = TiffBitmapFactory.decodeFile(file, options);
+```
+
+#### Saving tiff file
+```Java
+//Open some image
+Bitmap bitmap = BitmapFactory.decodeFile("sdcard/image.png");
+//Create options for saving
+TiffSaver.SaveOptions options = new TiffSaver.SaveOptions();
+//By default compression mode is none
+options.compressionMode = TiffSaver.CompressionMode.COMPRESSION_LZW;
+//By default orientation is top left
+options.orientation = TiffSaver.Orientation.ORIENTATION_LEFTTOP;
+//Add author tag to output file
+options.author = "beyka";
+//Add copyright tag to output file
+options.copyright = "Some copyright";
+//Save image as tif. If image saved succesfull true will be returned
+boolean saved = TiffSaver.saveBitmap("/sdcard/out.tif", bitmap, options);
 ```
 
 Special thanks to dennis508 for providing of incremental reading of TIFF file
