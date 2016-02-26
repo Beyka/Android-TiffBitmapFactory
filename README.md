@@ -13,7 +13,7 @@ Minimum Android API level 8
 ### Installation
 Just add to your gradle dependencies :
 ```
-compile 'com.github.beyka:androidtiffbitmapfactory:0.6'
+compile 'com.github.beyka:androidtiffbitmapfactory:0.7'
 ```
 And do not forget to add WRITE_EXTERNAL_STORAGE permission to main project manifest
 
