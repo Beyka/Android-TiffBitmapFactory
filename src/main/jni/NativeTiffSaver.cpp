@@ -94,32 +94,32 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffSaver_save
         return JNI_FALSE;
     }
 
-        //Write tiff tags for saveing
-        TIFFSetField(output_image, TIFFTAG_IMAGEWIDTH, img_width);
-        TIFFSetField(output_image, TIFFTAG_IMAGELENGTH, img_height);
-        TIFFSetField(output_image, TIFFTAG_BITSPERSAMPLE, 8);
-        TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL, 4);
-        TIFFSetField(output_image, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-        TIFFSetField(output_image, TIFFTAG_COMPRESSION, compressionInt);
-        TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
-        TIFFSetField(output_image, TIFFTAG_ORIENTATION, orientationInt);
+    //Write tiff tags for saveing
+    TIFFSetField(output_image, TIFFTAG_IMAGEWIDTH, img_width);
+    TIFFSetField(output_image, TIFFTAG_IMAGELENGTH, img_height);
+    TIFFSetField(output_image, TIFFTAG_BITSPERSAMPLE, 8);
+    TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL, 4);
+    TIFFSetField(output_image, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+    TIFFSetField(output_image, TIFFTAG_COMPRESSION, compressionInt);
+    TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
+    TIFFSetField(output_image, TIFFTAG_ORIENTATION, orientationInt);
 
-        //Write additiona tags
-        if (authorString) {
-            TIFFSetField(output_image, TIFFTAG_ARTIST, authorString);
-        }
-        if (copyrightString) {
-            TIFFSetField(output_image, TIFFTAG_COPYRIGHT, copyrightString);
-        }
+    //Write additiona tags
+    if (authorString) {
+        TIFFSetField(output_image, TIFFTAG_ARTIST, authorString);
+    }
+    if (copyrightString) {
+        TIFFSetField(output_image, TIFFTAG_COPYRIGHT, copyrightString);
+    }
 
-        // Write the information to the file
-        int ret = TIFFWriteEncodedStrip(output_image, 0, &array[0], img_width*img_height * 4);
+    // Write the information to the file
+    int ret = TIFFWriteEncodedStrip(output_image, 0, &array[0], img_width*img_height * 4);
 
-        // Close the file
-        TIFFClose(output_image);
-        //free temp array
-        free (array);
-        //Remove variables
+    // Close the file
+    TIFFClose(output_image);
+    //free temp array
+    free (array);
+    //Remove variables
     if (authorString) {
         env->ReleaseStringUTFChars(jAuthor, authorString);
     }
@@ -132,13 +132,6 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffSaver_save
     if (ret == -1) return JNI_FALSE;
     return JNI_TRUE;
   }
-
-
-
-
-
-
-
 
 #ifdef __cplusplus
 }
