@@ -73,6 +73,10 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffSaver_save
 
     int pixelsBufferSize = img_width * img_height;
     int* array = (int *) malloc(sizeof(int) * pixelsBufferSize);
+    if (!array) {
+        throw_not_enought_memory_exception(env, sizeof(int) * pixelsBufferSize);
+        return JNI_FALSE;
+    }
     for (int i = 0; i < img_width; i++) {
         for (int j = 0; j < img_height; j++) {
             jint crPix = c_array[j * img_width + i];

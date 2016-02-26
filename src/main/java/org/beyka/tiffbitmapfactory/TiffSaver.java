@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.util.Log;
 
 import org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException;
+import org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException;
 
 import java.io.File;
 
@@ -66,8 +67,9 @@ public class TiffSaver {
      * @param bmp         - Bitmap for saving
      * @return true if bitmap was saved successful or false otherwise
      * @throws org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException when {@code destination} not exist or can't be opened for writing
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
      */
-    public static boolean saveBitmap(File destination, Bitmap bmp) throws NoSuchFileException {
+    public static boolean saveBitmap(File destination, Bitmap bmp) throws NoSuchFileException, NotEnoughtMemoryException {
         return saveBitmap(destination.getAbsolutePath(), bmp, new SaveOptions());
     }
 
@@ -79,6 +81,7 @@ public class TiffSaver {
      * @param options     - options for saving
      * @return true if bitmap was saved successful or false otherwise
      * @throws org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException when {@code destinationPath} not exist or can't be opened for writing
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
      */
     public static boolean saveBitmap(File destination, Bitmap bmp, SaveOptions options) throws NoSuchFileException {
         return saveBitmap(destination.getAbsolutePath(), bmp, options);
@@ -91,6 +94,7 @@ public class TiffSaver {
      * @param bmp             - Bitmap for saving
      * @return true if bitmap was saved successful or false otherwise
      * @throws org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException when {@code destinationPath} not exist or can't be opened for writing
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
      */
     public static boolean saveBitmap(String destinationPath, Bitmap bmp) throws NoSuchFileException {
         return saveBitmap(destinationPath, bmp, new SaveOptions());
@@ -104,6 +108,7 @@ public class TiffSaver {
      * @param options         - options for saving
      * @return true if bitmap was saved successful or false otherwise
      * @throws org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException when {@code destinationPath} not exist or can't be opened for writing
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
      */
     public static boolean saveBitmap(String destinationPath, Bitmap bmp, SaveOptions options) throws NoSuchFileException {
         int pixels[] = new int[bmp.getWidth() * bmp.getHeight()];
