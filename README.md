@@ -10,6 +10,9 @@ While saving there is available few(most popular) compression mods and some addi
 
 Minimum Android API level 8
 
+####x64 systems support
+If you need support for x64 systems, please read this: https://github.com/Beyka/Android-TiffBitmapFactory/issues/10
+
 ### Installation
 Just add to your gradle dependencies :
 ```
