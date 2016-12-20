@@ -101,6 +101,6 @@ This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-Special thanks to dennis508 for providing of incremental reading of TIFF file
+Special thanks to [dennis508](https://github.com/dennis508)    for providing of incremental reading of TIFF file
 
 
