@@ -10,7 +10,6 @@ jpeg-6b/cdjpeg.c \
 jpeg-6b/cjpeg.c \
 jpeg-6b/ckconfig.c \
 jpeg-6b/djpeg.c \
-jpeg-6b/example.c \
 jpeg-6b/jcapimin.c \
 jpeg-6b/jcapistd.c \
 jpeg-6b/jccoefct.c \
@@ -120,9 +119,10 @@ LOCAL_TIFF_SRC_FILES += tiff/port/lfind.c
 #######################LIBJPEG8D#################################
 
 include $(CLEAR_WARS)
-LOCAL_MODULE := jpeg
+LOCAL_MODULE := libjpeg
+LOCAL_CFLAGS += -O3 -fstrict-aliasing
 LOCAL_SRC_FILES:= $(LOCAL_JPEG_SRC_FILES)
 #LOCAL_SRC_FILES += \
 #	jpeg8d/jmemnobs.c
-#LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/jpeg8d
+#LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/jpeg-6b
 include $(BUILD_STATIC_LIBRARY)
