@@ -26,6 +26,9 @@ To build native part of library use [Android-NDK-bundle-10](https://developer.an
 ndk-build NDK_PROJECT_PATH=src/main
 ```
 
+### Known problems
+On devices with x64 architecture can't open and save files with JPEG compression
+
 ### Usage
 #### Opening tiff file
 ```Java
