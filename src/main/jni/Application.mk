@@ -1,6 +1,6 @@
 APP_STL := stlport_static
 
-APP_MODULES      := libjpeg
+APP_MODULES      := jpeg
 
 APP_PLATFORM=android-8
 

@@ -120,8 +120,7 @@ LOCAL_TIFF_SRC_FILES += tiff/port/lfind.c
 #######################LIBJPEG8D#################################
 
 include $(CLEAR_WARS)
-LOCAL_MODULE := libjpeg
-LOCAL_MODULE_FILENAME := libjpeg
+LOCAL_MODULE := jpeg
 LOCAL_SRC_FILES:= $(LOCAL_JPEG_SRC_FILES)
 #LOCAL_SRC_FILES += \
 #	jpeg8d/jmemnobs.c
