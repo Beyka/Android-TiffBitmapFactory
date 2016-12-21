@@ -5,14 +5,76 @@ include $(CLEAR_VARS)
 LOCAL_ARM_MODE := arm
 
 LOCAL_JPEG_SRC_FILES := \
-	jpeg8d/jcapimin.c jpeg8d/jcapistd.c jpeg8d/jccoefct.c jpeg8d/jccolor.c jpeg8d/jcdctmgr.c jpeg8d/jchuff.c \
-	jpeg8d/jcinit.c jpeg8d/jcmainct.c jpeg8d/jcmarker.c jpeg8d/jcmaster.c jpeg8d/jcomapi.c jpeg8d/jcparam.c \
-	jpeg8d/jcprepct.c jpeg8d/jcsample.c jpeg8d/jctrans.c jpeg8d/jdapimin.c jpeg8d/jdapistd.c \
-	jpeg8d/jdatadst.c jpeg8d/jdatasrc.c jpeg8d/jdcoefct.c jpeg8d/jdcolor.c jpeg8d/jddctmgr.c jpeg8d/jdhuff.c \
-	jpeg8d/jdinput.c jpeg8d/jdmainct.c jpeg8d/jdmarker.c jpeg8d/jdmaster.c jpeg8d/jdmerge.c \
-	jpeg8d/jdpostct.c jpeg8d/jdsample.c jpeg8d/jdtrans.c jpeg8d/jerror.c jpeg8d/jfdctflt.c jpeg8d/jfdctfst.c \
-	jpeg8d/jfdctint.c jpeg8d/jidctflt.c jpeg8d/jidctfst.c jpeg8d/jidctint.c jpeg8d/jquant1.c \
-	jpeg8d/jquant2.c jpeg8d/jutils.c jpeg8d/jmemmgr.c jpeg8d/jcarith.c jpeg8d/jdarith.c jpeg8d/jaricom.c
+	jpeg-6b/ansi2knr.c \
+jpeg-6b/cdjpeg.c \
+jpeg-6b/cjpeg.c \
+jpeg-6b/ckconfig.c \
+jpeg-6b/djpeg.c \
+jpeg-6b/example.c \
+jpeg-6b/jcapimin.c \
+jpeg-6b/jcapistd.c \
+jpeg-6b/jccoefct.c \
+jpeg-6b/jccolor.c \
+jpeg-6b/jcdctmgr.c \
+jpeg-6b/jchuff.c \
+jpeg-6b/jcinit.c \
+jpeg-6b/jcmainct.c \
+jpeg-6b/jcmarker.c \
+jpeg-6b/jcmaster.c \
+jpeg-6b/jcomapi.c \
+jpeg-6b/jcparam.c \
+jpeg-6b/jcphuff.c \
+jpeg-6b/jcprepct.c \
+jpeg-6b/jcsample.c \
+jpeg-6b/jctrans.c \
+jpeg-6b/jdapimin.c \
+jpeg-6b/jdapistd.c \
+jpeg-6b/jdatadst.c \
+jpeg-6b/jdatasrc.c \
+jpeg-6b/jdcoefct.c \
+jpeg-6b/jdcolor.c \
+jpeg-6b/jddctmgr.c \
+jpeg-6b/jdhuff.c \
+jpeg-6b/jdinput.c \
+jpeg-6b/jdmainct.c \
+jpeg-6b/jdmarker.c \
+jpeg-6b/jdmaster.c \
+jpeg-6b/jdmerge.c \
+jpeg-6b/jdphuff.c \
+jpeg-6b/jdpostct.c \
+jpeg-6b/jdsample.c \
+jpeg-6b/jdtrans.c \
+jpeg-6b/jerror.c \
+jpeg-6b/jfdctflt.c \
+jpeg-6b/jfdctfst.c \
+jpeg-6b/jfdctint.c \
+jpeg-6b/jidctflt.c \
+jpeg-6b/jidctfst.c \
+jpeg-6b/jidctint.c \
+jpeg-6b/jidctred.c \
+jpeg-6b/jmemansi.c \
+jpeg-6b/jmemmgr.c \
+jpeg-6b/jmemname.c \
+jpeg-6b/jmemnobs.c \
+jpeg-6b/jpegtran.c \
+jpeg-6b/jquant1.c \
+jpeg-6b/jquant2.c \
+jpeg-6b/jutils.c \
+jpeg-6b/rdbmp.c \
+jpeg-6b/rdcolmap.c \
+jpeg-6b/rdgif.c \
+jpeg-6b/rdjpgcom.c \
+jpeg-6b/rdppm.c \
+jpeg-6b/rdrle.c \
+jpeg-6b/rdswitch.c \
+jpeg-6b/rdtarga.c \
+jpeg-6b/transupp.c \
+jpeg-6b/wrbmp.c \
+jpeg-6b/wrgif.c \
+jpeg-6b/wrjpgcom.c \
+jpeg-6b/wrppm.c \
+jpeg-6b/wrrle.c \
+jpeg-6b/wrtarga.c
 
 LOCAL_TIFF_SRC_FILES := \
 	tiff/libtiff/tif_dirread.c \
@@ -54,73 +116,14 @@ LOCAL_TIFF_SRC_FILES := \
 	tiff/libtiff/tif_swab.c \
 	tiff/libtiff/tif_strip.c
 
-LOCAL_TIFF_SRC_FILES += tiff/port/lfind.c 
+LOCAL_TIFF_SRC_FILES += tiff/port/lfind.c
 #######################LIBJPEG8D#################################
 
-#include $(CLEAR_WARS)
-#LOCAL_MODULE := cocos_jpeg_static
-#LOCAL_MODULE_FILENAME := libjpeg
-#LOCAL_SRC_FILES:= $(LOCAL_JPEG_SRC_FILES)
+include $(CLEAR_WARS)
+LOCAL_MODULE := libjpeg
+LOCAL_MODULE_FILENAME := libjpeg
+LOCAL_SRC_FILES:= $(LOCAL_JPEG_SRC_FILES)
 #LOCAL_SRC_FILES += \
 #	jpeg8d/jmemnobs.c
 #LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/jpeg8d
-#include $(BUILD_STATIC_LIBRARY)
-
-
-
-#include $(CLEAR_VARS)
-
-#LOCAL_MODULE := libjpeg
-#LOCAL_EXPORT_C_INCLUDES := $(GENERATED_INCLUDE_PATH)/assimp/include
-#LOCAL_SRC_FILES := libs/$(TARGET_ARCH_ABI)/libjpeg.a
-
-#include $(PREBUILT_STATIC_LIBRARY)
-
-###########################################################
-LOCAL_SRC_FILES:= $(LOCAL_TIFF_SRC_FILES)
-LOCAL_C_INCLUDES += \
-					$(LOCAL_PATH)/tiff/libtiff \
-					$(LOCAL_PATH)/jpeg
-
-
-#LOCAL_STATIC_LIBRARIES := \
-#					$(LOCAL_PATH)/libs/libjpeg.a \
-#					$(LOCAL_PATH)/libs/libjpeg-x86.a
-
-LOCAL_CFLAGS += -DAVOID_TABLES
-LOCAL_CFLAGS += -O3 -fstrict-aliasing -fprefetch-loop-arrays
-LOCAL_MODULE:= libtiff
-LOCAL_LDLIBS := -lz
-	#-L $(LOCAL_PATH)/libs \
-	#-L $(LOCAL_STATIC_LIBRARIES) \
-	#-ljpeg
-
-LOCAL_LDLIBS += $(LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/libjpeg.a
-
-#LOCAL_PRELINK_MODULE:=false
-include $(BUILD_SHARED_LIBRARY)
-
-###############################################################
-include $(CLEAR_VARS)
-LOCAL_MODULE := tifffactory
-LOCAL_CFLAGS := -DANDROID_NDK
-LOCAL_SRC_FILES := \
-	NativeExceptions.cpp \
-	readTiffIncremental.cpp \
-	NativeTiffBitmapFactory.cpp
-LOCAL_LDLIBS := -ldl -llog -ljnigraphics
-LOCAL_LDFLAGS +=-ljnigraphics
-LOCAL_SHARED_LIBRARIES := tiff
-include $(BUILD_SHARED_LIBRARY)
-
-###############################################################
-include $(CLEAR_VARS)
-LOCAL_MODULE := tiffsaver
-LOCAL_CFLAGS := -DANDROID_NDK
-LOCAL_SRC_FILES := \
-	NativeExceptions.cpp \
-	NativeTiffSaver.cpp
-LOCAL_LDLIBS := -ldl -llog -ljnigraphics
-LOCAL_LDFLAGS +=-ljnigraphics
-LOCAL_SHARED_LIBRARIES := tiff
-include $(BUILD_SHARED_LIBRARY)
+include $(BUILD_STATIC_LIBRARY)
