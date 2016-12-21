@@ -10,13 +10,12 @@ While saving there is available few(most popular) compression mods and some addi
 
 Minimum Android API level 8
 
-####x64 systems support
-If you need support for x64 systems, please read this: https://github.com/Beyka/Android-TiffBitmapFactory/issues/10
+Starting from version 0.8 library has support for all architectures
 
 ### Installation
 Just add to your gradle dependencies :
 ```
-compile 'com.github.beyka:androidtiffbitmapfactory:0.7'
+compile 'com.github.beyka:androidtiffbitmapfactory:0.8'
 ```
 And do not forget to add WRITE_EXTERNAL_STORAGE permission to main project manifest
 
@@ -102,6 +101,6 @@ This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-Special thanks to dennis508 for providing of incremental reading of TIFF file
+Special thanks to [dennis508](https://github.com/dennis508)    for providing of incremental reading of TIFF file
 
 
