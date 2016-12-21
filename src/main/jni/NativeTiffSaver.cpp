@@ -91,11 +91,26 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffSaver_save
     }
 
     TIFF *output_image;
+    int fileDescriptor = -1;
+
     // Open the TIFF file
     if((output_image = TIFFOpen(strPath, "w")) == NULL){
-        LOGE("Unable to write tif file");
-        throw_no_such_file_exception(env, filePath);
-        return JNI_FALSE;
+        LOGE("can not open file. Trying file descriptor");
+        //if TIFFOpen returns null then try to open file from descriptor
+        int mode = O_RDWR | O_CREAT | O_TRUNC | 0;
+        fileDescriptor = open(strPath, mode, 0666);
+        if (fileDescriptor < 0) {
+            LOGE("Unable to create tif file descriptor");
+            throw_no_such_file_exception(env, filePath);
+            return JNI_FALSE;
+        } else {
+            if ((output_image = TIFFFdOpen(fileDescriptor, strPath, "w")) == NULL) {
+                close(fileDescriptor);
+                LOGE("Unable to write tif file");
+                throw_no_such_file_exception(env, filePath);
+                return JNI_FALSE;
+            }
+        }
     }
 
     //Write tiff tags for saveing
@@ -118,9 +133,18 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffSaver_save
 
     // Write the information to the file
     int ret = TIFFWriteEncodedStrip(output_image, 0, &array[0], img_width*img_height * 4);
+    LOGII("ret = ", ret);
 
     // Close the file
     TIFFClose(output_image);
+
+    //if file descriptor was openned then close it
+
+    if (fileDescriptor >= 0) {
+        close(fileDescriptor);
+    }
+
+
     //free temp array
     free (array);
     //Remove variables

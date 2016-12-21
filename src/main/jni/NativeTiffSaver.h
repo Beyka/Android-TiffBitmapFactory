@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <tiffio.h>
+#include "fcntl.h"
+#include "unistd.h"
 /* Header for class org_beyka_tiffbitmapfactory_TiffSaver */
 
 #define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffSaver", "%s", x)
