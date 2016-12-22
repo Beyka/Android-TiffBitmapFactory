@@ -15,13 +15,15 @@ Starting from version 0.8 library has support for all architectures
 ### Installation
 Just add to your gradle dependencies :
 ```
-compile 'com.github.beyka:androidtiffbitmapfactory:0.8.1'
+compile 'com.github.beyka:androidtiffbitmapfactory:0.8.2'
 ```
 And do not forget to add WRITE_EXTERNAL_STORAGE permission to main project manifest
 
 ### Build from sources
 To build native part of library use [Android-NDK-bundle-10](https://developer.android.com/tools/sdk/ndk/index.html) or higher.
-<p>Go to tiffbitmapfactory folder and run</p>
+<p>For now arm64 x86_64 and mips64 abies is supporting but it has problems with decoding files with jpeg compression. To avoid broken builds for all abies make different builds for armeabi-v7a x86 armeabi mips and for arm64-v8a x86_64 mips64. To do this just use different abies in Application.mk file.</p>
+
+<p>To start build go to tiffbitmapfactory folder and run</p>
 ```
 ndk-build NDK_PROJECT_PATH=src/main
 ```
