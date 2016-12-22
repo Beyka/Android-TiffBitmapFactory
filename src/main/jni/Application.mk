@@ -4,6 +4,6 @@ APP_MODULES      := tiff tifffactory tiffsaver
 
 APP_PLATFORM=android-8
 
-APP_ABI := all
-#armeabi-v7a arm64-v8a x86 x86_64 mips mips64
-#x86 armeabi armeabi-v7a mips
+#Do not build x32 and x64 modules in same time - it leads to errors in binaries
+APP_ABI := armeabi-v7a x86 armeabi mips
+#arm64-v8a x86_64 mips64
