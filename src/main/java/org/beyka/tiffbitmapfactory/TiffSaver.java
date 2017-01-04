@@ -114,10 +114,68 @@ public class TiffSaver {
         int pixels[] = new int[bmp.getWidth() * bmp.getHeight()];
         bmp.getPixels(pixels, 0, bmp.getWidth(), 0, 0, bmp.getWidth(), bmp.getHeight());
 
-        return save(destinationPath, pixels, options, bmp.getWidth(), bmp.getHeight());
+        return save(destinationPath, pixels, options, bmp.getWidth(), bmp.getHeight(), false);
     }
 
-    private static synchronized native boolean save(String filePath, int[] image, SaveOptions options, int width, int height);
+    /**
+     * Append bitmap to the end of existing file or create new file with default {@link TiffSaver.SaveOptions options}.
+     *
+     * @param destination - file to write bitmap
+     * @param bmp         - Bitmap for saving
+     * @return true if bitmap was saved successful or false otherwise
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException when {@code destination} not exist or can't be opened for writing
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
+     */
+    public static boolean appendBitmap(File destination, Bitmap bmp) throws NoSuchFileException, NotEnoughtMemoryException {
+        return appendBitmap(destination.getAbsolutePath(), bmp, new SaveOptions());
+    }
+
+    /**
+     * append bitmap to the end of existing file or create new file.
+     *
+     * @param destination - file to write bitmap
+     * @param bmp         - Bitmap for saving
+     * @param options     - options for saving
+     * @return true if bitmap was saved successful or false otherwise
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException when {@code destinationPath} not exist or can't be opened for writing
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
+     */
+    public static boolean appendBitmap(File destination, Bitmap bmp, SaveOptions options) throws NoSuchFileException {
+        return appendBitmap(destination.getAbsolutePath(), bmp, options);
+    }
+
+    /**
+     * append bitmap to the end of existing file or create new file with default {@link TiffSaver.SaveOptions options}.
+     *
+     * @param destinationPath - file path to write bitmap
+     * @param bmp             - Bitmap for saving
+     * @return true if bitmap was saved successful or false otherwise
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException when {@code destinationPath} not exist or can't be opened for writing
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
+     */
+    public static boolean appendBitmap(String destinationPath, int page, Bitmap bmp) throws NoSuchFileException {
+        return appendBitmap(destinationPath, bmp, new SaveOptions());
+    }
+
+    /**
+     * append bitmap to the end of existing file or create new file.
+     *
+     * @param destinationPath - file path to write bitmap
+     * @param bmp             - Bitmap for saving
+     * @param options         - options for saving
+     * @return true if bitmap was saved successful or false otherwise
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException when {@code destinationPath} not exist or can't be opened for writing
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
+     */
+    public static boolean appendBitmap(String destinationPath, Bitmap bmp,SaveOptions options) throws NoSuchFileException {
+        int pixels[] = new int[bmp.getWidth() * bmp.getHeight()];
+        bmp.getPixels(pixels, 0, bmp.getWidth(), 0, 0, bmp.getWidth(), bmp.getHeight());
+
+        return save(destinationPath, pixels, options, bmp.getWidth(), bmp.getHeight(), true);
+    }
+
+    private static synchronized native boolean save(String filePath, int[] image, SaveOptions options, int width, int height, boolean append);
+
 
     /**
      * Options class to specify saving parameters
