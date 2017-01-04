@@ -2,12 +2,14 @@ package org.beyka.tiffbitmapfactory;
 
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.os.Build;
 import android.util.Log;
 
 import org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException;
 import org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 
 /**
  * Created by beyka on 18.2.16.
@@ -208,5 +210,10 @@ public class TiffSaver {
          * Copyright for writing to file
          */
         public String copyright;
+
+        /**
+         * A string that describes the subject of the image.
+         */
+        public String imageDescription;
     }
 }

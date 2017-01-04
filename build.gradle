@@ -5,16 +5,27 @@ android {
     compileSdkVersion 22
     buildToolsVersion "25.0.0"
 
+    def softwareName
+
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 22
         versionCode 820
         versionName "0.8.2"
+
+        softwareName = "\"" + project.name + "-" + versionName + "\""
     }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            buildConfigField("String", "softwarename", softwareName)
+        }
+        debug {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            buildConfigField("String", "softwarename", softwareName)
         }
     }
 

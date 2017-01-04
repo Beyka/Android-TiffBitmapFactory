@@ -74,6 +74,40 @@ extern "C" {
             LOGIS("Copyright: ", copyrightString);
         }
 
+        //Get image description field if exist
+        jfieldID gOptions_imgDescrFieldID = env->GetFieldID(jSaveOptionsClass, "imageDescription", "Ljava/lang/String;");
+        jstring jImgDescr = (jstring)env->GetObjectField(options, gOptions_imgDescrFieldID);
+        const char *imgDescrString = NULL;
+        if (jImgDescr) {
+            imgDescrString = env->GetStringUTFChars(jImgDescr, 0);
+            LOGIS("Image Description: ", imgDescrString);
+        }
+
+        //Get software name and number from buildconfig
+        jclass jBuildConfigClass = env->FindClass(
+                "org/beyka/tiffbitmapfactory/BuildConfig");
+        jfieldID softwareNameFieldID = env->GetStaticFieldID(jBuildConfigClass, "softwarename", "Ljava/lang/String;");
+        jstring jsoftwarename = (jstring)env->GetStaticObjectField(jBuildConfigClass, softwareNameFieldID);
+        const char *softwareNameString = NULL;
+        if (jsoftwarename) {
+            softwareNameString = env->GetStringUTFChars(jsoftwarename, 0);
+            LOGIS("Software Name: ", softwareNameString);
+        }
+
+        //Get android version
+        jclass build_class = env->FindClass("android/os/Build$VERSION");
+        jfieldID releaseFieldID = env->GetStaticFieldID(build_class, "RELEASE", "Ljava/lang/String;");
+        jstring jrelease = (jstring)env->GetStaticObjectField(build_class, releaseFieldID);
+        const char *releaseString = NULL;
+        if (jrelease) {
+            releaseString = env->GetStringUTFChars(jrelease, 0);
+            LOGIS("Release: ", releaseString);
+        }
+        char *fullReleaseName = concat("Android ", releaseString);
+        //strcpy(fullReleaseName, android);
+        //strcpy(fullReleaseName, releaseString);
+        LOGIS("Full Release: ", fullReleaseName);
+
         int pixelsBufferSize = img_width * img_height;
         int* array = (int *) malloc(sizeof(int) * pixelsBufferSize);
         if (!array) {
@@ -148,9 +182,26 @@ extern "C" {
         TIFFSetField(output_image, TIFFTAG_ORIENTATION, orientationInt);
 
         //Write additiona tags
+        //CreationDate tag
+        char *date = getCreationDate();
+        TIFFSetField(output_image, TIFFTAG_DATETIME, date);
+        free(date);
+        //Host system
+        TIFFSetField(output_image, TIFFTAG_HOSTCOMPUTER, fullReleaseName);
+
+        //software
+        if (softwareNameString) {
+            TIFFSetField(output_image, TIFFTAG_SOFTWARE, softwareNameString);
+        }
+        //image description
+        if (imgDescrString) {
+            TIFFSetField(output_image, TIFFTAG_IMAGEDESCRIPTION, imgDescrString);
+        }
+        //author
         if (authorString) {
             TIFFSetField(output_image, TIFFTAG_ARTIST, authorString);
         }
+        //copyright
         if (copyrightString) {
             TIFFSetField(output_image, TIFFTAG_COPYRIGHT, copyrightString);
         }
@@ -174,6 +225,15 @@ extern "C" {
         //free temp array
         free (array);
         //Remove variables
+        if (releaseString) {
+            env->ReleaseStringUTFChars(jrelease, releaseString);
+        }
+        if (softwareNameString) {
+            env->ReleaseStringUTFChars(jsoftwarename, softwareNameString);
+        }
+        if (imgDescrString) {
+            env->ReleaseStringUTFChars(jImgDescr, imgDescrString);
+        }
         if (authorString) {
             env->ReleaseStringUTFChars(jAuthor, authorString);
         }
@@ -187,6 +247,25 @@ extern "C" {
         return JNI_TRUE;
     }
 
+    char *getCreationDate() {
+        char * datestr = (char *) malloc(sizeof(char) * 20);
+        time_t rawtime;
+        struct tm * timeinfo;
+        time (&rawtime);
+        timeinfo = localtime (&rawtime);
+        strftime (datestr,20,/*"Now it's %I:%M%p."*/"%Y:%m:%d %H:%M:%S",timeinfo);
+
+        return datestr;
+    }
+
+    char* concat(const char *s1, const char *s2)
+    {
+        char *result = (char *)malloc(strlen(s1)+strlen(s2)+1);//+1 for the zero-terminator
+        //in real code you would check for errors in malloc here
+        strcpy(result, s1);
+        strcat(result, s2);
+        return result;
+    }
 
     #ifdef __cplusplus
 }

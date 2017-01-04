@@ -6,6 +6,7 @@
 #include <tiffio.h>
 #include "fcntl.h"
 #include "unistd.h"
+#include <ctime>
 /* Header for class org_beyka_tiffbitmapfactory_TiffSaver */
 
 #define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffSaver", "%s", x)
@@ -28,6 +29,9 @@ extern "C" {
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffSaver_save
   (JNIEnv *, jclass, jstring, jintArray, jobject, jint, jint, jboolean);
 
+char *getCreationDate();
+
+char *concat(const char *, const char *);
 
 #ifdef __cplusplus
 }
