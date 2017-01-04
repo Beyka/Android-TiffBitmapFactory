@@ -228,6 +228,7 @@ extern "C" {
         if (releaseString) {
             env->ReleaseStringUTFChars(jrelease, releaseString);
         }
+        free(fullReleaseName);
         if (softwareNameString) {
             env->ReleaseStringUTFChars(jsoftwarename, softwareNameString);
         }
