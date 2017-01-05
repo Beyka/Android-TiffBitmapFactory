@@ -211,6 +211,78 @@ void writeDataToOptions(JNIEnv *env, jobject options, int directoryNumber) {
         env->SetIntField(options, gOptions_outHeightFieldId, origwidth);
     }
 
+    //Author
+    char *artist;
+    TIFFGetField(image, TIFFTAG_ARTIST, &artist);
+    if (artist) {
+        LOGI(artist);
+        jstring jauthor = env->NewStringUTF(artist);
+        jfieldID gOptions_outAuthorFieldId = env->GetFieldID(jOptionsClass, "outAuthor", "Ljava/lang/String;");
+        env->SetObjectField(options, gOptions_outAuthorFieldId, jauthor);
+        env->DeleteLocalRef(jauthor);
+        //free(artist);
+    }
+
+    //Copyright
+    char *copyright;
+    TIFFGetField(image, TIFFTAG_COPYRIGHT, &copyright);
+    if (copyright) {
+        LOGI(copyright);
+        jstring jcopyright = env->NewStringUTF(copyright);
+        jfieldID gOptions_outCopyrightFieldId = env->GetFieldID(jOptionsClass, "outCopyright", "Ljava/lang/String;");
+        env->SetObjectField(options, gOptions_outCopyrightFieldId, jcopyright);
+        env->DeleteLocalRef(jcopyright);
+        //free(copyright);
+    }
+
+    //ImageDescription
+        char *imgDescr;
+        TIFFGetField(image, TIFFTAG_IMAGEDESCRIPTION, &imgDescr);
+        if (imgDescr) {
+            LOGI(imgDescr);
+            jstring jimgDescr = env->NewStringUTF(imgDescr);
+            jfieldID gOptions_outimgDescrFieldId = env->GetFieldID(jOptionsClass, "outImageDescription", "Ljava/lang/String;");
+            env->SetObjectField(options, gOptions_outimgDescrFieldId, jimgDescr);
+            env->DeleteLocalRef(jimgDescr);
+            //free(imgDescr);
+        }
+
+    //Software
+        char *software;
+        TIFFGetField(image, TIFFTAG_SOFTWARE, &software);
+        if (software) {
+            LOGI(software);
+            jstring jsoftware = env->NewStringUTF(software);
+            jfieldID gOptions_outsoftwareFieldId = env->GetFieldID(jOptionsClass, "outSoftware", "Ljava/lang/String;");
+            env->SetObjectField(options, gOptions_outsoftwareFieldId, jsoftware);
+            env->DeleteLocalRef(jsoftware);
+            //free(software);
+        }
+
+    //DateTime
+        char *datetime;
+        TIFFGetField(image, TIFFTAG_DATETIME, &datetime);
+        if (datetime) {
+            LOGI(datetime);
+            jstring jdatetime = env->NewStringUTF(datetime);
+            jfieldID gOptions_outdatetimeFieldId = env->GetFieldID(jOptionsClass, "outDatetime", "Ljava/lang/String;");
+            env->SetObjectField(options, gOptions_outdatetimeFieldId, jdatetime);
+            env->DeleteLocalRef(jdatetime);
+            //free(datetime);
+        }
+
+    //Host Computer
+        char *host;
+        TIFFGetField(image, TIFFTAG_HOSTCOMPUTER, &host);
+        if (host) {
+            LOGI(host);
+            jstring jhost = env->NewStringUTF(host);
+            jfieldID gOptions_outhostFieldId = env->GetFieldID(jOptionsClass, "outHostComputer", "Ljava/lang/String;");
+            env->SetObjectField(options, gOptions_outhostFieldId, jhost);
+            env->DeleteLocalRef(jhost);
+            //free(host);
+        }
+
     env->DeleteLocalRef(jOptionsClass);
 }
 

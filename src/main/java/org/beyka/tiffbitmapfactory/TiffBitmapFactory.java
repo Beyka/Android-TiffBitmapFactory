@@ -30,6 +30,27 @@ public class TiffBitmapFactory {
         UNAVAILABLE;
     }
 
+    public enum CompressionMode {
+        COMPRESSION_NONE(1),
+        /**
+         * LZW
+         */
+        COMPRESSION_LZW(5),
+        /**
+         * JPEG ('new-style' JPEG)
+         */
+        COMPRESSION_JPEG(7),
+        COMPRESSION_PACKBITS(32773),
+        COMPRESSION_DEFLATE(32946),
+        COMPRESSION_ADOBE_DEFLATE(8);
+
+        final int ordinal;
+
+        CompressionMode(int ordinal) {
+            this.ordinal = ordinal;
+        }
+    }
+
     public enum ImageConfig {
         /**
          * Each pixel is stored on 4 bytes. Each channel (RGB and alpha
@@ -248,5 +269,36 @@ public class TiffBitmapFactory {
          * <p>If image wasn't decoded successful this parameter will be equal to {@link ImageOrientation#UNAVAILABLE}</p>
          */
         public ImageOrientation outImageOrientation;
+
+        /**
+         * Author of file
+         */
+        public String outAuthor = "";
+
+        /**
+         * Copyright of file
+         */
+        public String outCopyright = "";
+
+        /**
+         * A string that describes the subject of the image.
+         */
+        public String outImageDescription = "";
+
+        /**
+         * Name and version number of the software package(s) used to create the image.
+         */
+        public String outSoftware = "";
+
+        /**
+         * Date and time of image creation. The format is: "YYYY:MM:DD HH:MM:SS", with hours like those on a 24-hour clock.
+         */
+        public String outDatetime = "";
+
+        /**
+         * The computer and/or operating system in use at the time of image creation.
+         */
+        public String outHostComputer = "";
+
     }
 }
