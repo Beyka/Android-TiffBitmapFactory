@@ -36,23 +36,23 @@ extern "C" {
         "org/beyka/tiffbitmapfactory/TiffSaver$SaveOptions");
         //Get compression mode from options object
         jfieldID gOptions_CompressionModeFieldID = env->GetFieldID(jSaveOptionsClass,
-        "compressionMode",
-        "Lorg/beyka/tiffbitmapfactory/TiffSaver$CompressionMode;");
+        "compressionScheme",
+        "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
         jobject compressionMode = env->GetObjectField(options, gOptions_CompressionModeFieldID);
 
         jclass compressionModeClass = env->FindClass(
-        "org/beyka/tiffbitmapfactory/TiffSaver$CompressionMode");
+        "org/beyka/tiffbitmapfactory/CompressionScheme");
         jfieldID ordinalFieldID = env->GetFieldID(compressionModeClass, "ordinal", "I");
         jint compressionInt = env->GetIntField(compressionMode, ordinalFieldID);
 
         //Get image orientation from options object
         jfieldID gOptions_OrientationFieldID = env->GetFieldID(jSaveOptionsClass,
         "orientation",
-        "Lorg/beyka/tiffbitmapfactory/TiffSaver$Orientation;");
+        "Lorg/beyka/tiffbitmapfactory/Orientation;");
         jobject orientation = env->GetObjectField(options, gOptions_OrientationFieldID);
 
         jclass orientationClass = env->FindClass(
-        "org/beyka/tiffbitmapfactory/TiffSaver$Orientation");
+        "org/beyka/tiffbitmapfactory/Orientation");
         jfieldID orientationOrdinalFieldID = env->GetFieldID(orientationClass, "ordinal", "I");
         jint orientationInt = env->GetIntField(orientation, orientationOrdinalFieldID);
 

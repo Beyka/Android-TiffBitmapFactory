@@ -1,15 +1,11 @@
 package org.beyka.tiffbitmapfactory;
 
 import android.graphics.Bitmap;
-import android.graphics.Color;
-import android.os.Build;
-import android.util.Log;
 
 import org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException;
 import org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException;
 
 import java.io.File;
-import java.text.SimpleDateFormat;
 
 /**
  * Created by beyka on 18.2.16.
@@ -19,47 +15,6 @@ public class TiffSaver {
     static {
         System.loadLibrary("tiff");
         System.loadLibrary("tiffsaver");
-    }
-
-    public enum CompressionMode {
-        /**
-         * No compression
-         */
-        COMPRESSION_NONE(1),
-        /**
-         * LZW
-         */
-        COMPRESSION_LZW(5),
-        /**
-         * JPEG ('new-style' JPEG)
-         */
-        COMPRESSION_JPEG(7),
-        COMPRESSION_PACKBITS(32773),
-        COMPRESSION_DEFLATE(32946),
-        COMPRESSION_ADOBE_DEFLATE(8);
-
-        final int ordinal;
-
-        CompressionMode(int ordinal) {
-            this.ordinal = ordinal;
-        }
-    }
-
-    public enum Orientation {
-        ORIENTATION_TOPLEFT(1),
-        ORIENTATION_TOPRIGHT(2),
-        ORIENTATION_BOTRIGHT(3),
-        ORIENTATION_BOTLEFT(4),
-        ORIENTATION_LEFTTOP(5),
-        ORIENTATION_RIGHTTOP(6),
-        ORIENTATION_RIGHTBOT(7),
-        ORIENTATION_LEFTBOT(8);
-
-        final int ordinal;
-
-        Orientation(int ordinal) {
-            this.ordinal = ordinal;
-        }
     }
 
     /**
@@ -185,15 +140,15 @@ public class TiffSaver {
     public static final class SaveOptions {
 
         public SaveOptions() {
-            compressionMode = CompressionMode.COMPRESSION_NONE;
+            compressionScheme = CompressionScheme.COMPRESSION_NONE;
             orientation = Orientation.ORIENTATION_TOPLEFT;
         }
 
         /**
          * Compression scheme used on the image data.
-         * <p>Default value is {@link CompressionMode#COMPRESSION_NONE COMPRESSION_NONE}</p>
+         * <p>Default value is {@link CompressionScheme#COMPRESSION_NONE COMPRESSION_NONE}</p>
          */
-        public CompressionMode compressionMode;
+        public CompressionScheme compressionScheme;
 
         /**
          * {@link org.beyka.tiffbitmapfactory.TiffSaver.Orientation Orientation} that will used for saving image

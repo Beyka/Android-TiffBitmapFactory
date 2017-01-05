@@ -18,39 +18,6 @@ public class TiffBitmapFactory {
         System.loadLibrary("tifffactory");
     }
 
-    public enum ImageOrientation {
-        ORIENTATION_TOPLEFT,
-        ORIENTATION_TOPRIGHT,
-        ORIENTATION_BOTRIGHT,
-        ORIENTATION_BOTLEFT,
-        ORIENTATION_LEFTTOP,
-        ORIENTATION_RIGHTTOP,
-        ORIENTATION_RIGHTBOT,
-        ORIENTATION_LEFTBOT,
-        UNAVAILABLE;
-    }
-
-    public enum CompressionMode {
-        COMPRESSION_NONE(1),
-        /**
-         * LZW
-         */
-        COMPRESSION_LZW(5),
-        /**
-         * JPEG ('new-style' JPEG)
-         */
-        COMPRESSION_JPEG(7),
-        COMPRESSION_PACKBITS(32773),
-        COMPRESSION_DEFLATE(32946),
-        COMPRESSION_ADOBE_DEFLATE(8);
-
-        final int ordinal;
-
-        CompressionMode(int ordinal) {
-            this.ordinal = ordinal;
-        }
-    }
-
     public enum ImageConfig {
         /**
          * Each pixel is stored on 4 bytes. Each channel (RGB and alpha
@@ -174,7 +141,7 @@ public class TiffBitmapFactory {
             outWidth = -1;
             outHeight = -1;
             outDirectoryCount = -1;
-            outImageOrientation = ImageOrientation.UNAVAILABLE;
+            outImageOrientation = Orientation.UNAVAILABLE;
         }
 
         /**
@@ -265,10 +232,16 @@ public class TiffBitmapFactory {
 
         /**
          * This parameter returns orientation of decoded image
-         * <p>For storing orientation uses {@link org.beyka.tiffbitmapfactory.TiffBitmapFactory.ImageOrientation ImageOrientation} enum</p>
-         * <p>If image wasn't decoded successful this parameter will be equal to {@link ImageOrientation#UNAVAILABLE}</p>
+         * <p>For storing orientation uses {@link org.beyka.tiffbitmapfactory.Orientation ImageOrientation} enum</p>
+         * <p>If image wasn't decoded successful this parameter will be equal to {@link Orientation#UNAVAILABLE}</p>
          */
-        public ImageOrientation outImageOrientation;
+        public Orientation outImageOrientation;
+
+        /**
+         * This parameter returns compression scheme of decoded image
+         * <p>For storing compression mode uses {@link CompressionScheme CompressionScheme} enum</p>
+         */
+        public CompressionScheme outCompressionScheme;
 
         /**
          * Author of file

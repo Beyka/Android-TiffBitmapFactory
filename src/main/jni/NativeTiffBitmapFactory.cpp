@@ -17,6 +17,7 @@ TIFF *image;
 int origwidth = 0;
 int origheight = 0;
 short origorientation = 0;
+int origcompressionscheme = 0;
 jobject preferedConfig;
 jboolean invertRedAndBlue = false;
 int availableMemory = -1;
@@ -28,6 +29,7 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
 
     //Drop some global variables
     origorientation = 0;
+    origcompressionscheme = 0;
     origwidth = 0;
     origheight = 0;
     preferedConfig = NULL;
@@ -131,53 +133,53 @@ void writeDataToOptions(JNIEnv *env, jobject options, int directoryNumber) {
         origorientation = ORIENTATION_TOPLEFT;
     }
     jclass gOptions_ImageOrientationClass = env->FindClass(
-            "org/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation");
+            "org/beyka/tiffbitmapfactory/Orientation");
     jfieldID gOptions_ImageOrientationFieldId = NULL;
     bool flipHW = false;
     switch (origorientation) {
         case ORIENTATION_TOPLEFT :
             gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
                                                                      "ORIENTATION_TOPLEFT",
-                                                                     "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation;");
+                                                                     "Lorg/beyka/tiffbitmapfactory/Orientation;");
             break;
         case ORIENTATION_TOPRIGHT :
             gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
                                                                      "ORIENTATION_TOPRIGHT",
-                                                                     "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation;");
+                                                                     "Lorg/beyka/tiffbitmapfactory/Orientation;");
             break;
         case ORIENTATION_BOTRIGHT :
             gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
                                                                      "ORIENTATION_BOTRIGHT",
-                                                                     "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation;");
+                                                                     "Lorg/beyka/tiffbitmapfactory/Orientation;");
             break;
         case ORIENTATION_BOTLEFT :
             gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
                                                                      "ORIENTATION_BOTLEFT",
-                                                                     "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation;");
+                                                                     "Lorg/beyka/tiffbitmapfactory/Orientation;");
             break;
         case ORIENTATION_LEFTTOP :
             flipHW = true;
             gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
                                                                      "ORIENTATION_LEFTTOP",
-                                                                     "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation;");
+                                                                     "Lorg/beyka/tiffbitmapfactory/Orientation;");
             break;
         case ORIENTATION_RIGHTTOP :
             flipHW = true;
             gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
                                                                      "ORIENTATION_RIGHTTOP",
-                                                                     "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation;");
+                                                                     "Lorg/beyka/tiffbitmapfactory/Orientation;");
             break;
         case ORIENTATION_RIGHTBOT :
             flipHW = true;
             gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
                                                                      "ORIENTATION_RIGHTBOT",
-                                                                     "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation;");
+                                                                     "Lorg/beyka/tiffbitmapfactory/Orientation;");
             break;
         case ORIENTATION_LEFTBOT :
             flipHW = true;
             gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
                                                                      "ORIENTATION_LEFTBOT",
-                                                                     "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation;");
+                                                                     "Lorg/beyka/tiffbitmapfactory/Orientation;");
             break;
     }
     if (gOptions_ImageOrientationFieldId != NULL) {
@@ -188,10 +190,109 @@ void writeDataToOptions(JNIEnv *env, jobject options, int directoryNumber) {
         //Set outImageOrientation field to options object
         jfieldID gOptions_outImageOrientationField = env->GetFieldID(jOptionsClass,
                                                                      "outImageOrientation",
-                                                                     "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageOrientation;");
+                                                                     "Lorg/beyka/tiffbitmapfactory/Orientation;");
         env->SetObjectField(options, gOptions_outImageOrientationField,
                             gOptions_ImageOrientationObj);
     }
+
+
+
+
+    //Getting image compression scheme and createing CompressionScheme enum
+        TIFFGetField(image, TIFFTAG_COMPRESSION, &origcompressionscheme);
+        /*
+        //If orientation field is empty - use ORIENTATION_TOPLEFT
+        if (origcompressionscheme == 0) {
+            origcompressionscheme = ORIENTATION_TOPLEFT;
+        }
+        */
+        jclass gOptions_ImageCompressionClass = env->FindClass(
+                "org/beyka/tiffbitmapfactory/CompressionScheme");
+        jfieldID gOptions_ImageCompressionFieldId = NULL;
+        switch (origcompressionscheme) {
+            case COMPRESSION_NONE :
+                gOptions_ImageCompressionFieldId = env->GetStaticFieldID(gOptions_ImageCompressionClass,
+                                                                         "COMPRESSION_NONE",
+                                                                         "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
+                break;
+            case COMPRESSION_LZW :
+                gOptions_ImageCompressionFieldId = env->GetStaticFieldID(gOptions_ImageCompressionClass,
+                                                                         "COMPRESSION_LZW",
+                                                                         "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
+                break;
+            case COMPRESSION_JPEG :
+                                gOptions_ImageCompressionFieldId = env->GetStaticFieldID(gOptions_ImageCompressionClass,
+                                                                                         "COMPRESSION_JPEG",
+                                                                                         "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
+                                break;
+case COMPRESSION_PACKBITS :
+                gOptions_ImageCompressionFieldId = env->GetStaticFieldID(gOptions_ImageCompressionClass,
+                                                                         "COMPRESSION_PACKBITS",
+                                                                         "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
+                break;
+                case COMPRESSION_DEFLATE :
+                                gOptions_ImageCompressionFieldId = env->GetStaticFieldID(gOptions_ImageCompressionClass,
+                                                                                         "COMPRESSION_DEFLATE",
+                                                                                         "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
+                                break;
+case COMPRESSION_ADOBE_DEFLATE :
+                gOptions_ImageCompressionFieldId = env->GetStaticFieldID(gOptions_ImageCompressionClass,
+                                                                         "COMPRESSION_ADOBE_DEFLATE",
+                                                                         "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
+                break;
+                default:
+                gOptions_ImageCompressionFieldId = env->GetStaticFieldID(gOptions_ImageCompressionClass,
+                                                                                         "OTHER",
+                                                                                         "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
+
+        }
+        if (gOptions_ImageCompressionFieldId != NULL) {
+            jobject gOptions_ImageCompressionObj = env->GetStaticObjectField(
+                    gOptions_ImageCompressionClass,
+                    gOptions_ImageCompressionFieldId);
+
+            //Set outImageOrientation field to options object
+            jfieldID gOptions_outCompressionSchemeField = env->GetFieldID(jOptionsClass,
+                                                                         "outCompressionScheme",
+                                                                         "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
+            env->SetObjectField(options, gOptions_outCompressionSchemeField,
+                                gOptions_ImageCompressionObj);
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     jfieldID gOptions_OutCurDirNumberFieldID = env->GetFieldID(jOptionsClass,
                                                                "outCurDirectoryNumber",
