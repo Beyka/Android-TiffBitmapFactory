@@ -94,6 +94,7 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
         LOGES("Can\'t open bitmap", strPath);
         return NULL;
     }
+    LOGI("Tiff is open");
 
     jobject java_bitmap = NULL;
 
@@ -112,7 +113,7 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
 }
 
 void writeDataToOptions(JNIEnv *env, jobject options, int directoryNumber) {
-    TIFFSetDirectory(image, 0);
+    TIFFSetDirectory(image, directoryNumber);
 
     jclass jOptionsClass = env->FindClass(
             "org/beyka/tiffbitmapfactory/TiffBitmapFactory$Options");
@@ -136,6 +137,7 @@ void writeDataToOptions(JNIEnv *env, jobject options, int directoryNumber) {
             "org/beyka/tiffbitmapfactory/Orientation");
     jfieldID gOptions_ImageOrientationFieldId = NULL;
     bool flipHW = false;
+    LOGII("Orientation", origorientation);
     switch (origorientation) {
         case ORIENTATION_TOPLEFT :
             gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
@@ -196,8 +198,6 @@ void writeDataToOptions(JNIEnv *env, jobject options, int directoryNumber) {
     }
 
 
-
-
     //Getting image compression scheme and createing CompressionScheme enum
         TIFFGetField(image, TIFFTAG_COMPRESSION, &origcompressionscheme);
         /*
@@ -206,6 +206,8 @@ void writeDataToOptions(JNIEnv *env, jobject options, int directoryNumber) {
             origcompressionscheme = ORIENTATION_TOPLEFT;
         }
         */
+        LOGII("compression", origcompressionscheme);
+
         jclass gOptions_ImageCompressionClass = env->FindClass(
                 "org/beyka/tiffbitmapfactory/CompressionScheme");
         jfieldID gOptions_ImageCompressionFieldId = NULL;
@@ -259,41 +261,6 @@ case COMPRESSION_ADOBE_DEFLATE :
                                 gOptions_ImageCompressionObj);
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     jfieldID gOptions_OutCurDirNumberFieldID = env->GetFieldID(jOptionsClass,
                                                                "outCurDirectoryNumber",
                                                                "I");
@@ -312,10 +279,12 @@ case COMPRESSION_ADOBE_DEFLATE :
         env->SetIntField(options, gOptions_outHeightFieldId, origwidth);
     }
 
+    int tagRead = 0;
+
     //Author
     char *artist;
-    TIFFGetField(image, TIFFTAG_ARTIST, &artist);
-    if (artist) {
+    tagRead = TIFFGetField(image, TIFFTAG_ARTIST, &artist);
+    if (tagRead == 1) {
         LOGI(artist);
         jstring jauthor = env->NewStringUTF(artist);
         jfieldID gOptions_outAuthorFieldId = env->GetFieldID(jOptionsClass, "outAuthor", "Ljava/lang/String;");
@@ -326,8 +295,8 @@ case COMPRESSION_ADOBE_DEFLATE :
 
     //Copyright
     char *copyright;
-    TIFFGetField(image, TIFFTAG_COPYRIGHT, &copyright);
-    if (copyright) {
+    tagRead = TIFFGetField(image, TIFFTAG_COPYRIGHT, &copyright);
+    if (tagRead == 1) {
         LOGI(copyright);
         jstring jcopyright = env->NewStringUTF(copyright);
         jfieldID gOptions_outCopyrightFieldId = env->GetFieldID(jOptionsClass, "outCopyright", "Ljava/lang/String;");
@@ -338,8 +307,8 @@ case COMPRESSION_ADOBE_DEFLATE :
 
     //ImageDescription
         char *imgDescr;
-        TIFFGetField(image, TIFFTAG_IMAGEDESCRIPTION, &imgDescr);
-        if (imgDescr) {
+        tagRead = TIFFGetField(image, TIFFTAG_IMAGEDESCRIPTION, &imgDescr);
+        if (tagRead == 1) {
             LOGI(imgDescr);
             jstring jimgDescr = env->NewStringUTF(imgDescr);
             jfieldID gOptions_outimgDescrFieldId = env->GetFieldID(jOptionsClass, "outImageDescription", "Ljava/lang/String;");
@@ -350,8 +319,8 @@ case COMPRESSION_ADOBE_DEFLATE :
 
     //Software
         char *software;
-        TIFFGetField(image, TIFFTAG_SOFTWARE, &software);
-        if (software) {
+        tagRead = TIFFGetField(image, TIFFTAG_SOFTWARE, &software);
+        if (tagRead == 1) {
             LOGI(software);
             jstring jsoftware = env->NewStringUTF(software);
             jfieldID gOptions_outsoftwareFieldId = env->GetFieldID(jOptionsClass, "outSoftware", "Ljava/lang/String;");
@@ -362,8 +331,8 @@ case COMPRESSION_ADOBE_DEFLATE :
 
     //DateTime
         char *datetime;
-        TIFFGetField(image, TIFFTAG_DATETIME, &datetime);
-        if (datetime) {
+        tagRead = TIFFGetField(image, TIFFTAG_DATETIME, &datetime);
+        if (tagRead == 1) {
             LOGI(datetime);
             jstring jdatetime = env->NewStringUTF(datetime);
             jfieldID gOptions_outdatetimeFieldId = env->GetFieldID(jOptionsClass, "outDatetime", "Ljava/lang/String;");
@@ -374,8 +343,8 @@ case COMPRESSION_ADOBE_DEFLATE :
 
     //Host Computer
         char *host;
-        TIFFGetField(image, TIFFTAG_HOSTCOMPUTER, &host);
-        if (host) {
+        tagRead = TIFFGetField(image, TIFFTAG_HOSTCOMPUTER, &host);
+        if (tagRead == 1) {
             LOGI(host);
             jstring jhost = env->NewStringUTF(host);
             jfieldID gOptions_outhostFieldId = env->GetFieldID(jOptionsClass, "outHostComputer", "Ljava/lang/String;");
