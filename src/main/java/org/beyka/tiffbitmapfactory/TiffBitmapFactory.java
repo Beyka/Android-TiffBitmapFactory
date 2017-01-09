@@ -234,42 +234,50 @@ public class TiffBitmapFactory {
          * This parameter returns orientation of decoded image
          * <p>For storing orientation uses {@link org.beyka.tiffbitmapfactory.Orientation ImageOrientation} enum</p>
          * <p>If image wasn't decoded successful this parameter will be equal to {@link Orientation#UNAVAILABLE}</p>
+         * <p>This parameter is link to TIFFTAG_ORIENTATION tag</p>
          */
         public Orientation outImageOrientation;
 
         /**
          * This parameter returns compression scheme of decoded image
          * <p>For storing compression mode uses {@link CompressionScheme CompressionScheme} enum</p>
+         * <p>This parameter is link to TIFFTAG_COMPRESSION tag</p>
          */
         public CompressionScheme outCompressionScheme;
 
         /**
-         * Author of file
+         * Author of file.
+         * <p>This parameter is link to TIFFTAG_ARTIST tag</p>
          */
         public String outAuthor = "";
 
         /**
          * Copyright of file
+         * <p>This parameter is link to TIFFTAG_COPYRIGHT tag</p>
          */
         public String outCopyright = "";
 
         /**
          * A string that describes the subject of the image.
+         * <p>This parameter is link to TIFFTAG_IMAGEDESCRIPTION tag</p>
          */
         public String outImageDescription = "";
 
         /**
          * Name and version number of the software package(s) used to create the image.
+         * <p>This parameter is link to TIFFTAG_SOFTWARE tag</p>
          */
         public String outSoftware = "";
 
         /**
          * Date and time of image creation. The format is: "YYYY:MM:DD HH:MM:SS", with hours like those on a 24-hour clock.
+         * <p>This parameter is link to TIFFTAG_DATETIME tag</p>
          */
         public String outDatetime = "";
 
         /**
          * The computer and/or operating system in use at the time of image creation.
+         * <p>This parameter is link to TIFFTAG_HOSTCOMPUTER tag</p>
          */
         public String outHostComputer = "";
 

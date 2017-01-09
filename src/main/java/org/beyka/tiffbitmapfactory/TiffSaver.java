@@ -147,27 +147,32 @@ public class TiffSaver {
         /**
          * Compression scheme used on the image data.
          * <p>Default value is {@link CompressionScheme#COMPRESSION_NONE COMPRESSION_NONE}</p>
+         * <p>This parameter is link to TIFFTAG_COMPRESSION tag</p>
          */
         public CompressionScheme compressionScheme;
 
         /**
          * {@link org.beyka.tiffbitmapfactory.TiffSaver.Orientation Orientation} that will used for saving image
          * <p>By default uses {@link org.beyka.tiffbitmapfactory.TiffSaver.Orientation#ORIENTATION_TOPLEFT ORIENTATION_TOPLEFT} </p>
+         * <p>This parameter is link to TIFFTAG_ORIENTATION tag</p>
          */
         public Orientation orientation;
 
         /**
-         * Author for writing to file
+         * Author for writing to file.
+         * <p>This parameter is link to TIFFTAG_ARTIST tag</p>
          */
         public String author;
 
         /**
          * Copyright for writing to file
+         * <p>This parameter is link to TIFFTAG_COPYRIGHT tag</p>
          */
         public String copyright;
 
         /**
          * A string that describes the subject of the image.
+         * <p>This parameter is link to TIFFTAG_IMAGEDESCRIPTION tag</p>
          */
         public String imageDescription;
     }
