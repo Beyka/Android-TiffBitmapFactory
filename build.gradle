@@ -10,8 +10,8 @@ android {
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 22
-        versionCode 820
-        versionName "0.8.2"
+        versionCode 900
+        versionName "0.9.0"
 
         softwareName = "\"" + project.name + "-" + versionName + "\""
     }
