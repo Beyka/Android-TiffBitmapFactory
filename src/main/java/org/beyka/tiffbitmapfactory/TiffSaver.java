@@ -152,8 +152,8 @@ public class TiffSaver {
         public CompressionScheme compressionScheme;
 
         /**
-         * {@link org.beyka.tiffbitmapfactory.TiffSaver.Orientation Orientation} that will used for saving image
-         * <p>By default uses {@link org.beyka.tiffbitmapfactory.TiffSaver.Orientation#ORIENTATION_TOPLEFT ORIENTATION_TOPLEFT} </p>
+         * {@link org.beyka.tiffbitmapfactory.Orientation Orientation} that will used for saving image
+         * <p>By default uses {@link org.beyka.tiffbitmapfactory.Orientation#ORIENTATION_TOPLEFT ORIENTATION_TOPLEFT} </p>
          * <p>This parameter is link to TIFFTAG_ORIENTATION tag</p>
          */
         public Orientation orientation;
