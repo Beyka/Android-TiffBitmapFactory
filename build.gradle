@@ -50,7 +50,7 @@ publish {
     dryRun = false
     groupId = 'com.github.beyka'
     artifactId = 'androidtiffbitmapfactory'
-    publishVersion = '0.8.2'
+    publishVersion = '0.9.0'
     desc = 'Library for opening and saving TIFF image files on android devices'
     licences = ['MIT']
     website = 'https://github.com/Beyka/Android-TiffBitmapFactory'
