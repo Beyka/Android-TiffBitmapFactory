@@ -15,7 +15,7 @@ Starting from version 0.8 library has support for all architectures
 ### Installation
 Just add to your gradle dependencies :
 ```
-compile 'com.github.beyka:androidtiffbitmapfactory:0.8.2'
+compile 'com.github.beyka:androidtiffbitmapfactory:0.9.0'
 ```
 And do not forget to add WRITE_EXTERNAL_STORAGE permission to main project manifest
 
@@ -115,7 +115,7 @@ options.orientation = TiffSaver.Orientation.ORIENTATION_LEFTTOP;
 options.author = "beyka";
 //Add copyright tag to output file
 options.copyright = "Some copyright";
-//Save image as tif. If image saved succesfull true will be returned
+//Add new directory to existing file or create new file. If image saved succesfull true will be returned
 boolean saved = TiffSaver.appendBitmap("/sdcard/out.tif", bitmap, options);
 ```
 Every new page will be added as new directory to the end of file. If you trying to append directory to non-exisiting file - new file will be created
