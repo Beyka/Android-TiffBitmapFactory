@@ -101,6 +101,26 @@ options.copyright = "Some copyright";
 boolean saved = TiffSaver.saveBitmap("/sdcard/out.tif", bitmap, options);
 ```
 
+#### Adding page to existing tiff file
+```Java
+//Open some image
+Bitmap bitmap = BitmapFactory.decodeFile("sdcard/image.png");
+//Create options for saving
+TiffSaver.SaveOptions options = new TiffSaver.SaveOptions();
+//By default compression mode is none
+options.compressionMode = TiffSaver.CompressionMode.COMPRESSION_LZW;
+//By default orientation is top left
+options.orientation = TiffSaver.Orientation.ORIENTATION_LEFTTOP;
+//Add author tag to output file
+options.author = "beyka";
+//Add copyright tag to output file
+options.copyright = "Some copyright";
+//Save image as tif. If image saved succesfull true will be returned
+boolean saved = TiffSaver.appendBitmap("/sdcard/out.tif", bitmap, options);
+```
+Every new page will be added as new directory to the end of file. If you trying to append directory to non-exisiting file - new file will be created
+
+
 ### 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
