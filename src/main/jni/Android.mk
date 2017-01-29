@@ -45,7 +45,7 @@ LOCAL_TIFF_SRC_FILES := \
 	tiff/libtiff/tif_strip.c
 
 LOCAL_TIFF_SRC_FILES += tiff/port/lfind.c 
-#######################LIBJPEG8D#################################
+#######################LIBTIFF#################################
 
 LOCAL_SRC_FILES:= $(LOCAL_TIFF_SRC_FILES)
 LOCAL_C_INCLUDES += \
