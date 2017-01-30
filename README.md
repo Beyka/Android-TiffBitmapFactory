@@ -3,7 +3,7 @@ TiffBitmapFactory is an Android library that allows opening and saving images in
 
 This fork enables large Tiff files to be read and sampled incrementally. The caller specifies how much memory is available for processing. If there is sufficient memory the entire file is read in at once, sampled, and the bitmap is created. If there is insufficient memory, the file is read a Tile or Strip at a time, sampled, and the bitmap is created.
 
-For decoding and encoding *.tif files it uses the native library [libtiff](https://github.com/dumganhar/libtiff). Also for images that compressed with jpeg compression scheme used [libjpeg9 for android](https://github.com/Suvitruf/libjpeg-version-9-android)
+For decoding and encoding *.tif files it uses the native library [libtiff](https://github.com/dumganhar/libtiff). Also for images that compressed with jpeg compression scheme used [libjpeg9 for android](https://github.com/Suvitruf/libjpeg-version-9-android) (the IJG code)
 
 Just now it has possibility to open tif image as mutable bitmap, read count of directory in file, apply sample rate for bitmap decoding and choose directory to decode.
 While saving there is available few(most popular) compression mods and some additiona fields that can be writen to file, like author or copyright.
