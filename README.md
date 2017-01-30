@@ -15,7 +15,7 @@ Starting from version 0.8 library has support for all architectures
 ### Installation
 Just add to your gradle dependencies :
 ```
-compile 'com.github.beyka:androidtiffbitmapfactory:0.9.0'
+compile 'com.github.beyka:androidtiffbitmapfactory:0.9.1'
 ```
 And do not forget to add WRITE_EXTERNAL_STORAGE permission to main project manifest
 
@@ -27,9 +27,6 @@ To build native part of library use [Android-NDK-bundle-10](https://developer.an
 ```
 ndk-build NDK_PROJECT_PATH=src/main
 ```
-
-### Known problems
-On devices with x64 architecture can't open and save files with JPEG compression
 
 ### Usage
 #### Opening tiff file
