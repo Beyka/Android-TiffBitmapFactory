@@ -20,7 +20,7 @@ short origorientation = 0;
 int origcompressionscheme = 0;
 jobject preferedConfig;
 jboolean invertRedAndBlue = false;
-int availableMemory = -1;
+long availableMemory = -1;
 
 JNIEXPORT jobject
 
@@ -60,8 +60,8 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
     
     jfieldID gOptions_AvailableMemoryFieldID = env->GetFieldID(jBitmapOptionsClass,
                                                               "inAvailableMemory",
-                                                              "I");
-    availableMemory = env->GetIntField(options, gOptions_AvailableMemoryFieldID);
+                                                              "J");
+    availableMemory = env->GetLongField(options, gOptions_AvailableMemoryFieldID);
 
     jfieldID gOptions_PreferedConfigFieldID = env->GetFieldID(jBitmapOptionsClass,
                                                               "inPreferredConfig",
@@ -368,7 +368,7 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     // Estimate the memory required when the entire file is read in: 
     // original file size plus two copies of sampled file plus a little extra to be conservative.
     int origBufferSize = origwidth * origheight * sizeof(unsigned int);
-    int estimatedMemory = origBufferSize + 2 * (origBufferSize / (inSampleSize * inSampleSize));
+    unsigned long long estimatedMemory = origBufferSize + 2 * (origBufferSize / (inSampleSize * inSampleSize));
     estimatedMemory = 11 * estimatedMemory / 10; // 10% extra.
     LOGII("estimatedMemory", estimatedMemory);
     

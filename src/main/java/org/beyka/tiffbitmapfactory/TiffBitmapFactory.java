@@ -120,10 +120,10 @@ public class TiffBitmapFactory {
         return nativeDecodePath(path, options);
     }
 
-    private static synchronized native Bitmap nativeDecodePath(String path, Options options);
+    private static native Bitmap nativeDecodePath(String path, Options options);
 
     /**
-     * Options class to specify decoding parameters
+     * Options class to specify decoding parameterMs
      */
     public static final class Options {
 
@@ -180,7 +180,7 @@ public class TiffBitmapFactory {
          * Number of bytes that may be allocated during the Tiff file operations.
          * -1 means memory is unlimited.
          */
-        public int inAvailableMemory;
+        public long inAvailableMemory;
 
         /**
          * If this is non-null, the decoder will try to decode into this
