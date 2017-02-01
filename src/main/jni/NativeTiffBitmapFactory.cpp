@@ -371,8 +371,33 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     unsigned long long estimatedMemory = origBufferSize + 2 * (origBufferSize / (inSampleSize * inSampleSize));
     estimatedMemory = 11 * estimatedMemory / 10; // 10% extra.
     LOGII("estimatedMemory", estimatedMemory);
+
+    LOGII("origbuffsize", origBufferSize);
     
     unsigned int *origBuffer = NULL;
+
+    ///---------------------------NEW READ ALGORITHM---------------------------------
+
+/*
+//TILES
+    tdata_t buf;
+    ttile_t tile;
+    uint32 tileWidth, tileLength;
+    TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileWidth);
+    TIFFGetField(image, TIFFTAG_TILELENGTH, &tileLength);
+
+    //buf = _TIFFmalloc(TIFFTileSize(image));
+    int numberOfTiles = TIFFNumberOfTiles(image);
+    LOGII("Number of tiles ", numberOfTiles);
+    LOGII("Tile width ", tileWidth);
+    LOGII("Tile lenght ", tileLength);
+    //for (tile = 0; tile < numberOfTiles; tile++) {
+    //    TIFFReadEncodedTile(image, tile, buf, (tsize_t) -1);
+    //}
+    _TIFFfree(buf);
+*/
+
+    ///---------------------------NEW READ ALGORITHM END---------------------------------
     
     // Test memory requirement.
     if ((availableMemory > 0) && (estimatedMemory > availableMemory)) {
@@ -397,12 +422,66 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
             return NULL;
         }
 
+    int rowPerStrip = -1;
+    TIFFGetField(image, TIFFTAG_ROWSPERSTRIP, &rowPerStrip);
+    LOGII("rowsperstrip", rowPerStrip);
+
+    unsigned int * raster;
+    raster = (unsigned int *)_TIFFmalloc(origwidth * rowPerStrip * sizeof (uint32));
+
+    LOGII("Height", origheight);
+    int siz = sizeof(unsigned int);
+    LOGII("siz ", siz);
+
+    int cpOffset = 0;
+    int ok = 1;
+    for (int i = 0; i < origheight; i += rowPerStrip) {
+        LOGII("Row", i);
+        ok = TIFFReadRGBAStrip(image, i, raster);
+        LOGII("Ok", ok);
+        if (!ok) break;
+
+        int byteToCopy = 0;
+        if (i + rowPerStrip < origheight) {
+            byteToCopy = sizeof(unsigned int) * rowPerStrip * origwidth;
+        } else {
+            unsigned long long unusedLines = i + rowPerStrip - origheight;
+            unsigned long long linesToCopy = rowPerStrip - unusedLines;
+            byteToCopy = sizeof(unsigned int) * linesToCopy * origwidth;
+        }
+        LOGII("byte to copy ", byteToCopy);
+        int position = i * origwidth;
+        LOGII("position ", position);
+        memcpy(&origBuffer[position], raster, byteToCopy);
+
+
+        for (int x = 0; x < rowPerStrip; x++) {
+            int curLine = i + x;
+            if (curLine >= origheight) {
+                LOGI("x > origheight");
+                break;
+            }
+
+              cpOffset++;
+        }
+
+        //int px = raster[i*origwidth+0];
+        //LOGII("Px ", px);
+    }
+    LOGII("lines", cpOffset);
+
+
+
+
+
+/*
         if (0 ==
             TIFFReadRGBAImageOriented(image, origwidth, origheight, origBuffer, ORIENTATION_TOPLEFT, 0)) {
 	        free(origBuffer);
             LOGE("Error reading image.");
             return NULL;
         }
+        */
     }
 
     // Convert ABGR to ARGB
