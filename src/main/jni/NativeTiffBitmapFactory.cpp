@@ -423,8 +423,9 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
         }
 
 
-    /*
 
+
+    /*
     -----------------------STRIPED IMAGE READING-------------------
 
 
@@ -480,6 +481,8 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     }
     */
 
+    /*
+
     //----------------------TILE IMAGE READING-------------------------
     uint32 tileWidth = 0, tileHeight = 0;
     uint32 *raster;
@@ -493,6 +496,9 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     ok = TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileHeight);
     LOGII("Get tile height ", ok);
     LOGII("tile height ", tileHeight);
+    //uint32 tiffNum = TIFFNumberOfTiles(image);
+    //LOGII("tile count ", tiffNum);
+
 
     raster = (uint32*)_TIFFmalloc(tileWidth * tileHeight * sizeof (uint32));
     work_line_buf = (uint32*)_TIFFmalloc(tileWidth * sizeof (uint32));
@@ -500,7 +506,6 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     for (row = 0; row < origheight; row += tileHeight) {
         for (column = 0; column < origwidth; column += tileWidth) {
             ok = TIFFReadRGBATile(image, column, row, raster);
-            LOGII("row ", row); LOGII("column ", column);
 
             //tile orig is on bottom left - should change lines
             for (int line = 0; line < tileHeight / 2; line++) {
@@ -514,30 +519,20 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
                 _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * tileWidth);
             }
 
-
-            //1 tile width copy to origin buff
+            uint32 wOffset = 0;
+            uint32 hOffset = 0;
             for (int th = 0; th < tileHeight; th++) {
                 for (int tw = 0; tw < tileWidth; tw++) {
-                     int byteToCopy = sizeof(uint32) * tileWidth;
-                     int position = row * tileWidth + column;
-                     LOGII("position ", position);
-
-                     memcpy(&origBuffer[position], raster, byteToCopy);
-
+                    uint32 srcPosition = th * tileWidth + tw;
+                    if (raster[srcPosition] != 0) {
+                        int position = (row + th) * origwidth + column + tw;
+                        origBuffer[position] = raster[srcPosition];
+                    }
                 }
             }
-
-            int byteToCopy = sizeof(uint32) * tileWidth;
-            int position = row * tileWidth + column;
-            LOGII("position ", position);
-
-            memcpy(&origBuffer[position], raster, byteToCopy);
         }
     }
-
-
-
-
+    */
 
 
 //Base method TIFFReadRGBAImageOriented
