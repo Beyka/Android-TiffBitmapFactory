@@ -426,6 +426,7 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     TIFFGetField(image, TIFFTAG_ROWSPERSTRIP, &rowPerStrip);
     LOGII("rowsperstrip", rowPerStrip);
 
+    unsigned int * work_line_buf = (unsigned int *)_TIFFmalloc(origwidth * sizeof(unsigned int));
     unsigned int * raster;
     raster = (unsigned int *)_TIFFmalloc(origwidth * rowPerStrip * sizeof (uint32));
 
@@ -433,42 +434,45 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     int siz = sizeof(unsigned int);
     LOGII("siz ", siz);
 
-    int cpOffset = 0;
     int ok = 1;
     for (int i = 0; i < origheight; i += rowPerStrip) {
-        LOGII("Row", i);
         ok = TIFFReadRGBAStrip(image, i, raster);
-        LOGII("Ok", ok);
         if (!ok) break;
+
+        //raster origin is bottom left. We need to change order of lines
+        int rows_to_write = 0;
+        if( i + rowPerStrip > origheight )
+           rows_to_write = origheight - i;
+        else
+           rows_to_write = rowPerStrip;
+
+        for (int line = 0; line < rows_to_write / 2; line++) {
+            unsigned int  *top_line, *bottom_line;
+
+            top_line = raster + origwidth * line;
+            bottom_line = raster + origwidth * (rows_to_write - line - 1);
+
+            _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * origwidth);
+            //LOGI("memcpy from top to work")
+            _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * origwidth);
+            _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * origwidth);
+        }
 
         int byteToCopy = 0;
         if (i + rowPerStrip < origheight) {
             byteToCopy = sizeof(unsigned int) * rowPerStrip * origwidth;
         } else {
-            unsigned long long unusedLines = i + rowPerStrip - origheight;
-            unsigned long long linesToCopy = rowPerStrip - unusedLines;
-            byteToCopy = sizeof(unsigned int) * linesToCopy * origwidth;
+            //unsigned long long unusedLines = i + rowPerStrip - origheight;
+            //unsigned long long linesToCopy = rowPerStrip - unusedLines;
+            byteToCopy = sizeof(unsigned int) * rows_to_write * origwidth;
         }
-        LOGII("byte to copy ", byteToCopy);
+        //LOGII("byte to copy ", byteToCopy);
         int position = i * origwidth;
-        LOGII("position ", position);
+        //LOGII("position ", position);
         memcpy(&origBuffer[position], raster, byteToCopy);
 
-
-        for (int x = 0; x < rowPerStrip; x++) {
-            int curLine = i + x;
-            if (curLine >= origheight) {
-                LOGI("x > origheight");
-                break;
-            }
-
-              cpOffset++;
-        }
-
-        //int px = raster[i*origwidth+0];
-        //LOGII("Px ", px);
     }
-    LOGII("lines", cpOffset);
+
 
 
 
