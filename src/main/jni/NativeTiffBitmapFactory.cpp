@@ -425,17 +425,28 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
 
 
 
-    /*
-    -----------------------STRIPED IMAGE READING-------------------
 
+    //-----------------------STRIPED IMAGE READING-------------------
 
+    uint32 stripSize = TIFFStripSize (image);
+    uint32 stripMax = TIFFNumberOfStrips (image);
+    LOGII("strip size ", stripSize);
+    LOGII("stripMax  ", stripMax);
     int rowPerStrip = -1;
     TIFFGetField(image, TIFFTAG_ROWSPERSTRIP, &rowPerStrip);
     LOGII("rowsperstrip", rowPerStrip);
 
     unsigned int * work_line_buf = (unsigned int *)_TIFFmalloc(origwidth * sizeof(unsigned int));
     unsigned int * raster;
-    raster = (unsigned int *)_TIFFmalloc(origwidth * rowPerStrip * sizeof (uint32));
+    if (rowPerStrip == -1 && stripMax == 1) {
+        raster = (unsigned int *)_TIFFmalloc(origBufferSize * sizeof (uint32));
+    } else {
+        raster = (unsigned int *)_TIFFmalloc(origwidth * rowPerStrip * sizeof (uint32));
+    }
+    if (rowPerStrip == -1) {
+        rowPerStrip = origheight;
+    }
+
 
     LOGII("Height", origheight);
     int siz = sizeof(unsigned int);
@@ -479,7 +490,7 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
         memcpy(&origBuffer[position], raster, byteToCopy);
 
     }
-    */
+
 
     /*
 
