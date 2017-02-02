@@ -368,7 +368,8 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     int newBitmapWidth = 0;
     int newBitmapHeight = 0;
 
-    jint *raster = getSampledRasterFromImage(env, inSampleSize, &newBitmapWidth, &newBitmapHeight);
+    //jint *raster = getSampledRasterFromImage(env, inSampleSize, &newBitmapWidth, &newBitmapHeight);
+    jint *raster = getSampledRasterFromStrip(env, inSampleSize, &newBitmapWidth, &newBitmapHeight);
 
     // Convert ABGR to ARGB
     if (invertRedAndBlue) {
@@ -686,6 +687,282 @@ int getDyrectoryCount() {
         dircount++;
     } while (TIFFReadDirectory(image));
     return dircount;
+}
+
+jint *getSampledRasterFromStrip(JNIEnv *env, int inSampleSize, int *bitmapwidth, int *bitmapheight) {
+
+    LOGII("width", origwidth);
+    LOGII("height", origheight);
+
+    jint *pixels = NULL;
+    *bitmapwidth = origwidth / inSampleSize;
+    *bitmapheight = origheight / inSampleSize;
+    int pixelsBufferSize = *bitmapwidth * *bitmapheight;
+    int origImageBufferSize = origwidth * origheight;
+
+    LOGII("new width", *bitmapwidth);
+        LOGII("new height", *bitmapheight);
+
+    pixels = (jint *) malloc(sizeof(jint) * pixelsBufferSize);
+    if (pixels == NULL) {
+        LOGE("Can\'t allocate memory for temp buffer");
+        return NULL;
+    }
+
+    uint32 stripSize = TIFFStripSize (image);
+    uint32 stripMax = TIFFNumberOfStrips (image);
+    LOGII("strip size ", stripSize);
+    LOGII("stripMax  ", stripMax);
+    int rowPerStrip = -1;
+    TIFFGetField(image, TIFFTAG_ROWSPERSTRIP, &rowPerStrip);
+    LOGII("rowsperstrip", rowPerStrip);
+
+    uint32* work_line_buf = (uint32 *)_TIFFmalloc(origwidth * sizeof(uint32));
+    uint32* raster;
+    if (rowPerStrip == -1 && stripMax == 1) {
+            raster = (uint32 *)_TIFFmalloc(origImageBufferSize * sizeof (uint32));
+    } else {
+            raster = (uint32 *)_TIFFmalloc(origwidth * rowPerStrip * sizeof (uint32));
+    }
+    if (rowPerStrip == -1) {
+            rowPerStrip = origheight;
+    }
+
+    int writedLines = 0;
+    int nextStripOffset = 0;
+    int processedLines = 0;
+
+    int ok = 1;
+    for (int i = 0; i < origheight; i += rowPerStrip) {
+            ok = TIFFReadRGBAStrip(image, i, raster);
+            if (!ok) break;
+
+            //raster origin is bottom left. We need to change order of lines
+            int rows_to_write = 0;
+            if( i + rowPerStrip > origheight )
+               rows_to_write = origheight - i;
+            else
+               rows_to_write = rowPerStrip;
+
+            for (int line = 0; line < rows_to_write / 2; line++) {
+                unsigned int  *top_line, *bottom_line;
+
+                top_line = raster + origwidth * line;
+                bottom_line = raster + origwidth * (rows_to_write - line - 1);
+
+                _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * origwidth);
+                //LOGI("memcpy from top to work")
+                _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * origwidth);
+                _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * origwidth);
+            }
+
+            if (inSampleSize == 1) {
+                int byteToCopy = 0;
+                if (i + rowPerStrip < origheight) {
+                    byteToCopy = sizeof(unsigned int) * rowPerStrip * origwidth;
+                } else {
+                    //unsigned long long unusedLines = i + rowPerStrip - origheight;
+                    //unsigned long long linesToCopy = rowPerStrip - unusedLines;
+                    byteToCopy = sizeof(unsigned int) * rows_to_write * origwidth;
+                }
+                //LOGII("byte to copy ", byteToCopy);
+                int position = i * origwidth;
+                //LOGII("position ", position);
+                memcpy(&pixels[position], raster, byteToCopy);
+            } else {
+                if (processedLines != 0) {
+                    nextStripOffset = (i)%processedLines;    //rowPerStrip   inSampleSize i
+                }
+                LOGII("img line", i);
+                LOGII("processedLines", processedLines);
+                LOGII("nextStripOffset", nextStripOffset);
+
+
+
+                 //= nextStripOffset//inSampleSize ;
+                 for (int wj = writedLines, wj1 = nextStripOffset; wj < *bitmapheight, wj1 < rowPerStrip; wj++, wj1 += inSampleSize) {
+                    for (int wi = 0, wi1 = 0; wi < *bitmapwidth; wi++, wi1 += inSampleSize) {
+
+
+
+
+
+                        //Apply filter to pixel
+                        jint crPix = raster[wj1 * origwidth + wi1];
+                        int sum = 1;
+
+
+                        int alpha = colorMask & crPix >> 24;
+                        int red = colorMask & crPix >> 16;
+                        int green = colorMask & crPix >> 8;
+                        int blue = colorMask & crPix;
+
+
+                        //topleft
+                        if (wi1 - 1 >= 0 && wj1 - 1 >= 0) {
+                            crPix = raster[(wj1 - 1) * origwidth + wi1 - 1];
+                            red += colorMask & crPix >> 16;
+                            green += colorMask & crPix >> 8;
+                            blue += colorMask & crPix;
+                            alpha += colorMask & crPix >> 24;
+                            sum++;
+                        }
+                        //top
+                        if (wj1 - 1 >= 0) {
+                            crPix = raster[(wj1 - 1) * origwidth + wi1];
+                            red += colorMask & crPix >> 16;
+                            green += colorMask & crPix >> 8;
+                            blue += colorMask & crPix;
+                            alpha += colorMask & crPix >> 24;
+                            sum++;
+                        }
+                        // topright
+                        if (wi1 + 1 < origwidth && wj1 - 1 >= 0) {
+                            crPix = raster[(wj1 - 1) * origwidth + wi1 + 1];
+                            red += colorMask & crPix >> 16;
+                            green += colorMask & crPix >> 8;
+                            blue += colorMask & crPix;
+                            alpha += colorMask & crPix >> 24;
+                            sum++;
+                        }
+                        //right
+                        if (wi1 + 1 < origwidth) {
+                            crPix = raster[wj1 * origwidth + wi1 + 1];
+                            red += colorMask & crPix >> 16;
+                            green += colorMask & crPix >> 8;
+                            blue += colorMask & crPix;
+                            alpha += colorMask & crPix >> 24;
+                            sum++;
+                        }
+                        //bottomright
+                        if (wi1 + 1 < origwidth && wj1 + 1 < rowPerStrip) {
+                            crPix = raster[(wj1 + 1) * origwidth + wi1 + 1];
+                            red += colorMask & crPix >> 16;
+                            green += colorMask & crPix >> 8;
+                            blue += colorMask & crPix;
+                            alpha += colorMask & crPix >> 24;
+                            sum++;
+                        }
+                        //bottom
+                        if (wj1 + 1 < rowPerStrip) {
+                            crPix = raster[(wj1 + 1) * origwidth + wi1 + 1];
+                            red += colorMask & crPix >> 16;
+                            green += colorMask & crPix >> 8;
+                            blue += colorMask & crPix;
+                            alpha += colorMask & crPix >> 24;
+                            sum++;
+                        }
+                        //bottomleft
+                        if (wi1 - 1 >= 0 && wj1 + 1 < rowPerStrip) {
+                            crPix = raster[(wj1 + 1) * origwidth + wi1 - 1];
+                            red += colorMask & crPix >> 16;
+                            green += colorMask & crPix >> 8;
+                            blue += colorMask & crPix;
+                            alpha += colorMask & crPix >> 24;
+                            sum++;
+                        }
+                        //left
+                        if (wi1 - 1 >= 0) {
+                            crPix = raster[wj1 * origwidth + wi1 - 1];
+                            red += colorMask & crPix >> 16;
+                            green += colorMask & crPix >> 8;
+                            blue += colorMask & crPix;
+                            alpha += colorMask & crPix >> 24;
+                            sum++;
+                        }
+
+                        red /= sum;
+                        if (red > 255) red = 255;
+                        if (red < 0) red = 0;
+
+                        green /= sum;
+                        if (green > 255) green = 255;
+                        if (green < 0) green = 0;
+
+                        blue /= sum;
+                        if (blue > 255) blue = 255;
+                        if (blue < 0) blue = 0;
+
+                        alpha /= sum;///= sum;
+                        if (alpha > 255) alpha = 255;
+                        if (alpha < 0) alpha = 0;
+
+                        crPix = (alpha << 24) | (red << 16) | (green << 8) | (blue);
+
+                        pixels[wj * *bitmapwidth + wi] = crPix;
+                    }
+                }
+            }
+        }
+        //Close Buffer
+        if (raster) {
+            _TIFFfree(raster);
+            raster = NULL;
+        }
+
+        if (origorientation > 4) {
+                unsigned int size = *bitmapheight * *bitmapwidth - 1;
+                jint t;
+                unsigned long long next;
+                unsigned long long cycleBegin;
+                bool *barray = (bool *) malloc(sizeof(bool) * pixelsBufferSize);
+        	for (int x = 0; x < size; x++) { barray[x] = false; }
+                barray[0] = barray[size] = true;
+                unsigned long long k = 1;
+
+                switch (origorientation) {
+                    case ORIENTATION_LEFTTOP:
+                    case ORIENTATION_RIGHTBOT:
+                        while (k < size) {
+                            cycleBegin = k;
+                            t = pixels[k];
+                            do {
+                                next = (k * *bitmapheight) % size;
+                                jint buf = pixels[next];
+                                pixels[next] = t;
+                                t = buf;
+                                barray[k] = true;
+                                k = next;
+                            } while (k != cycleBegin);
+                            for (k = 1; k < size && barray[k]; k++);
+                        }
+                        break;
+                    case ORIENTATION_LEFTBOT:
+                    case ORIENTATION_RIGHTTOP:
+                        while (k < size) {
+                            cycleBegin = k;
+                            t = pixels[k];
+                            do {
+                                next = (k * *bitmapheight) % size;
+                                jint buf = pixels[next];
+                                pixels[next] = t;
+                                t = buf;
+                                barray[k] = true;
+                                k = next;
+                            } while (k != cycleBegin);
+                            for (k = 1; k < size && barray[k]; k++);
+                        }
+                        //flip horizontally
+                        for (int j = 0, j1 = *bitmapwidth - 1; j < *bitmapwidth / 2; j++, j1--) {
+                            for (int i = 0; i < *bitmapheight; i++) {
+                                jint tmp = pixels[j * *bitmapheight + i];
+                                pixels[j * *bitmapheight + i] = pixels[j1 * *bitmapheight + i];
+                                pixels[j1 * *bitmapheight + i] = tmp;
+                            }
+                        }
+                        //flip vertically
+                        for (int i = 0, i1 = *bitmapheight - 1; i < *bitmapheight / 2; i++, i1--) {
+                            for (int j = 0; j < *bitmapwidth; j++) {
+                                jint tmp = pixels[j * *bitmapheight + i];
+                                pixels[j * *bitmapheight + i] = pixels[j * *bitmapheight + i1];
+                                pixels[j * *bitmapheight + i1] = tmp;
+                            }
+                        }
+                        break;
+                }
+                free(barray);
+            }
+            return pixels;
 }
 
 jint *getSampledRasterFromImage(JNIEnv *env, int inSampleSize, int *bitmapwidth, int *bitmapheight) {

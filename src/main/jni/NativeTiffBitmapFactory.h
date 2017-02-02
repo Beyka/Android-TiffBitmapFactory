@@ -69,6 +69,8 @@ void releaseImage(JNIEnv *);
 
 jint *getSampledRasterFromImage(JNIEnv *, int , int *, int *);
 
+jint *getSampledRasterFromStrip(JNIEnv *, int , int *, int *);
+
 #ifdef __cplusplus
 }
 #endif
