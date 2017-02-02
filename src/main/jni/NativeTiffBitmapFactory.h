@@ -45,16 +45,16 @@ jobject createBitmap(JNIEnv *, int, int, jobject, jstring path);
 /*
  * Create java bitmap object with config ARGB_8888
  */
-jint * createBitmapARGB8888(JNIEnv *, int, unsigned int *, int *, int *);
+//jint * createBitmapARGB8888(JNIEnv *, int, unsigned int *, int *, int *);
 /*
  * Create java bitmap object with config ALPHA_8
  */
-jbyte * createBitmapAlpha8(JNIEnv *, int, unsigned int *, int *, int *);
+jbyte * createBitmapAlpha8(JNIEnv *, jint *, int, int);
 
 /*
  * Create java bitmap object with config RGB_565
  */
-unsigned short *createBitmapRGB565(JNIEnv *, int, unsigned int *, int *, int *);
+unsigned short *createBitmapRGB565(JNIEnv *, jint *, int, int);
 
 /*
  * Create blank java bitmap object with config ARGB_8888 and width and height calculated
@@ -66,6 +66,8 @@ jobject createBlankBitmap(JNIEnv *, int width, int height);
  * Release references and objects
  */
 void releaseImage(JNIEnv *);
+
+jint *getSampledRasterFromImage(JNIEnv *, int , int *, int *);
 
 #ifdef __cplusplus
 }
