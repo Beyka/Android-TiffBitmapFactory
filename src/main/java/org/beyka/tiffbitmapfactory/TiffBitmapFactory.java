@@ -71,8 +71,9 @@ public class TiffBitmapFactory {
      */
     public static Bitmap decodeFile(File file) throws NoSuchFileException, ReadTiffException {
         long time = System.currentTimeMillis();
+        Log.i("THREAD", "Starting decode " + file.getAbsolutePath());
         Bitmap mbp = nativeDecodePath(file.getAbsolutePath(), new Options());
-        Log.w("TIME", "elapsed ms: " + (System.currentTimeMillis() - time));
+        Log.w("THREAD", "elapsed ms: " + (System.currentTimeMillis() - time) + " for " + file.getAbsolutePath());
         return mbp;
     }
 
@@ -90,8 +91,9 @@ public class TiffBitmapFactory {
      */
     public static Bitmap decodeFile(File file, Options options) throws NoSuchFileException, ReadTiffException, NotEnoughtMemoryException {
         long time = System.currentTimeMillis();
+        Log.i("THREAD", "Starting decode " + file.getAbsolutePath());
         Bitmap mbp = nativeDecodePath(file.getAbsolutePath(), options);
-        Log.w("TIME", "elapsed ms: " + (System.currentTimeMillis() - time));
+        Log.w("THREAD", "elapsed ms: " + (System.currentTimeMillis() - time) + " for " + file.getAbsolutePath());
         return mbp;
     }
 
@@ -107,8 +109,9 @@ public class TiffBitmapFactory {
      */
     public static Bitmap decodePath(String path) throws NoSuchFileException, ReadTiffException {
         long time = System.currentTimeMillis();
+        Log.i("THREAD", "Starting decode " + path);
         Bitmap mbp = nativeDecodePath(path, new Options());
-        Log.w("TIME", "elapsed ms: " + (System.currentTimeMillis() - time));
+        Log.w("THREAD", "elapsed ms: " + (System.currentTimeMillis() - time) + " for " + path);
         return mbp;
     }
 
@@ -127,8 +130,9 @@ public class TiffBitmapFactory {
      */
     public static Bitmap decodePath(String path, Options options) throws NoSuchFileException, ReadTiffException, NotEnoughtMemoryException {
         long time = System.currentTimeMillis();
+        Log.i("THREAD", "Starting decode " + path);
         Bitmap mbp = nativeDecodePath(path, options);
-        Log.w("TIME", "elapsed ms: " + (System.currentTimeMillis() - time));
+        Log.w("THREAD", "elapsed ms: " + (System.currentTimeMillis() - time) + " for " + path);
         return mbp;
     }
 
