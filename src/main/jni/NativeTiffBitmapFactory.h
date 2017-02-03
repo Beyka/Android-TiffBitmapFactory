@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <tiffio.h>
+#include "NativeDecoder.h"
 /* Header for class NativeTiffBitmapFactory */
 
 #define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffBitmapFactory", "%s", x)

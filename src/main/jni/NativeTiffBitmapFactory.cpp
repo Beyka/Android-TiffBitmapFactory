@@ -27,6 +27,12 @@ JNIEXPORT jobject
 JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
         (JNIEnv *env, jclass clazz, jstring path, jobject options) {
 
+    NativeDecoder *decoder = new NativeDecoder(env, clazz, path, options);
+    jobject java_bitmap = decoder->getBitmap();
+    delete(decoder);
+
+    return java_bitmap;
+/*
     //Drop some global variables
     origorientation = 0;
     origcompressionscheme = 0;
@@ -110,6 +116,7 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
     releaseImage(env);
 
     return java_bitmap;
+    */
 }
 
 void writeDataToOptions(JNIEnv * env, jobject options, int directoryNumber) {
