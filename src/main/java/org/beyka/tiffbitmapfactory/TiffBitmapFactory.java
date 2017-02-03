@@ -1,6 +1,7 @@
 package org.beyka.tiffbitmapfactory;
 
 import android.graphics.Bitmap;
+import android.util.Log;
 
 import org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException;
 import org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException;
@@ -69,7 +70,10 @@ public class TiffBitmapFactory {
      * @throws org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException when {@code file} not exist
      */
     public static Bitmap decodeFile(File file) throws NoSuchFileException, ReadTiffException {
-        return nativeDecodePath(file.getAbsolutePath(), new Options());
+        long time = System.currentTimeMillis();
+        Bitmap mbp = nativeDecodePath(file.getAbsolutePath(), new Options());
+        Log.w("TIME", "elapsed ms: " + (System.currentTimeMillis() - time));
+        return mbp;
     }
 
     /**
@@ -85,7 +89,10 @@ public class TiffBitmapFactory {
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when {@link Options#inAvailableMemory} not enought to decode image
      */
     public static Bitmap decodeFile(File file, Options options) throws NoSuchFileException, ReadTiffException, NotEnoughtMemoryException {
-        return nativeDecodePath(file.getAbsolutePath(), options);
+        long time = System.currentTimeMillis();
+        Bitmap mbp = nativeDecodePath(file.getAbsolutePath(), options);
+        Log.w("TIME", "elapsed ms: " + (System.currentTimeMillis() - time));
+        return mbp;
     }
 
     /**
@@ -99,7 +106,10 @@ public class TiffBitmapFactory {
      * @throws org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException when {@code path} not exist
      */
     public static Bitmap decodePath(String path) throws NoSuchFileException, ReadTiffException {
-        return nativeDecodePath(path, new Options());
+        long time = System.currentTimeMillis();
+        Bitmap mbp = nativeDecodePath(path, new Options());
+        Log.w("TIME", "elapsed ms: " + (System.currentTimeMillis() - time));
+        return mbp;
     }
 
     /**
@@ -116,8 +126,10 @@ public class TiffBitmapFactory {
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when {@link Options#inAvailableMemory} not enought to decode image
      */
     public static Bitmap decodePath(String path, Options options) throws NoSuchFileException, ReadTiffException, NotEnoughtMemoryException {
-        options.inPreferredConfig = ImageConfig.ARGB_8888;
-        return nativeDecodePath(path, options);
+        long time = System.currentTimeMillis();
+        Bitmap mbp = nativeDecodePath(path, options);
+        Log.w("TIME", "elapsed ms: " + (System.currentTimeMillis() - time));
+        return mbp;
     }
 
     private static native Bitmap nativeDecodePath(String path, Options options);
