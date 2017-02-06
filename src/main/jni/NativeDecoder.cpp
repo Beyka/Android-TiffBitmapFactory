@@ -141,17 +141,17 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
     int newBitmapWidth = 0;
     int newBitmapHeight = 0;
 
-    jint *raster;
+    jint *raster = NULL;
 
     int rowPerStrip = -1;
     TIFFGetField(image, TIFFTAG_ROWSPERSTRIP, &rowPerStrip);
 
     if (rowPerStrip == -1) {
         //Image is encoded with tiles or image incoded with one strip that is full image - in both cases decode with getSampledRasterFromImage
-        *raster = getSampledRasterFromImage(inSampleSize, &newBitmapWidth, &newBitmapHeight);
+        raster = getSampledRasterFromImage(inSampleSize, &newBitmapWidth, &newBitmapHeight);
     } else {
         //else - can decode strip by strip with getSampledRasterFromStrip
-        *raster = getSampledRasterFromStrip(inSampleSize,  &newBitmapWidth, &newBitmapHeight);
+        raster = getSampledRasterFromStrip(inSampleSize,  &newBitmapWidth, &newBitmapHeight);
     }
 
     // Convert ABGR to ARGB
