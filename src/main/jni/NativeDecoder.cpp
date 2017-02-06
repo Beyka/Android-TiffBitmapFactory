@@ -145,11 +145,15 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
 
     int rowPerStrip = -1;
     TIFFGetField(image, TIFFTAG_ROWSPERSTRIP, &rowPerStrip);
+    uint32 stripSize = TIFFStripSize (image);
+    uint32 stripMax = TIFFNumberOfStrips (image);
 
-    if (rowPerStrip == -1) {
+    if (rowPerStrip == -1 || rowPerStrip == origheight || stripMax == 1 || stripSize == origwidth * origheight) {
+        LOGI("decoding using image");
         //Image is encoded with tiles or image incoded with one strip that is full image - in both cases decode with getSampledRasterFromImage
         raster = getSampledRasterFromImage(inSampleSize, &newBitmapWidth, &newBitmapHeight);
     } else {
+        LOGI("decoding using strips");
         //else - can decode strip by strip with getSampledRasterFromStrip
         raster = getSampledRasterFromStrip(inSampleSize,  &newBitmapWidth, &newBitmapHeight);
     }
@@ -309,11 +313,10 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
     int isSecondRasterExist = 0;
     int ok = 1;
     for (int i = 0; i < origheight - rowPerStrip; i += rowPerStrip) {
-            LOGII("Strip ", i);
+            //LOGII("writedlines ", writedLines);
+            //LOGII("line counter ", globalLineCounter);
 
         uint32 rows_to_write = 0;
-            //uint32 lineAddrToCopyBottomLine = 0;
-
             //if second raster is exist - copy it to work raster end decode next strip
             if (isSecondRasterExist) {
                 _TIFFmemcpy(raster, rasterForBottomLine, origwidth * rowPerStrip * sizeof (uint32));
@@ -329,17 +332,17 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
                     else
                         rows_to_write = rowPerStrip;
 
-                    //lineAddrToCopyBottomLine = rows_to_write_2-1;
+                    if (origorientation <= 4) {
+                        for (int line = 0; line < rows_to_write / 2; line++) {
+                            unsigned int  *top_line, *bottom_line;
 
-                    for (int line = 0; line < rows_to_write / 2; line++) {
-                        unsigned int  *top_line, *bottom_line;
+                            top_line = rasterForBottomLine + origwidth * line;
+                            bottom_line = rasterForBottomLine + origwidth * (rows_to_write - line - 1);
 
-                        top_line = rasterForBottomLine + origwidth * line;
-                        bottom_line = rasterForBottomLine + origwidth * (rows_to_write - line - 1);
-
-                        _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * origwidth);
-                        _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * origwidth);
-                        _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * origwidth);
+                            _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * origwidth);
+                            _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * origwidth);
+                            _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * origwidth);
+                        }
                     }
                 } else {
                     isSecondRasterExist = 0;
@@ -354,15 +357,17 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
                  else
                     rows_to_write = rowPerStrip;
 
-                 for (int line = 0; line < rows_to_write / 2; line++) {
-                     unsigned int  *top_line, *bottom_line;
+                 if (origorientation <= 4) {
+                     for (int line = 0; line < rows_to_write / 2; line++) {
+                         unsigned int  *top_line, *bottom_line;
 
-                     top_line = raster + origwidth * line;
-                     bottom_line = raster + origwidth * (rows_to_write - line - 1);
+                         top_line = raster + origwidth * line;
+                         bottom_line = raster + origwidth * (rows_to_write - line - 1);
 
-                     _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * origwidth);
-                     _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * origwidth);
-                     _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * origwidth);
+                         _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * origwidth);
+                         _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * origwidth);
+                         _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * origwidth);
+                     }
                  }
 
                  //if next strip is exist - read it and invert lines
@@ -376,76 +381,21 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
                         rows_to_write = origheight - i - rowPerStrip;
                     else
                         rows_to_write = rowPerStrip;
+                    if (origorientation <= 4) {
+                        for (int line = 0; line < rows_to_write / 2; line++) {
+                            unsigned int  *top_line, *bottom_line;
 
-                    //lineAddrToCopyBottomLine = rows_to_write_2-1;
+                            top_line = rasterForBottomLine + origwidth * line;
+                            bottom_line = rasterForBottomLine + origwidth * (rows_to_write - line - 1);
 
-                    for (int line = 0; line < rows_to_write / 2; line++) {
-                        unsigned int  *top_line, *bottom_line;
-
-                        top_line = rasterForBottomLine + origwidth * line;
-                        bottom_line = rasterForBottomLine + origwidth * (rows_to_write - line - 1);
-
-                        _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * origwidth);
-                        _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * origwidth);
-                        _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * origwidth);
+                            _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * origwidth);
+                            _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * origwidth);
+                            _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * origwidth);
+                        }
                     }
                  }
 
             }
-            //ok = TIFFReadRGBAStrip(image, i, raster);
-            //if (!ok) break;
-
-            /*if (i + rowPerStrip < origheight) {
-                TIFFReadRGBAStrip(image, i+rowPerStrip, rasterForBottomLine);
-                isSecondRasterExist = 1;
-            }*/
-
-
-
-
-
-
-
-            //raster origin is bottom left. We need to change order of lines
-            /*int rows_to_write = 0;
-            if( i + rowPerStrip > origheight )
-               rows_to_write = origheight - i;
-            else
-               rows_to_write = rowPerStrip;
-
-            for (int line = 0; line < rows_to_write / 2; line++) {
-                unsigned int  *top_line, *bottom_line;
-
-                top_line = raster + origwidth * line;
-                bottom_line = raster + origwidth * (rows_to_write - line - 1);
-
-                _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * origwidth);
-                _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * origwidth);
-                _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * origwidth);
-            }
-*/
-            //second raster for getting bottom lines. origin is bottom left. We need to change order of lines
-            /*unsigned int lineAddrToCopyBottomLine = 0;
-            if (isSecondRasterExist) {
-                int rows_to_write_2 = 0;
-                if ( i + rowPerStrip * 2 > origheight )
-                    rows_to_write_2 = origheight - i - rowPerStrip;
-                else
-                    rows_to_write_2 = rowPerStrip;
-                lineAddrToCopyBottomLine = rows_to_write_2-1;
-                //LOGII("lineAddrToCopyBottomLine", lineAddrToCopyBottomLine);
-                for (int line = 0; line < rows_to_write_2 / 2; line++) {
-                                                unsigned int  *top_line, *bottom_line;
-
-                                                top_line = rasterForBottomLine + origwidth * line;
-                                                bottom_line = rasterForBottomLine + origwidth * (rows_to_write_2 - line - 1);
-
-                                                _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * origwidth);
-                                                _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * origwidth);
-                                                _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * origwidth);
-                                            }
-
-                }*/
 
             if (inSampleSize == 1) {
                 int byteToCopy = 0;
@@ -991,69 +941,7 @@ jbyte * NativeDecoder::createBitmapAlpha8(jint *raster, int bitmapwidth, int bit
             raster = NULL;
         }
 
-	if (origorientation > 4) {
-        unsigned int size = bitmapheight * bitmapwidth - 1;
-        jbyte t;
-        unsigned long long next;
-        unsigned long long cycleBegin;
-        bool *barray = (bool *) malloc(sizeof(bool) * pixelsBufferSize);
-	for (int x = 0; x < size; x++) { barray[x] = false; }
-        barray[0] = barray[size] = true;
-        unsigned long long k = 1;
-
-        switch (origorientation) {
-            case ORIENTATION_LEFTTOP:
-            case ORIENTATION_RIGHTBOT:
-                while (k < size) {
-                    cycleBegin = k;
-                    t = pixels[k];
-                    do {
-                        next = (k * bitmapheight) % size;
-                        jbyte buf = pixels[next];
-                        pixels[next] = t;
-                        t = buf;
-                        barray[k] = true;
-                        k = next;
-                    } while (k != cycleBegin);
-                    for (k = 1; k < size && barray[k]; k++);
-                }
-                break;
-            case ORIENTATION_LEFTBOT:
-            case ORIENTATION_RIGHTTOP:
-                while (k < size) {
-                    cycleBegin = k;
-                    t = pixels[k];
-                    do {
-                        next = (k * bitmapheight) % size;
-                        jbyte buf = pixels[next];
-                        pixels[next] = t;
-                        t = buf;
-                        barray[k] = true;
-                        k = next;
-                    } while (k != cycleBegin);
-                    for (k = 1; k < size && barray[k]; k++);
-                }
-                //flip horizontally
-                for (int j = 0, j1 = bitmapwidth - 1; j < bitmapwidth / 2; j++, j1--) {
-                    for (int i = 0; i < bitmapheight; i++) {
-                        jbyte tmp = pixels[j * bitmapheight + i];
-                        pixels[j * bitmapheight + i] = pixels[j1 * bitmapheight + i];
-                        pixels[j1 * bitmapheight + i] = tmp;
-                    }
-                }
-                //flip vertically
-                for (int i = 0, i1 = bitmapheight - 1; i < bitmapheight / 2; i++, i1--) {
-                    for (int j = 0; j < bitmapwidth; j++) {
-                        jbyte tmp = pixels[j * bitmapheight + i];
-                        pixels[j * bitmapheight + i] = pixels[j * bitmapheight + i1];
-                        pixels[j * bitmapheight + i1] = tmp;
-                    }
-                }
-                break;
-        }
-        free(barray);
-    }
-    return pixels;
+	return pixels;
 }
 
 unsigned short * NativeDecoder::createBitmapRGB565(jint *buffer, int bitmapwidth, int bitmapheight)
@@ -1068,7 +956,7 @@ unsigned short * NativeDecoder::createBitmapRGB565(jint *buffer, int bitmapwidth
 
     for (int i = 0; i < bitmapwidth; i++) {
 		for (int j = 0; j < bitmapheight; j++) {
-			unsigned int crPix = buffer[j * bitmapwidth + i];
+			jint crPix = buffer[j * bitmapwidth + i];
 			int blue = colorMask & crPix >> 16;
             int green = colorMask & crPix >> 8;
             int red = colorMask & crPix;
@@ -1077,7 +965,7 @@ unsigned short * NativeDecoder::createBitmapRGB565(jint *buffer, int bitmapwidth
             unsigned char G = (green >> 2);
             unsigned char R = (red >> 3);
 
-            unsigned short curPix = (R << 11) | (G << 5) | B;
+            jint curPix = (R << 11) | (G << 5) | B;
 
 			pixels[j * bitmapwidth + i] = curPix;
 		}
@@ -1088,70 +976,6 @@ unsigned short * NativeDecoder::createBitmapRGB565(jint *buffer, int bitmapwidth
         _TIFFfree(buffer);
         buffer = NULL;
     }
-
-	if (origorientation > 4) {
-        unsigned int size = bitmapheight * bitmapwidth - 1;
-        unsigned short t;
-        unsigned long long next;
-        unsigned long long cycleBegin;
-        bool *barray = (bool *) malloc(sizeof(bool) * pixelsBufferSize);
-	for (int x = 0; x < size; x++) { barray[x] = false; }
-        barray[0] = barray[size] = true;
-        unsigned long long k = 1;
-
-        switch (origorientation) {
-            case ORIENTATION_LEFTTOP:
-            case ORIENTATION_RIGHTBOT:
-                while (k < size) {
-                    cycleBegin = k;
-                    t = pixels[k];
-                    do {
-                        next = (k * bitmapheight) % size;
-                        unsigned short buf = pixels[next];
-                        pixels[next] = t;
-                        t = buf;
-                        barray[k] = true;
-                        k = next;
-                    } while (k != cycleBegin);
-                    for (k = 1; k < size && barray[k]; k++);
-                }
-                break;
-            case ORIENTATION_LEFTBOT:
-            case ORIENTATION_RIGHTTOP:
-                while (k < size) {
-                    cycleBegin = k;
-                    t = pixels[k];
-                    do {
-                        next = (k * bitmapheight) % size;
-                        unsigned short buf = pixels[next];
-                        pixels[next] = t;
-                        t = buf;
-                        barray[k] = true;
-                        k = next;
-                    } while (k != cycleBegin);
-                    for (k = 1; k < size && barray[k]; k++);
-                }
-                //flip horizontally
-                for (int j = 0, j1 = bitmapwidth - 1; j < bitmapwidth / 2; j++, j1--) {
-                    for (int i = 0; i < bitmapheight; i++) {
-                        unsigned short tmp = pixels[j * bitmapheight + i];
-                        pixels[j * bitmapheight + i] = pixels[j1 * bitmapheight + i];
-                        pixels[j1 * bitmapheight + i] = tmp;
-                    }
-                }
-                //flip vertically
-                for (int i = 0, i1 = bitmapheight - 1; i < bitmapheight / 2; i++, i1--) {
-                    for (int j = 0; j < bitmapwidth; j++) {
-                        unsigned short tmp = pixels[j * bitmapheight + i];
-                        pixels[j * bitmapheight + i] = pixels[j * bitmapheight + i1];
-                        pixels[j * bitmapheight + i1] = tmp;
-                    }
-                }
-                break;
-        }
-        free(barray);
-    }
-
     return pixels;
 }
 
