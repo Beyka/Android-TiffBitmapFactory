@@ -257,6 +257,7 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
         LOGE("Can\'t allocate memory for temp buffer");
         return NULL;
     }
+    allocatedTotal += sizeof(jint) * pixelsBufferSize;
 
     uint32 stripSize = TIFFStripSize (image);
     uint32 stripMax = TIFFNumberOfStrips (image);
@@ -291,15 +292,18 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
 
     unsigned int *matrixTopLine = (uint32 *) malloc(sizeof(jint) * origwidth);
     unsigned int *matrixBottomLine = (uint32 *) malloc(sizeof(jint) * origwidth);
+    allocatedTotal += sizeof(jint) * origwidth;
+    allocatedTotal += sizeof(jint) * origwidth;
 
 
     int ok = 1;
     for (int i = 0; i < origheight; i += rowPerStrip) {
+            LOGII("Strip ", i);
             ok = TIFFReadRGBAStrip(image, i, raster);
             if (!ok) break;
             int isSecondRasterExist = 0;
-            if (i < origheight - rowPerStrip) {
-                TIFFReadRGBAStrip(image, i, rasterForBottomLine);
+            if (i + rowPerStrip < origheight) {
+                TIFFReadRGBAStrip(image, i+rowPerStrip, rasterForBottomLine);
                 isSecondRasterExist = 1;
             }
 
@@ -309,13 +313,6 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
                rows_to_write = origheight - i;
             else
                rows_to_write = rowPerStrip;
-
-            //second raster for getting bottom lines. origin is bottom left. We need to change order of lines
-            int rows_to_write_2 = 0;
-            if ( i + rowPerStrip * 2 > origheight )
-                rows_to_write_2 = origheight - i;
-            else
-                rows_to_write_2 = rowPerStrip;
 
             for (int line = 0; line < rows_to_write / 2; line++) {
                 unsigned int  *top_line, *bottom_line;
@@ -327,18 +324,29 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
                 _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * origwidth);
                 _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * origwidth);
             }
+
+            //second raster for getting bottom lines. origin is bottom left. We need to change order of lines
+            unsigned int lineAddrToCopyBottomLine = 0;
             if (isSecondRasterExist) {
+                int rows_to_write_2 = 0;
+                if ( i + rowPerStrip * 2 > origheight )
+                    rows_to_write_2 = origheight - i - rowPerStrip;
+                else
+                    rows_to_write_2 = rowPerStrip;
+                lineAddrToCopyBottomLine = rows_to_write_2-1;
+                //LOGII("lineAddrToCopyBottomLine", lineAddrToCopyBottomLine);
                 for (int line = 0; line < rows_to_write_2 / 2; line++) {
-                    unsigned int  *top_line, *bottom_line;
+                                                unsigned int  *top_line, *bottom_line;
 
-                    top_line = rasterForBottomLine + origwidth * line;
-                    bottom_line = rasterForBottomLine + origwidth * (rows_to_write_2 - line - 1);
+                                                top_line = rasterForBottomLine + origwidth * line;
+                                                bottom_line = rasterForBottomLine + origwidth * (rows_to_write_2 - line - 1);
 
-                    _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * origwidth);
-                    _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * origwidth);
-                    _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * origwidth);
+                                                _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * origwidth);
+                                                _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * origwidth);
+                                                _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * origwidth);
+                                            }
+
                 }
-            }
 
             if (inSampleSize == 1) {
                 int byteToCopy = 0;
@@ -351,14 +359,20 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
                 memcpy(&pixels[position], raster, byteToCopy);
             } else {
                 if (isSecondRasterExist) {
-                    _TIFFmemcpy(matrixBottomLine, rasterForBottomLine + (rowPerStrip - 1) * origwidth, sizeof(unsigned int) * origwidth);
+                    _TIFFmemcpy(matrixBottomLine, rasterForBottomLine + lineAddrToCopyBottomLine * origwidth, sizeof(unsigned int) * origwidth);
                 }
 
                  int workWritedLines = writedLines;
-                 for (int resBmpY = workWritedLines, workY = 0; resBmpY < *bitmapheight, workY < rowPerStrip; /*wj++,*/ workY ++/*= inSampleSize*/) {
-
+                 for (int resBmpY = workWritedLines, workY = 0; resBmpY < *bitmapheight && workY < rowPerStrip; /*wj++,*/ workY ++/*= inSampleSize*/) {
+                    /*if (resBmpY >= *bitmapheight) {
+                        continue;
+                    }*/
+                        //LOGII("resBmpY", resBmpY);
+                        //LOGII("workY", workY);
                     // if total line of source image is equal to inSampleSize*N then process this line
                     if (globalLineCounter % inSampleSize == 0) {
+                        //LOGII("resBmpY", resBmpY);
+                        //LOGII("workY", workY);
                         for (int resBmpX = 0, workX = 0; resBmpX < *bitmapwidth; resBmpX++, workX += inSampleSize) {
 
                             //Apply filter to pixel
@@ -512,6 +526,10 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
 
                             crPix = (alpha << 24) | (red << 16) | (green << 8) | (blue);
 
+                            /*if (resBmpY >= 2500) {
+                                unsigned int t1 = resBmpY * *bitmapwidth + resBmpX;
+                                LOGII("write pixel", t1);
+                            }*/
                             pixels[resBmpY * *bitmapwidth + resBmpX] = crPix;
                         }
                         //if line was processed - increment counter of lines that was writed to result image
@@ -519,7 +537,7 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
                         //and incremetncounter of current Y for writing
                         resBmpY++;
                     }
-                    if (workY == rowPerStrip - 1) {
+                    if (workY == rowPerStrip - 1 && i + rowPerStrip < origheight) {
                         _TIFFmemcpy(matrixTopLine, raster + workY * origwidth, sizeof(unsigned int) * origwidth);
                     }
                     //incremetn global source image line counter
@@ -616,11 +634,15 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
                 }
                 free(barray);
             }
+            int mbUsed = allocatedTotal/1024/1024;
+            LOGII("Max memmory use ", mbUsed);
             return pixels;
 }
 
 jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwidth, int *bitmapheight)
 {
+    unsigned long allocatedTotal = 0;
+
     int origBufferSize = origwidth * origheight * sizeof(unsigned int);
     unsigned long long estimatedMemory = origBufferSize + 2 * (origBufferSize / (inSampleSize * inSampleSize));
     estimatedMemory = 11 * estimatedMemory / 10; // 10% extra.
@@ -635,6 +657,7 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
         LOGE("Can\'t allocate memory for origBuffer");
         return NULL;
     }
+    allocatedTotal += origBufferSize;
 
 	if (0 ==
         TIFFReadRGBAImageOriented(image, origwidth, origheight, origBuffer, ORIENTATION_TOPLEFT, 0)) {
@@ -660,6 +683,7 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
             return NULL;
         }
         else {
+            allocatedTotal += sizeof(jint) * pixelsBufferSize;
             for (int i = 0, i1 = 0; i < *bitmapwidth; i++, i1 += inSampleSize) {
                 for (int j = 0, j1 = 0; j < *bitmapheight; j++, j1 += inSampleSize) {
 
@@ -839,7 +863,8 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
         }
         free(barray);
     }
-
+    int mbUsed = allocatedTotal/1024/1024;
+    LOGII("Max memmory use ", mbUsed);
     return pixels;
 }
 
