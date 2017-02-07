@@ -159,8 +159,8 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
         raster = getSampledRasterFromStrip(inSampleSize,  &newBitmapWidth, &newBitmapHeight);
     }
     */
-    //raster = getSampledRasterFromTile(inSampleSize, &newBitmapWidth, &newBitmapHeight);
-    raster = raster = getSampledRasterFromImage(inSampleSize, &newBitmapWidth, &newBitmapHeight);
+    raster = getSampledRasterFromTile(inSampleSize, &newBitmapWidth, &newBitmapHeight);
+    //raster = raster = getSampledRasterFromImage(inSampleSize, &newBitmapWidth, &newBitmapHeight);
 
 
     // Convert ABGR to ARGB
@@ -743,10 +743,27 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                 }
 
                 //if current column + tile width is less than origin width - we have right tile - copy it to current tile and read next tile to rasterTileRight buffer
-                if (column + tileWidth < origwidth) {
+                if (column + tileWidth < origwidth && rightTileExists) {
                     _TIFFmemcpy(rasterTile, rasterTileRight, tileWidth * tileHeight * sizeof(uint32));
                     TIFFReadRGBATile(image, column + tileWidth, row, rasterTileRight);
                     rightTileExists = 1;
+                } else if (column + tileWidth < origwidth) {
+                    //have right tile but this is first tile in row, so need to read raster and right raster
+                    TIFFReadRGBATile(image, column + tileWidth, row, rasterTileRight);
+                    TIFFReadRGBATile(image, column, row, rasterTile);
+                    rightTileExists = 1;
+
+                    //in that case we also need to invert lines in rasterTile
+                    for (int line = 0; line < tileHeight / 2; line++) {
+                        unsigned int  *top_line, *bottom_line;
+
+                        top_line = rasterTile + tileWidth * line;
+                        bottom_line = rasterTile + tileWidth * (tileHeight - line - 1);
+
+                        _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * tileWidth);
+                        _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * tileWidth);
+                        _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * tileWidth);
+                    }
                 } else {
                     //otherwise we haven't right tile buffer, so we should read tile to current buffer
                     TIFFReadRGBATile(image, column, row, rasterTile);
@@ -816,11 +833,200 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                             tileStartDataY = origTileY;
                                         }
 
+//Apply filter to pixel
+                                        /*jint checkPixRight = 0;
+                                        if (origTileX + 1 < tileWidth) {
+                                            checkPixRight = origTileY * tileWidth + origTileX;
+                                        } else if (rightTileExists) {
+                                            checkPixRight = rasterTileRight
+                                        }
 
-                                        //todo insert reading of pixels
+                                        jint checkPixLeft = 0;
+                                        jint checkPixRightTop = 0;
+                                        jint checkPixRightBot = 0;
+                                        jint checkPixLeftTop = 0;
+                                        jint checkPixLeftBot = 0;*/
+
+                                        jint crPix = rasterTile[srcPosition];//origBuffer[j1 * origwidth + i1];
+                                        int sum = 1;
+
+                                        int alpha = colorMask & crPix >> 24;
+                                        int red = colorMask & crPix >> 16;
+                                        int green = colorMask & crPix >> 8;
+                                        int blue = colorMask & crPix;
+
+                                        //using kernel 3x3
+
+                                        //topleft
+                                        if (origTileX - 1 >= 0 && origTileY - 1 >= 0) {
+                                            crPix = rasterTile[(origTileY - 1) * tileWidth + origTileX - 1];
+                                            if (crPix) {
+                                                red += colorMask & crPix >> 16;
+                                                green += colorMask & crPix >> 8;
+                                                blue += colorMask & crPix;
+                                                alpha += colorMask & crPix >> 24;
+                                                sum++;
+                                            }
+                                        } else if (origTileY - 1 >= 0 && leftTileExists) {
+                                            crPix = rasterTileLeft[(origTileY - 1) * tileWidth + tileWidth - 1];
+                                            if (crPix) {
+                                                red += colorMask & crPix >> 16;
+                                                green += colorMask & crPix >> 8;
+                                                blue += colorMask & crPix;
+                                                alpha += colorMask & crPix >> 24;
+                                                sum++;
+                                            }
+                                        }
+
+                                        //top
+                                        if (origTileY - 1 >= 0) {
+                                            crPix = rasterTile[(origTileY - 1) * tileWidth + origTileX];
+                                            if (crPix) {
+                                                red += colorMask & crPix >> 16;
+                                                green += colorMask & crPix >> 8;
+                                                blue += colorMask & crPix;
+                                                alpha += colorMask & crPix >> 24;
+                                                sum++;
+                                            }
+                                        }
+
+                                        // topright
+                                        if (origTileX + 1 < tileWidth && origTileY - 1 >= 0) {
+                                            crPix = rasterTile[(origTileY - 1) * tileWidth + origTileX + 1];
+                                            if (crPix) {
+                                                red += colorMask & crPix >> 16;
+                                                green += colorMask & crPix >> 8;
+                                                blue += colorMask & crPix;
+                                                alpha += colorMask & crPix >> 24;
+                                                sum++;
+                                            }
+                                        } else if (origTileY - 1 >= 0 && rightTileExists) {
+                                            crPix = rasterTileRight[(origTileY - 1) * tileWidth];
+                                            if (crPix) {
+                                                red += colorMask & crPix >> 16;
+                                                green += colorMask & crPix >> 8;
+                                                blue += colorMask & crPix;
+                                                alpha += colorMask & crPix >> 24;
+                                                sum++;
+                                            }
+                                        }
+
+                                        //right
+                                        if (origTileX + 1 < tileWidth) {
+                                            crPix = rasterTile[origTileY * tileWidth + origTileX + 1];
+                                            if (crPix) {
+                                                red += colorMask & crPix >> 16;
+                                                green += colorMask & crPix >> 8;
+                                                blue += colorMask & crPix;
+                                                alpha += colorMask & crPix >> 24;
+                                                sum++;
+                                            }
+                                        } else if (rightTileExists) {
+                                            crPix = rasterTileRight[(origTileY - 1) * tileWidth];
+                                            if (crPix) {
+                                                red += colorMask & crPix >> 16;
+                                                green += colorMask & crPix >> 8;
+                                                blue += colorMask & crPix;
+                                                alpha += colorMask & crPix >> 24;
+                                                sum++;
+                                            }
+                                        }
+
+                                        //bottomright
+                                        if (origTileX + 1 < tileWidth && origTileY + 1 < tileHeight) {
+                                            crPix = rasterTile[(origTileY + 1) * tileWidth + origTileX + 1];
+                                            if (crPix) {
+                                                red += colorMask & crPix >> 16;
+                                                green += colorMask & crPix >> 8;
+                                                blue += colorMask & crPix;
+                                                alpha += colorMask & crPix >> 24;
+                                                sum++;
+                                            }
+                                        } else if (origTileY + 1 < tileHeight && rightTileExists) {
+                                            crPix = rasterTileRight[(origTileY + 1) * tileWidth];
+                                            if (crPix) {
+                                                red += colorMask & crPix >> 16;
+                                                green += colorMask & crPix >> 8;
+                                                blue += colorMask & crPix;
+                                                alpha += colorMask & crPix >> 24;
+                                                sum++;
+                                            }
+                                        }
+
+                                        //bottom
+                                        if (origTileY + 1 < tileHeight) {
+                                            crPix = rasterTile[(origTileY + 1) * tileWidth + origTileX + 1];
+                                            if (crPix) {
+                                                red += colorMask & crPix >> 16;
+                                                green += colorMask & crPix >> 8;
+                                                blue += colorMask & crPix;
+                                                alpha += colorMask & crPix >> 24;
+                                                sum++;
+                                            }
+                                        }
+
+                                        //bottomleft
+                                        if (origTileX - 1 >= 0 && origTileY + 1 < tileHeight) {
+                                            crPix = rasterTile[(origTileY + 1) * tileWidth + origTileX - 1];
+                                            if (crPix) {
+                                                red += colorMask & crPix >> 16;
+                                                green += colorMask & crPix >> 8;
+                                                blue += colorMask & crPix;
+                                                alpha += colorMask & crPix >> 24;
+                                                sum++;
+                                            }
+                                        } else if (origTileY + 1 < tileHeight && leftTileExists) {
+                                            crPix = rasterTileLeft[(origTileY + 1) * tileWidth + tileWidth - 1];
+                                            if (crPix) {
+                                                red += colorMask & crPix >> 16;
+                                                green += colorMask & crPix >> 8;
+                                                blue += colorMask & crPix;
+                                                alpha += colorMask & crPix >> 24;
+                                                sum++;
+                                            }
+                                        }
+
+                                        //left
+                                        if (origTileX - 1 >= 0) {
+                                            crPix = rasterTile[origTileY * tileWidth + origTileX - 1];
+                                            if (crPix) {
+                                                red += colorMask & crPix >> 16;
+                                                green += colorMask & crPix >> 8;
+                                                blue += colorMask & crPix;
+                                                alpha += colorMask & crPix >> 24;
+                                                sum++;
+                                            }
+                                        } else if (leftTileExists) {
+                                            crPix = rasterTileLeft[origTileY * tileWidth + tileWidth - 1];
+                                            if (crPix) {
+                                                red += colorMask & crPix >> 16;
+                                                green += colorMask & crPix >> 8;
+                                                blue += colorMask & crPix;
+                                                alpha += colorMask & crPix >> 24;
+                                                sum++;
+                                            }
+                                        }
+
+                                        red /= sum;
+                                        if (red > 255) red = 255;
+                                        if (red < 0) red = 0;
+
+                                        green /= sum;
+                                        if (green > 255) green = 255;
+                                        if (green < 0) green = 0;
+
+                                        blue /= sum;
+                                        if (blue > 255) blue = 255;
+                                        if (blue < 0) blue = 0;
+
+                                        alpha /= sum;///= sum;
+                                        if (alpha > 255) alpha = 255;
+                                        if (alpha < 0) alpha = 0;
+
+                                        crPix = (alpha << 24) | (red << 16) | (green << 8) | (blue);
 
                                         int position = pixY * *bitmapwidth + pixX;
-                                        pixels[position] = rasterTile[srcPosition];
+                                        pixels[position] = crPix;
                                     }
 
                                     if (tileStartDataX != -1) {
