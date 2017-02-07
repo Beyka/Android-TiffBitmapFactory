@@ -11,6 +11,7 @@
 
 NativeDecoder::NativeDecoder(JNIEnv *e, jclass c, jstring path, jobject opts)
 {
+    memoryToUse = 8000*8000*4; // use 244Mb restriction for decoding full image
     env = e;
     clazz = c;
     optionsObject = opts;
@@ -159,8 +160,8 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
         raster = getSampledRasterFromStrip(inSampleSize,  &newBitmapWidth, &newBitmapHeight);
     }
     */
-    raster = getSampledRasterFromTile(inSampleSize, &newBitmapWidth, &newBitmapHeight);
-    //raster = raster = getSampledRasterFromImage(inSampleSize, &newBitmapWidth, &newBitmapHeight);
+    //raster = getSampledRasterFromTile(inSampleSize, &newBitmapWidth, &newBitmapHeight);
+    raster = getSampledRasterFromImage(inSampleSize, &newBitmapWidth, &newBitmapHeight);
 
 
     // Convert ABGR to ARGB
@@ -685,7 +686,7 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
             return pixels;
 }
 
-void rotateTileLinesVertical(uint32 tileHeight, uint32 tileWidth, uint32* whatRotate, uint32 *bufferLine) {
+void NativeDecoder::rotateTileLinesVertical(uint32 tileHeight, uint32 tileWidth, uint32* whatRotate, uint32 *bufferLine) {
     for (int line = 0; line < tileHeight / 2; line++) {
         unsigned int  *top_line, *bottom_line;
         top_line = whatRotate + tileWidth * line;
@@ -696,7 +697,7 @@ void rotateTileLinesVertical(uint32 tileHeight, uint32 tileWidth, uint32* whatRo
     }
 }
 
-void rotateTileLinesHorizontal(uint32 tileHeight, uint32 tileWidth, uint32* whatRotate, uint32 *bufferLine) {
+void NativeDecoder::rotateTileLinesHorizontal(uint32 tileHeight, uint32 tileWidth, uint32* whatRotate, uint32 *bufferLine) {
     uint32 buf;
     for (int y = 0; y < tileHeight; y++) {
         for (int x = 0; x < tileWidth / 2; x++) {

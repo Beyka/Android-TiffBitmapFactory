@@ -34,6 +34,7 @@ class NativeDecoder
         static int const RGB_565 = 4;
         static int const ALPHA_8 = 8;
         //fields
+        unsigned long memoryToUse;
         JNIEnv *env;
         jclass clazz;
         jobject optionsObject;
@@ -52,9 +53,12 @@ class NativeDecoder
         jobject createBitmap(int, int);
         jint *getSampledRasterFromImage(int, int *, int *);
         jint *getSampledRasterFromStrip(int, int *, int *);
+        void rotateTileLinesVertical(uint32, uint32, uint32 *, uint32 *);
+        void rotateTileLinesHorizontal(uint32, uint32, uint32 *, uint32 *);
         jint *getSampledRasterFromTile(int, int *, int *);
         jbyte * createBitmapAlpha8(jint *, int, int);
         unsigned short *createBitmapRGB565(jint *, int, int);
+
         /*jbyte * createBitmapAlpha8(JNIEnv *, jint *, int, int);
         unsigned short *createBitmapRGB565(JNIEnv *, jint *, int, int);
         jobject createBlankBitmap(JNIEnv *, int width, int height);
