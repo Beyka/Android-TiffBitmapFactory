@@ -685,6 +685,28 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
             return pixels;
 }
 
+void rotateTileLinesVertical(uint32 tileHeight, uint32 tileWidth, uint32* whatRotate, uint32 *bufferLine) {
+    for (int line = 0; line < tileHeight / 2; line++) {
+        unsigned int  *top_line, *bottom_line;
+        top_line = whatRotate + tileWidth * line;
+        bottom_line = whatRotate + tileWidth * (tileHeight - line -1);
+        _TIFFmemcpy(bufferLine, top_line, sizeof(unsigned int) * tileWidth);
+        _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * tileWidth);
+        _TIFFmemcpy(bottom_line, bufferLine, sizeof(unsigned int) * tileWidth);
+    }
+}
+
+void rotateTileLinesHorizontal(uint32 tileHeight, uint32 tileWidth, uint32* whatRotate, uint32 *bufferLine) {
+    uint32 buf;
+    for (int y = 0; y < tileHeight; y++) {
+        for (int x = 0; x < tileWidth / 2; x++) {
+            buf = whatRotate[y * tileWidth + x];
+            whatRotate[y * tileWidth + x] = whatRotate[y * tileWidth + tileWidth - x - 1];
+            whatRotate[y * tileWidth + tileWidth - x - 1] = buf;
+        }
+    }
+}
+
 jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidth, int *bitmapheight) {
 
         unsigned long allocatedTotal = 0;
@@ -713,13 +735,15 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
         TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileHeight);
         LOGII("Tile width", tileWidth);
         LOGII("Tile height", tileHeight);
+        //main worker tile
         uint32 *rasterTile = (uint32 *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32));
         allocatedTotal += tileWidth * tileHeight * sizeof(uint32);
+        //left tile
         uint32 *rasterTileLeft = (uint32 *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32));
         allocatedTotal += tileWidth * tileHeight * sizeof(uint32);
+        //right tile
         uint32 *rasterTileRight = (uint32 *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32));
         allocatedTotal += tileWidth * tileHeight * sizeof(uint32);
-
 
         uint32 *work_line_buf = (uint32*)_TIFFmalloc(tileWidth * sizeof (uint32));
         allocatedTotal += tileWidth * sizeof(uint32);
@@ -730,7 +754,6 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
         uint32 globalProcessedY = 0;
 
         for (row = 0; row < origheight; row += tileHeight) {
-        LOGII("row", row);
             short leftTileExists = 0;
             short rightTileExists = 0;
             for (column = 0; column < origwidth; column += tileWidth) {
@@ -754,51 +777,99 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                     rightTileExists = 1;
 
                     //in that case we also need to invert lines in rasterTile
-                    for (int line = 0; line < tileHeight / 2; line++) {
-                        unsigned int  *top_line, *bottom_line;
-
-                        top_line = rasterTile + tileWidth * line;
-                        bottom_line = rasterTile + tileWidth * (tileHeight - line - 1);
-
-                        _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * tileWidth);
-                        _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * tileWidth);
-                        _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * tileWidth);
+                    switch(origorientation) {
+                        case 1:
+                        case 5:
+                            rotateTileLinesVertical(tileHeight, tileWidth, rasterTile, work_line_buf);
+                            break;
+                        case 2:
+                        case 6:
+                            rotateTileLinesVertical(tileHeight, tileWidth, rasterTile, work_line_buf);
+                            rotateTileLinesHorizontal(tileHeight, tileWidth, rasterTile, work_line_buf);
+                            break;
+                        case 3:
+                        case 7:
+                            rotateTileLinesHorizontal(tileHeight, tileWidth, rasterTile, work_line_buf);
+                            break;
                     }
+
+                    /*if (origorientation <= 4) {
+                        for (int line = 0; line < tileHeight / 2; line++) {
+                            unsigned int  *top_line, *bottom_line;
+
+                            top_line = rasterTile + tileWidth * line;
+                            bottom_line = rasterTile + tileWidth * (tileHeight - line - 1);
+
+                            _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * tileWidth);
+                            _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * tileWidth);
+                            _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * tileWidth);
+                        }
+                    }*/
                 } else {
                     //otherwise we haven't right tile buffer, so we should read tile to current buffer
                     TIFFReadRGBATile(image, column, row, rasterTile);
                     rightTileExists = 0;
                 }
 
-
-                //TIFFReadRGBATile(image, column, row, rasterTile);
-                LOGII("column", column);
-
                 //if we have right tile - current tile already rotated and we need to rotate only right tile
                 if (rightTileExists) {
-                    for (int line = 0; line < tileHeight / 2; line++) {
-                        unsigned int  *top_line, *bottom_line;
+                    switch(origorientation) {
+                        case 1:
+                        case 5:
+                            rotateTileLinesVertical(tileHeight, tileWidth, rasterTileRight, work_line_buf);
+                            break;
+                        case 2:
+                        case 6:
+                            rotateTileLinesVertical(tileHeight, tileWidth, rasterTileRight, work_line_buf);
+                            rotateTileLinesHorizontal(tileHeight, tileWidth, rasterTileRight, work_line_buf);
+                            break;
+                        case 3:
+                        case 7:
+                            rotateTileLinesHorizontal(tileHeight, tileWidth, rasterTileRight, work_line_buf);
+                            break;
+                                    }
+                    /*if (origorientation <= 4) {
+                        for (int line = 0; line < tileHeight / 2; line++) {
+                            unsigned int  *top_line, *bottom_line;
 
-                        top_line = rasterTileRight + tileWidth * line;
-                        bottom_line = rasterTileRight + tileWidth * (tileHeight - line - 1);
+                            top_line = rasterTileRight + tileWidth * line;
+                            bottom_line = rasterTileRight + tileWidth * (tileHeight - line - 1);
 
-                        _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * tileWidth);
-                        _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * tileWidth);
-                        _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * tileWidth);
-                    }
+                            _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * tileWidth);
+                            _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * tileWidth);
+                            _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * tileWidth);
+                        }
+                    }*/
                 } else {
                     //otherwise - current tile not rotated so rotate it
                     //tile orig is on bottom left - should change lines
-                    for (int line = 0; line < tileHeight / 2; line++) {
-                        unsigned int  *top_line, *bottom_line;
+                    switch(origorientation) {
+                        case 1:
+                        case 5:
+                            rotateTileLinesVertical(tileHeight, tileWidth, rasterTile, work_line_buf);
+                            break;
+                        case 2:
+                        case 6:
+                            rotateTileLinesVertical(tileHeight, tileWidth, rasterTile, work_line_buf);
+                            rotateTileLinesHorizontal(tileHeight, tileWidth, rasterTile, work_line_buf);
+                            break;
+                        case 3:
+                        case 7:
+                            rotateTileLinesHorizontal(tileHeight, tileWidth, rasterTile, work_line_buf);
+                            break;
+                                        }
+                    /*if (origorientation <= 4) {
+                        for (int line = 0; line < tileHeight / 2; line++) {
+                            unsigned int  *top_line, *bottom_line;
 
-                        top_line = rasterTile + tileWidth * line;
-                        bottom_line = rasterTile + tileWidth * (tileHeight - line - 1);
+                            top_line = rasterTile + tileWidth * line;
+                            bottom_line = rasterTile + tileWidth * (tileHeight - line - 1);
 
-                        _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * tileWidth);
-                        _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * tileWidth);
-                        _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * tileWidth);
-                    }
+                            _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * tileWidth);
+                            _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * tileWidth);
+                            _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * tileWidth);
+                        }
+                    }*/
                 }
 
                 if (inSampleSize > 1 )
@@ -808,7 +879,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                     int tileStartDataY = -1;
 
                     for (int origTileY = 0, pixY = row/inSampleSize; origTileY < tileHeight && pixY < *bitmapheight; origTileY++) {
-                        if (tileStartDataY != -1 && /*(origTileY - tileStartDataY)*/globalProcessedY % inSampleSize != 0) {
+                        if (tileStartDataY != -1 && globalProcessedY % inSampleSize != 0) {
                             if (tileStartDataY != -1) {
                                 globalProcessedY++;
                             }
@@ -816,7 +887,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                         else
                         {
                             for (int origTileX = 0, pixX = column/inSampleSize; origTileX < tileWidth && pixX < *bitmapwidth; origTileX++) {
-                                if (tileStartDataX != -1 && /*(origTileX - tileStartDataX)*/globalProcessedX % inSampleSize != 0)
+                                if (tileStartDataX != -1 && globalProcessedX % inSampleSize != 0)
                                 {
                                     if (tileStartDataX != -1) {
                                         globalProcessedX++;
@@ -833,20 +904,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                             tileStartDataY = origTileY;
                                         }
 
-//Apply filter to pixel
-                                        /*jint checkPixRight = 0;
-                                        if (origTileX + 1 < tileWidth) {
-                                            checkPixRight = origTileY * tileWidth + origTileX;
-                                        } else if (rightTileExists) {
-                                            checkPixRight = rasterTileRight
-                                        }
-
-                                        jint checkPixLeft = 0;
-                                        jint checkPixRightTop = 0;
-                                        jint checkPixRightBot = 0;
-                                        jint checkPixLeftTop = 0;
-                                        jint checkPixLeftBot = 0;*/
-
+                                        //Apply filter to pixel
                                         jint crPix = rasterTile[srcPosition];//origBuffer[j1 * origwidth + i1];
                                         int sum = 1;
 
@@ -860,7 +918,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                         //topleft
                                         if (origTileX - 1 >= 0 && origTileY - 1 >= 0) {
                                             crPix = rasterTile[(origTileY - 1) * tileWidth + origTileX - 1];
-                                            if (crPix) {
+                                            if (crPix != 0) {
                                                 red += colorMask & crPix >> 16;
                                                 green += colorMask & crPix >> 8;
                                                 blue += colorMask & crPix;
@@ -869,7 +927,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                             }
                                         } else if (origTileY - 1 >= 0 && leftTileExists) {
                                             crPix = rasterTileLeft[(origTileY - 1) * tileWidth + tileWidth - 1];
-                                            if (crPix) {
+                                            if (crPix != 0) {
                                                 red += colorMask & crPix >> 16;
                                                 green += colorMask & crPix >> 8;
                                                 blue += colorMask & crPix;
@@ -881,7 +939,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                         //top
                                         if (origTileY - 1 >= 0) {
                                             crPix = rasterTile[(origTileY - 1) * tileWidth + origTileX];
-                                            if (crPix) {
+                                            if (crPix != 0) {
                                                 red += colorMask & crPix >> 16;
                                                 green += colorMask & crPix >> 8;
                                                 blue += colorMask & crPix;
@@ -893,7 +951,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                         // topright
                                         if (origTileX + 1 < tileWidth && origTileY - 1 >= 0) {
                                             crPix = rasterTile[(origTileY - 1) * tileWidth + origTileX + 1];
-                                            if (crPix) {
+                                            if (crPix != 0) {
                                                 red += colorMask & crPix >> 16;
                                                 green += colorMask & crPix >> 8;
                                                 blue += colorMask & crPix;
@@ -902,7 +960,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                             }
                                         } else if (origTileY - 1 >= 0 && rightTileExists) {
                                             crPix = rasterTileRight[(origTileY - 1) * tileWidth];
-                                            if (crPix) {
+                                            if (crPix != 0) {
                                                 red += colorMask & crPix >> 16;
                                                 green += colorMask & crPix >> 8;
                                                 blue += colorMask & crPix;
@@ -914,7 +972,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                         //right
                                         if (origTileX + 1 < tileWidth) {
                                             crPix = rasterTile[origTileY * tileWidth + origTileX + 1];
-                                            if (crPix) {
+                                            if (crPix != 0) {
                                                 red += colorMask & crPix >> 16;
                                                 green += colorMask & crPix >> 8;
                                                 blue += colorMask & crPix;
@@ -922,8 +980,8 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                                 sum++;
                                             }
                                         } else if (rightTileExists) {
-                                            crPix = rasterTileRight[(origTileY - 1) * tileWidth];
-                                            if (crPix) {
+                                            crPix = rasterTileRight[origTileY * tileWidth];
+                                            if (crPix != 0) {
                                                 red += colorMask & crPix >> 16;
                                                 green += colorMask & crPix >> 8;
                                                 blue += colorMask & crPix;
@@ -935,7 +993,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                         //bottomright
                                         if (origTileX + 1 < tileWidth && origTileY + 1 < tileHeight) {
                                             crPix = rasterTile[(origTileY + 1) * tileWidth + origTileX + 1];
-                                            if (crPix) {
+                                            if (crPix != 0) {
                                                 red += colorMask & crPix >> 16;
                                                 green += colorMask & crPix >> 8;
                                                 blue += colorMask & crPix;
@@ -944,7 +1002,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                             }
                                         } else if (origTileY + 1 < tileHeight && rightTileExists) {
                                             crPix = rasterTileRight[(origTileY + 1) * tileWidth];
-                                            if (crPix) {
+                                            if (crPix != 0) {
                                                 red += colorMask & crPix >> 16;
                                                 green += colorMask & crPix >> 8;
                                                 blue += colorMask & crPix;
@@ -955,8 +1013,8 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
 
                                         //bottom
                                         if (origTileY + 1 < tileHeight) {
-                                            crPix = rasterTile[(origTileY + 1) * tileWidth + origTileX + 1];
-                                            if (crPix) {
+                                            crPix = rasterTile[(origTileY + 1) * tileWidth + origTileX];
+                                            if (crPix != 0) {
                                                 red += colorMask & crPix >> 16;
                                                 green += colorMask & crPix >> 8;
                                                 blue += colorMask & crPix;
@@ -968,7 +1026,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                         //bottomleft
                                         if (origTileX - 1 >= 0 && origTileY + 1 < tileHeight) {
                                             crPix = rasterTile[(origTileY + 1) * tileWidth + origTileX - 1];
-                                            if (crPix) {
+                                            if (crPix != 0) {
                                                 red += colorMask & crPix >> 16;
                                                 green += colorMask & crPix >> 8;
                                                 blue += colorMask & crPix;
@@ -977,7 +1035,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                             }
                                         } else if (origTileY + 1 < tileHeight && leftTileExists) {
                                             crPix = rasterTileLeft[(origTileY + 1) * tileWidth + tileWidth - 1];
-                                            if (crPix) {
+                                            if (crPix != 0) {
                                                 red += colorMask & crPix >> 16;
                                                 green += colorMask & crPix >> 8;
                                                 blue += colorMask & crPix;
@@ -989,7 +1047,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                         //left
                                         if (origTileX - 1 >= 0) {
                                             crPix = rasterTile[origTileY * tileWidth + origTileX - 1];
-                                            if (crPix) {
+                                            if (crPix != 0) {
                                                 red += colorMask & crPix >> 16;
                                                 green += colorMask & crPix >> 8;
                                                 blue += colorMask & crPix;
@@ -998,7 +1056,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                             }
                                         } else if (leftTileExists) {
                                             crPix = rasterTileLeft[origTileY * tileWidth + tileWidth - 1];
-                                            if (crPix) {
+                                            if (crPix != 0) {
                                                 red += colorMask & crPix >> 16;
                                                 green += colorMask & crPix >> 8;
                                                 blue += colorMask & crPix;
@@ -1036,13 +1094,11 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
 
                                 }
                             }
-
                             if (tileStartDataY != -1) {
                                 pixY++;
                                 globalProcessedY++;
                             }
                         }
-
                     }
                 } else {
                     for (int th = 0; th < tileHeight; th++) {
@@ -1055,27 +1111,25 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                         }
                     }
                 }
-
-
-
-
-
-/*
-                for (int th = 0; th < tileHeight; th++) {
-                    for (int tw = 0; tw < tileWidth; tw++) {
-                        uint32 srcPosition = th * tileWidth + tw;
-                        if (rasterTile[srcPosition] != 0) {
-                            int position = (row + th) * origwidth + column + tw;
-                            pixels[position] = rasterTile[srcPosition];
-                        }
-                    }
-                }
-*/
             }
-            LOGII("proc x ", globalProcessedX);
-            LOGII("proc y ", globalProcessedY);
         }
 
+        if (rasterTile) {
+            _TIFFfree(rasterTile);
+            rasterTile = NULL;
+        }
+        if (rasterTileLeft) {
+            _TIFFfree(rasterTileLeft);
+            rasterTileLeft = NULL;
+        }
+        if (rasterTileRight) {
+            _TIFFfree(rasterTileRight);
+            rasterTileRight = NULL;
+        }
+        if (work_line_buf) {
+            _TIFFfree(work_line_buf);
+            work_line_buf = NULL;
+        }
 
 
         if (origorientation > 4) {
