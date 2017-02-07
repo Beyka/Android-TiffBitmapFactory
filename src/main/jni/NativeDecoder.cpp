@@ -159,7 +159,8 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
         raster = getSampledRasterFromStrip(inSampleSize,  &newBitmapWidth, &newBitmapHeight);
     }
     */
-    raster = getSampledRasterFromTile(inSampleSize, &newBitmapWidth, &newBitmapHeight);
+    //raster = getSampledRasterFromTile(inSampleSize, &newBitmapWidth, &newBitmapHeight);
+    raster = raster = getSampledRasterFromImage(inSampleSize, &newBitmapWidth, &newBitmapHeight);
 
 
     // Convert ABGR to ARGB
@@ -710,41 +711,85 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
 
         TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileWidth);
         TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileHeight);
-
         LOGII("Tile width", tileWidth);
         LOGII("Tile height", tileHeight);
-
         uint32 *rasterTile = (uint32 *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32));
         allocatedTotal += tileWidth * tileHeight * sizeof(uint32);
+        uint32 *rasterTileLeft = (uint32 *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32));
+        allocatedTotal += tileWidth * tileHeight * sizeof(uint32);
+        uint32 *rasterTileRight = (uint32 *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32));
+        allocatedTotal += tileWidth * tileHeight * sizeof(uint32);
+
+
         uint32 *work_line_buf = (uint32*)_TIFFmalloc(tileWidth * sizeof (uint32));
         allocatedTotal += tileWidth * sizeof(uint32);
 
-
+        //this variable calculate processed pixels for x and y direction to make right offsets at the begining of next tile
+        //offset calculated from condition globalProcessed % inSampleSize should be 0
         uint32 globalProcessedX = 0;
         uint32 globalProcessedY = 0;
+
         for (row = 0; row < origheight; row += tileHeight) {
         LOGII("row", row);
+            short leftTileExists = 0;
+            short rightTileExists = 0;
             for (column = 0; column < origwidth; column += tileWidth) {
-                TIFFReadRGBATile(image, column, row, rasterTile);
+                //If not first column - we should have previous tile - copy it to left tile buffer
+                if (column != 0) {
+                    _TIFFmemcpy(rasterTileLeft, rasterTile, tileWidth * tileHeight * sizeof(uint32));
+                    leftTileExists = 1;
+                } else {
+                    leftTileExists = 0;
+                }
 
+                //if current column + tile width is less than origin width - we have right tile - copy it to current tile and read next tile to rasterTileRight buffer
+                if (column + tileWidth < origwidth) {
+                    _TIFFmemcpy(rasterTile, rasterTileRight, tileWidth * tileHeight * sizeof(uint32));
+                    TIFFReadRGBATile(image, column + tileWidth, row, rasterTileRight);
+                    rightTileExists = 1;
+                } else {
+                    //otherwise we haven't right tile buffer, so we should read tile to current buffer
+                    TIFFReadRGBATile(image, column, row, rasterTile);
+                    rightTileExists = 0;
+                }
+
+
+                //TIFFReadRGBATile(image, column, row, rasterTile);
                 LOGII("column", column);
 
-                //tile orig is on bottom left - should change lines
-                for (int line = 0; line < tileHeight / 2; line++) {
-                    unsigned int  *top_line, *bottom_line;
+                //if we have right tile - current tile already rotated and we need to rotate only right tile
+                if (rightTileExists) {
+                    for (int line = 0; line < tileHeight / 2; line++) {
+                        unsigned int  *top_line, *bottom_line;
 
-                    top_line = rasterTile + tileWidth * line;
-                    bottom_line = rasterTile + tileWidth * (tileHeight - line - 1);
+                        top_line = rasterTileRight + tileWidth * line;
+                        bottom_line = rasterTileRight + tileWidth * (tileHeight - line - 1);
 
-                    _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * tileWidth);
-                    _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * tileWidth);
-                    _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * tileWidth);
+                        _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * tileWidth);
+                        _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * tileWidth);
+                        _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * tileWidth);
+                    }
+                } else {
+                    //otherwise - current tile not rotated so rotate it
+                    //tile orig is on bottom left - should change lines
+                    for (int line = 0; line < tileHeight / 2; line++) {
+                        unsigned int  *top_line, *bottom_line;
+
+                        top_line = rasterTile + tileWidth * line;
+                        bottom_line = rasterTile + tileWidth * (tileHeight - line - 1);
+
+                        _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * tileWidth);
+                        _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * tileWidth);
+                        _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * tileWidth);
+                    }
                 }
 
                 if (inSampleSize > 1 )
                 {
+                    //Tile could begin from not filled pixel(pixel[x,y] == 0). This variables allow to calculate begining of filled pixels
                     int tileStartDataX = -1;
                     int tileStartDataY = -1;
+
                     for (int origTileY = 0, pixY = row/inSampleSize; origTileY < tileHeight && pixY < *bitmapheight; origTileY++) {
                         if (tileStartDataY != -1 && /*(origTileY - tileStartDataY)*/globalProcessedY % inSampleSize != 0) {
                             if (tileStartDataY != -1) {
@@ -754,7 +799,6 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                         else
                         {
                             for (int origTileX = 0, pixX = column/inSampleSize; origTileX < tileWidth && pixX < *bitmapwidth; origTileX++) {
-
                                 if (tileStartDataX != -1 && /*(origTileX - tileStartDataX)*/globalProcessedX % inSampleSize != 0)
                                 {
                                     if (tileStartDataX != -1) {
@@ -771,6 +815,9 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                         if (tileStartDataY == -1) {
                                             tileStartDataY = origTileY;
                                         }
+
+
+                                        //todo insert reading of pixels
 
                                         int position = pixY * *bitmapwidth + pixX;
                                         pixels[position] = rasterTile[srcPosition];
