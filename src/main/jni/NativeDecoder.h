@@ -52,6 +52,7 @@ class NativeDecoder
         jobject createBitmap(int, int);
         jint *getSampledRasterFromImage(int, int *, int *);
         jint *getSampledRasterFromStrip(int, int *, int *);
+        jint *getSampledRasterFromTile(int, int *, int *);
         jbyte * createBitmapAlpha8(jint *, int, int);
         unsigned short *createBitmapRGB565(jint *, int, int);
         /*jbyte * createBitmapAlpha8(JNIEnv *, jint *, int, int);

@@ -143,6 +143,7 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
 
     jint *raster = NULL;
 
+    /*
     int rowPerStrip = -1;
     TIFFGetField(image, TIFFTAG_ROWSPERSTRIP, &rowPerStrip);
     uint32 stripSize = TIFFStripSize (image);
@@ -157,6 +158,9 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
         //else - can decode strip by strip with getSampledRasterFromStrip
         raster = getSampledRasterFromStrip(inSampleSize,  &newBitmapWidth, &newBitmapHeight);
     }
+    */
+    raster = getSampledRasterFromTile(inSampleSize, &newBitmapWidth, &newBitmapHeight);
+
 
     // Convert ABGR to ARGB
     if (invertRedAndBlue) {
@@ -410,18 +414,10 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
                 if (isSecondRasterExist) {
                     _TIFFmemcpy(matrixBottomLine, rasterForBottomLine /*+ lineAddrToCopyBottomLine * origwidth*/, sizeof(unsigned int) * origwidth);
                 }
-
                  int workWritedLines = writedLines;
                  for (int resBmpY = workWritedLines, workY = 0; resBmpY < *bitmapheight && workY < rowPerStrip; /*wj++,*/ workY ++/*= inSampleSize*/) {
-                    /*if (resBmpY >= *bitmapheight) {
-                        continue;
-                    }*/
-                        //LOGII("resBmpY", resBmpY);
-                        //LOGII("workY", workY);
                     // if total line of source image is equal to inSampleSize*N then process this line
                     if (globalLineCounter % inSampleSize == 0) {
-                        //LOGII("resBmpY", resBmpY);
-                        //LOGII("workY", workY);
                         for (int resBmpX = 0, workX = 0; resBmpX < *bitmapwidth; resBmpX++, workX += inSampleSize) {
 
                             //Apply filter to pixel
@@ -619,6 +615,214 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
             matrixBottomLine = NULL;
         }
         LOGI("matrixBottomLine");
+
+
+        if (origorientation > 4) {
+                unsigned int size = *bitmapheight * *bitmapwidth - 1;
+                jint t;
+                unsigned long long next;
+                unsigned long long cycleBegin;
+                bool *barray = (bool *) malloc(sizeof(bool) * pixelsBufferSize);
+        	for (int x = 0; x < size; x++) { barray[x] = false; }
+                barray[0] = barray[size] = true;
+                unsigned long long k = 1;
+
+                switch (origorientation) {
+                    case ORIENTATION_LEFTTOP:
+                    case ORIENTATION_RIGHTBOT:
+                        while (k < size) {
+                            cycleBegin = k;
+                            t = pixels[k];
+                            do {
+                                next = (k * *bitmapheight) % size;
+                                jint buf = pixels[next];
+                                pixels[next] = t;
+                                t = buf;
+                                barray[k] = true;
+                                k = next;
+                            } while (k != cycleBegin);
+                            for (k = 1; k < size && barray[k]; k++);
+                        }
+                        break;
+                    case ORIENTATION_LEFTBOT:
+                    case ORIENTATION_RIGHTTOP:
+                        while (k < size) {
+                            cycleBegin = k;
+                            t = pixels[k];
+                            do {
+                                next = (k * *bitmapheight) % size;
+                                jint buf = pixels[next];
+                                pixels[next] = t;
+                                t = buf;
+                                barray[k] = true;
+                                k = next;
+                            } while (k != cycleBegin);
+                            for (k = 1; k < size && barray[k]; k++);
+                        }
+                        //flip horizontally
+                        for (int j = 0, j1 = *bitmapwidth - 1; j < *bitmapwidth / 2; j++, j1--) {
+                            for (int i = 0; i < *bitmapheight; i++) {
+                                jint tmp = pixels[j * *bitmapheight + i];
+                                pixels[j * *bitmapheight + i] = pixels[j1 * *bitmapheight + i];
+                                pixels[j1 * *bitmapheight + i] = tmp;
+                            }
+                        }
+                        //flip vertically
+                        for (int i = 0, i1 = *bitmapheight - 1; i < *bitmapheight / 2; i++, i1--) {
+                            for (int j = 0; j < *bitmapwidth; j++) {
+                                jint tmp = pixels[j * *bitmapheight + i];
+                                pixels[j * *bitmapheight + i] = pixels[j * *bitmapheight + i1];
+                                pixels[j * *bitmapheight + i1] = tmp;
+                            }
+                        }
+                        break;
+                }
+                free(barray);
+            }
+            int mbUsed = allocatedTotal/1024/1024;
+            LOGII("Max memmory use ", mbUsed);
+            return pixels;
+}
+
+jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidth, int *bitmapheight) {
+
+        unsigned long allocatedTotal = 0;
+
+        LOGII("width", origwidth);
+        LOGII("height", origheight);
+
+        jint *pixels = NULL;
+        *bitmapwidth = origwidth / inSampleSize;
+        *bitmapheight = origheight / inSampleSize;
+        int pixelsBufferSize = *bitmapwidth * *bitmapheight;
+        LOGII("new width", *bitmapwidth);
+        LOGII("new height", *bitmapheight);
+
+        pixels = (jint *) malloc(sizeof(jint) * pixelsBufferSize);
+        if (pixels == NULL) {
+            LOGE("Can\'t allocate memory for temp buffer");
+            return NULL;
+        }
+        allocatedTotal += sizeof(jint) * pixelsBufferSize;
+
+        uint32 tileWidth = 0, tileHeight = 0;
+        uint32 row, column;
+
+        TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileWidth);
+        TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileHeight);
+
+        LOGII("Tile width", tileWidth);
+        LOGII("Tile height", tileHeight);
+
+        uint32 *rasterTile = (uint32 *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32));
+        allocatedTotal += tileWidth * tileHeight * sizeof(uint32);
+        uint32 *work_line_buf = (uint32*)_TIFFmalloc(tileWidth * sizeof (uint32));
+        allocatedTotal += tileWidth * sizeof(uint32);
+
+
+        uint32 globalProcessedX = 0;
+        uint32 globalProcessedY = 0;
+        for (row = 0; row < origheight; row += tileHeight) {
+        LOGII("row", row);
+            for (column = 0; column < origwidth; column += tileWidth) {
+                TIFFReadRGBATile(image, column, row, rasterTile);
+
+                LOGII("column", column);
+
+                //tile orig is on bottom left - should change lines
+                for (int line = 0; line < tileHeight / 2; line++) {
+                    unsigned int  *top_line, *bottom_line;
+
+                    top_line = rasterTile + tileWidth * line;
+                    bottom_line = rasterTile + tileWidth * (tileHeight - line - 1);
+
+                    _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * tileWidth);
+                    _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * tileWidth);
+                    _TIFFmemcpy(bottom_line, work_line_buf, sizeof(unsigned int) * tileWidth);
+                }
+
+                if (inSampleSize > 1 )
+                {
+                    int tileStartDataX = -1;
+                    int tileStartDataY = -1;
+                    for (int origTileY = 0, pixY = row/inSampleSize; origTileY < tileHeight && pixY < *bitmapheight; origTileY++) {
+                        if (tileStartDataY != -1 && /*(origTileY - tileStartDataY)*/globalProcessedY % inSampleSize != 0) {
+                            if (tileStartDataY != -1) {
+                                globalProcessedY++;
+                            }
+                        }
+                        else
+                        {
+                            for (int origTileX = 0, pixX = column/inSampleSize; origTileX < tileWidth && pixX < *bitmapwidth; origTileX++) {
+
+                                if (tileStartDataX != -1 && /*(origTileX - tileStartDataX)*/globalProcessedX % inSampleSize != 0)
+                                {
+                                    if (tileStartDataX != -1) {
+                                        globalProcessedX++;
+                                    }
+                                }
+                                else
+                                {
+                                    uint32 srcPosition = origTileY * tileWidth + origTileX;
+                                    if (rasterTile[srcPosition] != 0) {
+                                        if (tileStartDataX == -1) {
+                                            tileStartDataX = origTileX;
+                                        }
+                                        if (tileStartDataY == -1) {
+                                            tileStartDataY = origTileY;
+                                        }
+
+                                        int position = pixY * *bitmapwidth + pixX;
+                                        pixels[position] = rasterTile[srcPosition];
+                                    }
+
+                                    if (tileStartDataX != -1) {
+                                        pixX++;
+                                        globalProcessedX++;
+                                    }
+
+                                }
+                            }
+
+                            if (tileStartDataY != -1) {
+                                pixY++;
+                                globalProcessedY++;
+                            }
+                        }
+
+                    }
+                } else {
+                    for (int th = 0; th < tileHeight; th++) {
+                        for (int tw = 0; tw < tileWidth; tw++) {
+                            uint32 srcPosition = th * tileWidth + tw;
+                            if (rasterTile[srcPosition] != 0) {
+                                int position = (row + th) * origwidth + column + tw;
+                                pixels[position] = rasterTile[srcPosition];
+                            }
+                        }
+                    }
+                }
+
+
+
+
+
+/*
+                for (int th = 0; th < tileHeight; th++) {
+                    for (int tw = 0; tw < tileWidth; tw++) {
+                        uint32 srcPosition = th * tileWidth + tw;
+                        if (rasterTile[srcPosition] != 0) {
+                            int position = (row + th) * origwidth + column + tw;
+                            pixels[position] = rasterTile[srcPosition];
+                        }
+                    }
+                }
+*/
+            }
+            LOGII("proc x ", globalProcessedX);
+            LOGII("proc y ", globalProcessedY);
+        }
+
 
 
         if (origorientation > 4) {
