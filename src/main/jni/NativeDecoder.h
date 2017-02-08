@@ -33,6 +33,10 @@ class NativeDecoder
         static int const ARGB_8888 = 2;
         static int const RGB_565 = 4;
         static int const ALPHA_8 = 8;
+
+        static int const DECODE_METHOD_IMAGE = 1;
+        static int const DECODE_METHOD_TILE = 2;
+        static int const DECODE_METHOD_STRIP = 3;
         //fields
         unsigned long memoryToUse;
         JNIEnv *env;
@@ -56,6 +60,8 @@ class NativeDecoder
         void rotateTileLinesVertical(uint32, uint32, uint32 *, uint32 *);
         void rotateTileLinesHorizontal(uint32, uint32, uint32 *, uint32 *);
         jint *getSampledRasterFromTile(int, int *, int *);
+        int getDecodeMethod();
+        void fixOrientation(jint *, uint32, int, int);
         jbyte * createBitmapAlpha8(jint *, int, int);
         unsigned short *createBitmapRGB565(jint *, int, int);
 
