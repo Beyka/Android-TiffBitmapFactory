@@ -111,7 +111,7 @@ extern "C" {
         int pixelsBufferSize = img_width * img_height;
         int* array = (int *) malloc(sizeof(int) * pixelsBufferSize);
         if (!array) {
-            throw_not_enought_memory_exception(env, sizeof(int) * pixelsBufferSize);
+            throw_not_enought_memory_exception(env, sizeof(int) * pixelsBufferSize, 0);//todo change for estimating memory
             return JNI_FALSE;
         }
         for (int i = 0; i < img_width; i++) {

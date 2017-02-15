@@ -368,7 +368,7 @@ jobject createBitmap(JNIEnv *env, int inSampleSize, int directoryNumber, jobject
     if (bitdepth != 1 && bitdepth != 4 && bitdepth != 8 && bitdepth != 16) {
         //TODO Drop exception
         LOGE("Only 1, 4, 8, and 16 bits per sample supported");
-        throw_read_file_exception(env, path);
+        throw_decode_file_exception(env, path);
         return NULL;
     }
 

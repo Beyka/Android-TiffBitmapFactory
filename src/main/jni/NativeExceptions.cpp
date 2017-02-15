@@ -9,7 +9,7 @@ extern "C" {
 
 #include "NativeExceptions.h"
 
-void throw_not_enought_memory_exception(JNIEnv *env, int memory)
+void throw_not_enought_memory_exception(JNIEnv *env, int available, int need)
 {
     jclass exClass;
     jmethodID exConstructorID;
@@ -18,19 +18,19 @@ void throw_not_enought_memory_exception(JNIEnv *env, int memory)
 
     exClass = env->FindClass(className);
 
-    exConstructorID = env->GetMethodID(exClass, "<init>", "(I)V");
+    exConstructorID = env->GetMethodID(exClass, "<init>", "(II)V");
 
-    exObj = env->NewObject(exClass, exConstructorID, memory);
+    exObj = env->NewObject(exClass, exConstructorID, available, need);
 
     env->Throw((jthrowable)exObj);
 }
 
-void throw_read_file_exception(JNIEnv *env, jstring str)
+void throw_decode_file_exception(JNIEnv *env, jstring str)
 {
     jclass exClass;
     jmethodID exConstructorID;
     jobject exObj;
-    char *className = "org/beyka/tiffbitmapfactory/exceptions/ReadTiffException" ;
+    char *className = "org/beyka/tiffbitmapfactory/exceptions/DecodeTiffException" ;
 
     exClass = env->FindClass(className);
 

@@ -3,6 +3,7 @@
 //
 
 #include "NativeDecoder.h"
+//#include "NativeExceptions.h"
 
     /*const int NativeDecoder::colorMask = 0xFF;
     const int NativeDecoder::ARGB_8888 = 2;
@@ -22,7 +23,7 @@ NativeDecoder::NativeDecoder(JNIEnv *e, jclass c, jstring path, jobject opts)
     origorientation = 0;
     origcompressionscheme = 0;
     invertRedAndBlue = false;
-    availableMemory = -1;
+    //availableMemory = -1;
 
 
 }
@@ -81,7 +82,7 @@ jobject NativeDecoder::getBitmap()
         jfieldID gOptions_AvailableMemoryFieldID = env->GetFieldID(jBitmapOptionsClass,
                                                                   "inAvailableMemory",
                                                                   "J");
-        availableMemory = env->GetLongField(optionsObject, gOptions_AvailableMemoryFieldID);
+        unsigned long inAvailableMemory = env->GetLongField(optionsObject, gOptions_AvailableMemoryFieldID);
 
         jfieldID gOptions_PreferedConfigFieldID = env->GetFieldID(jBitmapOptionsClass,
                                                                   "inPreferredConfig",
@@ -89,6 +90,10 @@ jobject NativeDecoder::getBitmap()
         jobject config = env->GetObjectField(optionsObject, gOptions_PreferedConfigFieldID);
 
         env->DeleteLocalRef(jBitmapOptionsClass);
+
+        if (inAvailableMemory > 0) {
+            availableMemory = inAvailableMemory;
+        }
 
         if (config == NULL) {
             LOGI("config is NULL, creating default options");
@@ -135,7 +140,7 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
     TIFFGetField(image, TIFFTAG_BITSPERSAMPLE, &bitdepth);
     if (bitdepth != 1 && bitdepth != 4 && bitdepth != 8 && bitdepth != 16) {
         LOGE("Only 1, 4, 8, and 16 bits per sample supported");
-        throw_read_file_exception(env, jPath);
+        throw_decode_file_exception(env, jPath);
         return NULL;
     }
 
@@ -156,25 +161,6 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
             raster = getSampledRasterFromStrip(inSampleSize,  &newBitmapWidth, &newBitmapHeight);
             break;
     }
-    /*
-    int rowPerStrip = -1;
-    TIFFGetField(image, TIFFTAG_ROWSPERSTRIP, &rowPerStrip);
-    uint32 stripSize = TIFFStripSize (image);
-    uint32 stripMax = TIFFNumberOfStrips (image);
-
-    if (rowPerStrip == -1 || rowPerStrip == origheight || stripMax == 1 || stripSize == origwidth * origheight) {
-        LOGI("decoding using image");
-        //Image is encoded with tiles or image incoded with one strip that is full image - in both cases decode with getSampledRasterFromImage
-        raster = getSampledRasterFromImage(inSampleSize, &newBitmapWidth, &newBitmapHeight);
-    } else {
-        LOGI("decoding using strips");
-        //else - can decode strip by strip with getSampledRasterFromStrip
-        raster = getSampledRasterFromStrip(inSampleSize,  &newBitmapWidth, &newBitmapHeight);
-    }
-    */
-    //raster = getSampledRasterFromTile(inSampleSize, &newBitmapWidth, &newBitmapHeight);
-    //raster = getSampledRasterFromImage(inSampleSize, &newBitmapWidth, &newBitmapHeight);
-
 
     // Convert ABGR to ARGB
     if (invertRedAndBlue) {
@@ -285,13 +271,6 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
     LOGII("new width", *bitmapwidth);
     LOGII("new height", *bitmapheight);
 
-    pixels = (jint *) malloc(sizeof(jint) * pixelsBufferSize);
-    if (pixels == NULL) {
-        LOGE("Can\'t allocate memory for temp buffer");
-        return NULL;
-    }
-    allocatedTotal += sizeof(jint) * pixelsBufferSize;
-
     uint32 stripSize = TIFFStripSize (image);
     uint32 stripMax = TIFFNumberOfStrips (image);
     LOGII("strip size ", stripSize);
@@ -299,6 +278,24 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
     int rowPerStrip = -1;
     TIFFGetField(image, TIFFTAG_ROWSPERSTRIP, &rowPerStrip);
     LOGII("rowsperstrip", rowPerStrip);
+
+    unsigned long estimateMem = 0;
+    estimateMem += (sizeof(jint) * pixelsBufferSize); //buffer for decoded pixels
+    estimateMem += (origwidth * sizeof(uint32)); //work line for rotate strip
+    estimateMem += (origwidth * rowPerStrip * sizeof (uint32) * 2); //current and next strips
+    estimateMem += (sizeof(jint) * origwidth * 2); //bottom and top lines for reading pixel(matrixBottomLine, matrixTopLine)
+    LOGII("estimateMem", estimateMem);
+    if (estimateMem > availableMemory) {
+        throw_not_enought_memory_exception(env, availableMemory, estimateMem);
+        return NULL;
+    }
+
+    pixels = (jint *) malloc(sizeof(jint) * pixelsBufferSize);
+    if (pixels == NULL) {
+        LOGE("Can\'t allocate memory for temp buffer");
+        return NULL;
+    }
+    allocatedTotal += sizeof(jint) * pixelsBufferSize;
 
     uint32* work_line_buf = (uint32 *)_TIFFmalloc(origwidth * sizeof(uint32));
     allocatedTotal += origwidth * sizeof(uint32);
@@ -673,6 +670,22 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
         LOGII("new width", *bitmapwidth);
         LOGII("new height", *bitmapheight);
 
+        uint32 tileWidth = 0, tileHeight = 0;
+        TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileWidth);
+        TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileHeight);
+        LOGII("Tile width", tileWidth);
+        LOGII("Tile height", tileHeight);
+
+        unsigned long estimateMem = 0;
+        estimateMem += (sizeof(jint) * pixelsBufferSize); //buffer for decoded pixels
+        estimateMem += (tileWidth * tileHeight * sizeof(uint32)) * 3; //current, left and right tiles buffers
+        estimateMem += (tileWidth * sizeof(uint32)); //work line for rotate tile
+        LOGII("estimateMem", estimateMem);
+        if (estimateMem > availableMemory) {
+            throw_not_enought_memory_exception(env, availableMemory, estimateMem);
+            return NULL;
+        }
+
         pixels = (jint *) malloc(sizeof(jint) * pixelsBufferSize);
         if (pixels == NULL) {
             LOGE("Can\'t allocate memory for temp buffer");
@@ -680,13 +693,8 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
         }
         allocatedTotal += sizeof(jint) * pixelsBufferSize;
 
-        uint32 tileWidth = 0, tileHeight = 0;
         uint32 row, column;
 
-        TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileWidth);
-        TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileHeight);
-        LOGII("Tile width", tileWidth);
-        LOGII("Tile height", tileHeight);
         //main worker tile
         uint32 *rasterTile = (uint32 *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32));
         allocatedTotal += tileWidth * tileHeight * sizeof(uint32);
@@ -1059,12 +1067,27 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
 {
     unsigned long allocatedTotal = 0;
 
+    //buffer size for decoding tiff image in RGBA format
     int origBufferSize = origwidth * origheight * sizeof(unsigned int);
-    unsigned long long estimatedMemory = origBufferSize + 2 * (origBufferSize / (inSampleSize * inSampleSize));
-    estimatedMemory = 11 * estimatedMemory / 10; // 10% extra.
-    LOGII("estimatedMemory", estimatedMemory);
-
     LOGII("origbuffsize", origBufferSize);
+
+    *bitmapwidth = origwidth / inSampleSize;
+    *bitmapheight = origheight / inSampleSize;
+    //buffer size for creating scaled image;
+    uint32 pixelsBufferSize = *bitmapwidth * *bitmapheight * sizeof(jint);
+    LOGII("pixelsBufferSize", pixelsBufferSize);
+
+    /**Estimate usage of memory for decoding*/
+    unsigned long estimateMem = origBufferSize;//origBufferSize - size of decoded RGBA image
+    if (inSampleSize > 1) {
+        estimateMem += pixelsBufferSize; //if inSmapleSize greater than 1 we need aditional vevory for scaled image
+    }
+    LOGII("estimateMem", estimateMem);
+
+    if (estimateMem > availableMemory) {
+        throw_not_enought_memory_exception(env, availableMemory, estimateMem);
+        return NULL;
+    }
 
     unsigned int *origBuffer = NULL;
 
@@ -1079,13 +1102,11 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
         TIFFReadRGBAImageOriented(image, origwidth, origheight, origBuffer, ORIENTATION_TOPLEFT, 0)) {
 	    free(origBuffer);
         LOGE("Error reading image.");
+        throw_decode_file_exception(env, jPath);
         return NULL;
     }
 
     jint *pixels = NULL;
-    *bitmapwidth = origwidth / inSampleSize;
-    *bitmapheight = origheight / inSampleSize;
-    uint32 pixelsBufferSize = *bitmapwidth * *bitmapheight;
 
     if (inSampleSize == 1) {
         // Use buffer as is.
@@ -1093,7 +1114,7 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
     }
     else {
         // Sample the buffer.
-        pixels = (jint *) malloc(sizeof(jint) * pixelsBufferSize);
+        pixels = (jint *) malloc(pixelsBufferSize);
         if (pixels == NULL) {
             LOGE("Can\'t allocate memory for temp buffer");
             return NULL;

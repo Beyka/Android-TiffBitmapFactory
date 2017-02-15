@@ -5,7 +5,7 @@ import android.util.Log;
 
 import org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException;
 import org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException;
-import org.beyka.tiffbitmapfactory.exceptions.ReadTiffException;
+import org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException;
 
 import java.io.File;
 
@@ -66,10 +66,11 @@ public class TiffBitmapFactory {
      * @return The decoded bitmap, or null if the image data could not be
      *         decoded
      *
-     * @throws org.beyka.tiffbitmapfactory.exceptions.ReadTiffException when error occure while decoding image
+     * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while decoding image
      * @throws org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException when {@code file} not exist
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
      */
-    public static Bitmap decodeFile(File file) throws NoSuchFileException, ReadTiffException {
+    public static Bitmap decodeFile(File file) throws NoSuchFileException, DecodeTiffException, NotEnoughtMemoryException {
         long time = System.currentTimeMillis();
         Log.i("THREAD", "Starting decode " + file.getAbsolutePath());
         Bitmap mbp = nativeDecodePath(file.getAbsolutePath(), new Options());
@@ -85,11 +86,12 @@ public class TiffBitmapFactory {
      * @return The decoded bitmap, or null if the image data could not be
      *         decoded, or, if options is non-null, if options requested only the
      *         size be returned (in {@link Options#outWidth}, {@link Options#outHeight}, {@link Options#outDirectoryCount})
-     * @throws org.beyka.tiffbitmapfactory.exceptions.ReadTiffException when error occure while decoding image
+     * @throws DecodeTiffException when error occure while decoding image
      * @throws org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException when {@code file} not exist
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when {@link Options#inAvailableMemory} not enought to decode image
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
      */
-    public static Bitmap decodeFile(File file, Options options) throws NoSuchFileException, ReadTiffException, NotEnoughtMemoryException {
+    public static Bitmap decodeFile(File file, Options options) throws NoSuchFileException, DecodeTiffException, NotEnoughtMemoryException {
         long time = System.currentTimeMillis();
         Log.i("THREAD", "Starting decode " + file.getAbsolutePath());
         Bitmap mbp = nativeDecodePath(file.getAbsolutePath(), options);
@@ -104,10 +106,11 @@ public class TiffBitmapFactory {
      * @return The decoded bitmap, or null if the image data could not be
      *         decoded
      *
-     * @throws org.beyka.tiffbitmapfactory.exceptions.ReadTiffException when error occure while decoding image
+     * @throws DecodeTiffException when error occure while decoding image
      * @throws org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException when {@code path} not exist
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
      */
-    public static Bitmap decodePath(String path) throws NoSuchFileException, ReadTiffException {
+    public static Bitmap decodePath(String path) throws NoSuchFileException, DecodeTiffException, NotEnoughtMemoryException {
         long time = System.currentTimeMillis();
         Log.i("THREAD", "Starting decode " + path);
         Bitmap mbp = nativeDecodePath(path, new Options());
@@ -124,11 +127,11 @@ public class TiffBitmapFactory {
      *         decoded, or, if options is non-null, if options requested only the
      *         size be returned (in {@link Options#outWidth}, {@link Options#outHeight}, {@link Options#outDirectoryCount})
      *
-     * @throws org.beyka.tiffbitmapfactory.exceptions.ReadTiffException when error occure while decoding image
+     * @throws DecodeTiffException when error occure while decoding image
      * @throws org.beyka.tiffbitmapfactory.exceptions.NoSuchFileException when {@code path} not exist
-     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when {@link Options#inAvailableMemory} not enought to decode image
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
      */
-    public static Bitmap decodePath(String path, Options options) throws NoSuchFileException, ReadTiffException, NotEnoughtMemoryException {
+    public static Bitmap decodePath(String path, Options options) throws NoSuchFileException, DecodeTiffException, NotEnoughtMemoryException {
         long time = System.currentTimeMillis();
         Log.i("THREAD", "Starting decode " + path);
         Bitmap mbp = nativeDecodePath(path, options);

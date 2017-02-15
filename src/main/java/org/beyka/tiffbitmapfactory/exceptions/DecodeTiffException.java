@@ -3,12 +3,12 @@ package org.beyka.tiffbitmapfactory.exceptions;
 /**
  * Created by alexeyba on 09.11.15.
  */
-public class ReadTiffException extends RuntimeException {
+public class DecodeTiffException extends RuntimeException {
 
     private String fileName;
 
-    public ReadTiffException(String fileName){
-        super("Error while reading file " + fileName);
+    public DecodeTiffException(String fileName){
+        super("Could not decode tiff file " + fileName);
         this.fileName = fileName;
     }
 
