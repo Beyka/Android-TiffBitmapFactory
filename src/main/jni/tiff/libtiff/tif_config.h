@@ -236,6 +236,9 @@
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
+/* enable strip chopping */
+#define	STRIPCHOP_SUPPORT 1
+
 /* Support strip chopping (whether or not to convert single-strip uncompressed
    images to mutiple strips of specified size to reduce memory usage) */
 #define STRIPCHOP_DEFAULT TIFF_STRIPCHOP

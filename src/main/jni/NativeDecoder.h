@@ -38,7 +38,6 @@ class NativeDecoder
         static int const DECODE_METHOD_TILE = 2;
         static int const DECODE_METHOD_STRIP = 3;
         //fields
-        unsigned long memoryToUse;
         JNIEnv *env;
         jclass clazz;
         jobject optionsObject;
@@ -50,7 +49,7 @@ class NativeDecoder
         int origcompressionscheme;
         jobject preferedConfig;
         jboolean invertRedAndBlue;
-        long availableMemory;
+        unsigned long availableMemory;
         //methods
         int getDyrectoryCount();
         void writeDataToOptions(int);

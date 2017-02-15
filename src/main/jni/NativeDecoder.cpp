@@ -11,7 +11,7 @@
 
 NativeDecoder::NativeDecoder(JNIEnv *e, jclass c, jstring path, jobject opts)
 {
-    memoryToUse = 8000*8000*4; // use 244Mb restriction for decoding full image
+    availableMemory = 8000*8000*4; // use 244Mb restriction for decoding full image
     env = e;
     clazz = c;
     optionsObject = opts;
@@ -1226,26 +1226,29 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
 
 int NativeDecoder::getDecodeMethod()
 {
-	int method = DECODE_METHOD_IMAGE;
-	unsigned long totalMemoryAllocation = origheight * origwidth * sizeof(uint32);
-	if (totalMemoryAllocation < memoryToUse) {
-		method = DECODE_METHOD_IMAGE;
-	} else {
-		uint32 tileWidth, tileHeight;
-    	TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileWidth);
-    	TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileHeight);
-    	if (tileWidth > 0 && tileHeight > 0) {
-    		method = DECODE_METHOD_TILE;
+	int method = -1;
+	uint32 tileWidth, tileHeight;
+	int readTW = 0, readTH = 0;
+    readTW = TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileWidth);
+    readTH = TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileHeight);
+    if (tileWidth > 0 && tileHeight > 0 && readTH > 0 && readTW > 0) {
+        method = DECODE_METHOD_TILE;
+    } else {
+        int rowPerStrip = -1;
+    	TIFFGetField(image, TIFFTAG_ROWSPERSTRIP, &rowPerStrip);
+    	uint32 stripSize = TIFFStripSize (image);
+    	uint32 stripMax = TIFFNumberOfStrips (image);
+    	int estimate = origwidth * 3;
+    	LOGII("RPS", rowPerStrip);
+    	LOGII("stripSize", stripSize);
+    	LOGII("stripMax", stripMax);
+    	if (rowPerStrip != -1 && stripSize > 0 && stripMax > 1) {
+    	    method = DECODE_METHOD_STRIP;
     	} else {
-			int rowPerStrip = -1;
-		    TIFFGetField(image, TIFFTAG_ROWSPERSTRIP, &rowPerStrip);
-		    uint32 stripSize = TIFFStripSize (image);
-		    uint32 stripMax = TIFFNumberOfStrips (image);
-		    if (rowPerStrip != -1 && stripSize > 0 && stripMax > 1) {
-		    	method = DECODE_METHOD_STRIP;
-		    }
+    	method = DECODE_METHOD_IMAGE;
     	}
-	}
+    }
+
 	LOGII("Decode method", method);
 	return method;
 }
