@@ -1024,6 +1024,9 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                         position = pixX * *bitmapheight + pixY;
                                         }
                                         pixels[position] = crPix;
+                                    } else {
+                                        if (tileStartDataX != -1) tileStartDataX = -1;
+                                        if (tileStartDataY != -1) tileStartDataY = -1;
                                     }
 
                                     if (tileStartDataX != -1) {
@@ -1124,6 +1127,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
             work_line_buf = NULL;
         }
 
+        //rotateRaster(pixels, 90, bitmapwidth, bitmapheight);
         //fixOrientation(pixels, pixelsBufferSize, *bitmapwidth, *bitmapheight);
 
         int mbUsed = allocatedTotal/1024/1024;
@@ -1344,71 +1348,62 @@ int NativeDecoder::getDecodeMethod()
 	return method;
 }
 
-void NativeDecoder::fixTileOrientation(uint32 *pixels, uint32 pixelsBufferSize, int bitmapwidth, int bitmapheight)
-{
-	if (origorientation > 4) {
-        unsigned int size = bitmapheight * bitmapwidth - 1;
-        uint32 t;
-        unsigned long long next;
-        unsigned long long cycleBegin;
-        bool *barray = (bool *) malloc(sizeof(bool) * pixelsBufferSize);
-	for (int x = 0; x < size; x++) { barray[x] = false; }
-        barray[0] = barray[size] = true;
-        unsigned long long k = 1;
+void NativeDecoder::rotateRaster(jint *raster, int angle, int *width, int *height)
+        {
+            int rotatedWidth = *width;
+            int rotatedHeight = *height;
+            int numberOf90s = angle / 90;
+            if (numberOf90s % 2 != 0)
+            {
+                int tmp = rotatedWidth;
+                rotatedWidth = rotatedHeight;
+                rotatedHeight = tmp;
+            }
 
-        switch (origorientation) {
-            case ORIENTATION_LEFTTOP:
-            case ORIENTATION_RIGHTBOT:
-                while (k < size) {
-                    cycleBegin = k;
-                    t = pixels[k];
-                    do {
-                        next = (k * bitmapheight) % size;
-                        jint buf = pixels[next];
-                        pixels[next] = t;
-                        t = buf;
-                        barray[k] = true;
-                        k = next;
-                    } while (k != cycleBegin);
-                    for (k = 1; k < size && barray[k]; k++);
-                }
-                break;
-            case ORIENTATION_LEFTBOT:
-            case ORIENTATION_RIGHTTOP:
-                while (k < size) {
-                    cycleBegin = k;
-                    t = pixels[k];
-                    do {
-                        next = (k * bitmapheight) % size;
-                        jint buf = pixels[next];
-                        pixels[next] = t;
-                        t = buf;
-                        barray[k] = true;
-                        k = next;
-                    } while (k != cycleBegin);
-                    for (k = 1; k < size && barray[k]; k++);
-                }
-                //flip horizontally
-                for (int j = 0, j1 = bitmapwidth - 1; j < bitmapwidth / 2; j++, j1--) {
-                    for (int i = 0; i < bitmapheight; i++) {
-                        jint tmp = pixels[j * bitmapheight + i];
-                        pixels[j * bitmapheight + i] = pixels[j1 * bitmapheight + i];
-                        pixels[j1 * bitmapheight + i] = tmp;
+            jint *rotated = (jint *) malloc(sizeof(jint) * rotatedWidth * rotatedHeight);//new int[rotatedWidth * rotatedHeight];
+
+            for (int h = 0; h < *height; ++h)
+            {
+                for (int w = 0; w < *width; ++w)
+                {
+                    uint32 item = raster[h * *width + w];
+                    int x = 0;
+                    int y = 0;
+                    switch (numberOf90s % 4)
+                    {
+                        case 0:
+                            x = w;
+                            y = h;
+                            break;
+
+                        case 1:
+                            x = (*height - h - 1);
+                            y = (rotatedHeight - 1) - (*width - w - 1);
+                            break;
+
+                        case 2:
+                            x = (*width - w - 1);
+                            y = (*height - h - 1);
+
+                            break;
+
+                        case 3:
+                            x = (rotatedWidth - 1) - (*height - h - 1);
+                            y = (*width - w - 1);
+                            break;
                     }
+
+                    rotated[y * rotatedWidth + x] = item;
                 }
-                //flip vertically
-                for (int i = 0, i1 = bitmapheight - 1; i < bitmapheight / 2; i++, i1--) {
-                    for (int j = 0; j < bitmapwidth; j++) {
-                        jint tmp = pixels[j * bitmapheight + i];
-                        pixels[j * bitmapheight + i] = pixels[j * bitmapheight + i1];
-                        pixels[j * bitmapheight + i1] = tmp;
-                    }
-                }
-                break;
+            }
+
+            *width = rotatedWidth;
+            *height = rotatedHeight;
+
+            memcpy(raster, rotated, sizeof(jint) * *width * *height);
+
+            //return rotated;
         }
-        free(barray);
-    }
-}
 
 void NativeDecoder::fixOrientation(jint *pixels, uint32 pixelsBufferSize, int bitmapwidth, int bitmapheight)
 {
