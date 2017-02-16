@@ -679,7 +679,11 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
         TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileHeight);
         LOGII("Tile width", tileWidth);
         LOGII("Tile height", tileHeight);
-
+/*
+        *bitmapwidth = tileWidth;
+        *bitmapheight = tileHeight;
+        pixelsBufferSize = *bitmapwidth * *bitmapheight;
+*/
         unsigned long estimateMem = 0;
         estimateMem += (sizeof(jint) * pixelsBufferSize); //buffer for decoded pixels
         estimateMem += (tileWidth * tileHeight * sizeof(uint32)) * 3; //current, left and right tiles buffers
@@ -785,7 +789,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                 } else {
                     //otherwise - current tile not rotated so rotate it
                     //tile orig is on bottom left - should change lines
-                    switch(origorientation) {
+                     switch(origorientation) {
                         case 1:
                         case 5:
                             rotateTileLinesVertical(tileHeight, tileWidth, rasterTile, work_line_buf);
@@ -844,7 +848,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                         int blue = colorMask & crPix;
 
                                         //using kernel 3x3
-
+/*
                                         //topleft
                                         if (origTileX - 1 >= 0 && origTileY - 1 >= 0) {
                                             crPix = rasterTile[(origTileY - 1) * tileWidth + origTileX - 1];
@@ -994,7 +998,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                                 sum++;
                                             }
                                         }
-
+*/
                                         red /= sum;
                                         if (red > 255) red = 255;
                                         if (red < 0) red = 0;
@@ -1013,7 +1017,12 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
 
                                         crPix = (alpha << 24) | (red << 16) | (green << 8) | (blue);
 
-                                        int position = pixY * *bitmapwidth + pixX;
+                                        int position;
+                                        if (origorientation <= 4) {
+                                        position = pixY * *bitmapwidth + pixX;
+                                        } else {
+                                        position = pixX * *bitmapheight + pixY;
+                                        }
                                         pixels[position] = crPix;
                                     }
 
@@ -1031,8 +1040,49 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                         }
                     }
                 } else {
-                    if (origorientation <=4) {
-                        for (int th = 0; th < tileHeight && th < origheight; th++) {
+                    int rowHasPixels = 0;
+                        for (int th = 0, bh = 0; th < tileHeight; th++) {
+                            for (int tw = 0, bw = 0; tw < tileWidth; tw++) {
+                                uint32 srcPosition = th * tileWidth + tw;
+                                if (rasterTile[srcPosition] != 0) {
+                                    int position = 0;
+                                    if (origorientation <= 4) {
+                                        position = (row + bh) * *bitmapwidth + column + bw;
+                                    } else {
+                                        position = (column + bw) * *bitmapheight + row + bh;
+                                    }
+                                    pixels[position] = rasterTile[srcPosition];
+                                    rowHasPixels = 1;
+                                    bw++;
+                                }
+                            }
+                            if (rowHasPixels) {
+                                bh++;
+                                rowHasPixels = 0;
+                            }
+                        }
+
+                     /*else {
+                        //LOGII("bh", *bitmapheight);
+                        //LOGII("bw", *bitmapwidth);
+                        int rowHasPixels = 0;
+                        for (int th = 0, bh = 0; th < tileHeight ; th++) {
+                            for (int tw = 0, bw = 0; tw < tileWidth ; tw++) {
+                                uint32 srcPosition = th * tileWidth + tw;
+                                if (rasterTile[srcPosition] != 0) {
+                                    int position = bw * *bitmapheight + bh;
+                                    pixels[position] = rasterTile[srcPosition];
+                                    rowHasPixels = 1;
+                                    bw++;
+                                }
+                            }
+                            if (rowHasPixels) {
+                                bh++;
+                                rowHasPixels = 0;
+                            }
+                        }*/
+                        //fixTileOrientation(rasterTile, tileHeight * tileWidth, tileWidth, tileHeight);
+                        /*for (int th = 0; th < tileHeight && th < origheight; th++) {
                             for (int tw = 0; tw < tileWidth && tw < origwidth; tw++) {
                                 uint32 srcPosition = th * tileWidth + tw;
                                 if (rasterTile[srcPosition] != 0) {
@@ -1040,18 +1090,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                     pixels[position] = rasterTile[srcPosition];
                                 }
                             }
-                        }
-                    } else {
-                        //fixTileOrientation(rasterTile, tileHeight * tileWidth, tileWidth, tileHeight);
-                        for (int th = 0; th < tileHeight && th < origheight; th++) {
-                                                    for (int tw = 0; tw < tileWidth && tw < origwidth; tw++) {
-                                                        uint32 srcPosition = th * tileWidth + tw;
-                                                        if (rasterTile[srcPosition] != 0) {
-                                                            int position = (row + th) * origwidth + column + tw;
-                                                            pixels[position] = rasterTile[srcPosition];
-                                                        }
-                                                    }
-                                                }
+                        }*/
                     /*
                         for (int th = 0; th < tileHeight && th < origheight; th++) {
                             for (int tw = 0; tw < tileWidth && tw < origwidth; tw++) {
@@ -1063,7 +1102,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                 }
                             }
                         }*/
-                    }
+                    //}
                 }
             }
         }
@@ -1085,7 +1124,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
             work_line_buf = NULL;
         }
 
-        fixOrientation(pixels, pixelsBufferSize, *bitmapwidth, *bitmapheight);
+        //fixOrientation(pixels, pixelsBufferSize, *bitmapwidth, *bitmapheight);
 
         int mbUsed = allocatedTotal/1024/1024;
         LOGII("Max memmory use ", mbUsed);
