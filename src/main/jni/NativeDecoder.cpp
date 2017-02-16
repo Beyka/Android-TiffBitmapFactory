@@ -162,6 +162,10 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
             break;
     }
 
+    if (raster == NULL) {
+        return NULL;
+    }
+
     // Convert ABGR to ARGB
     if (invertRedAndBlue) {
         int i = 0;
@@ -758,6 +762,9 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                     rightTileExists = 0;
                 }
 
+                LOGII("left tile exist", leftTileExists);
+                LOGII("right tile exist", rightTileExists);
+
                 //if we have right tile - current tile already rotated and we need to rotate only right tile
                 if (rightTileExists) {
                     switch(origorientation) {
@@ -1024,14 +1031,38 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                         }
                     }
                 } else {
-                    for (int th = 0; th < tileHeight; th++) {
-                        for (int tw = 0; tw < tileWidth; tw++) {
-                            uint32 srcPosition = th * tileWidth + tw;
-                            if (rasterTile[srcPosition] != 0) {
-                                int position = (row + th) * origwidth + column + tw;
-                                pixels[position] = rasterTile[srcPosition];
+                    if (origorientation <=4) {
+                        for (int th = 0; th < tileHeight && th < origheight; th++) {
+                            for (int tw = 0; tw < tileWidth && tw < origwidth; tw++) {
+                                uint32 srcPosition = th * tileWidth + tw;
+                                if (rasterTile[srcPosition] != 0) {
+                                    int position = (row + th) * origwidth + column + tw;
+                                    pixels[position] = rasterTile[srcPosition];
+                                }
                             }
                         }
+                    } else {
+                        //fixTileOrientation(rasterTile, tileHeight * tileWidth, tileWidth, tileHeight);
+                        for (int th = 0; th < tileHeight && th < origheight; th++) {
+                                                    for (int tw = 0; tw < tileWidth && tw < origwidth; tw++) {
+                                                        uint32 srcPosition = th * tileWidth + tw;
+                                                        if (rasterTile[srcPosition] != 0) {
+                                                            int position = (row + th) * origwidth + column + tw;
+                                                            pixels[position] = rasterTile[srcPosition];
+                                                        }
+                                                    }
+                                                }
+                    /*
+                        for (int th = 0; th < tileHeight && th < origheight; th++) {
+                            for (int tw = 0; tw < tileWidth && tw < origwidth; tw++) {
+                                uint32 srcPosition = tw * tileHeight + th;
+                                if (rasterTile[srcPosition] != 0) {
+                                    int position = (row + th) * origwidth + column + tw;
+                                    //int position =(column + tw) * origheight + row + th;
+                                    pixels[position] = rasterTile[srcPosition];
+                                }
+                            }
+                        }*/
                     }
                 }
             }
@@ -1272,6 +1303,72 @@ int NativeDecoder::getDecodeMethod()
 
 	LOGII("Decode method", method);
 	return method;
+}
+
+void NativeDecoder::fixTileOrientation(uint32 *pixels, uint32 pixelsBufferSize, int bitmapwidth, int bitmapheight)
+{
+	if (origorientation > 4) {
+        unsigned int size = bitmapheight * bitmapwidth - 1;
+        uint32 t;
+        unsigned long long next;
+        unsigned long long cycleBegin;
+        bool *barray = (bool *) malloc(sizeof(bool) * pixelsBufferSize);
+	for (int x = 0; x < size; x++) { barray[x] = false; }
+        barray[0] = barray[size] = true;
+        unsigned long long k = 1;
+
+        switch (origorientation) {
+            case ORIENTATION_LEFTTOP:
+            case ORIENTATION_RIGHTBOT:
+                while (k < size) {
+                    cycleBegin = k;
+                    t = pixels[k];
+                    do {
+                        next = (k * bitmapheight) % size;
+                        jint buf = pixels[next];
+                        pixels[next] = t;
+                        t = buf;
+                        barray[k] = true;
+                        k = next;
+                    } while (k != cycleBegin);
+                    for (k = 1; k < size && barray[k]; k++);
+                }
+                break;
+            case ORIENTATION_LEFTBOT:
+            case ORIENTATION_RIGHTTOP:
+                while (k < size) {
+                    cycleBegin = k;
+                    t = pixels[k];
+                    do {
+                        next = (k * bitmapheight) % size;
+                        jint buf = pixels[next];
+                        pixels[next] = t;
+                        t = buf;
+                        barray[k] = true;
+                        k = next;
+                    } while (k != cycleBegin);
+                    for (k = 1; k < size && barray[k]; k++);
+                }
+                //flip horizontally
+                for (int j = 0, j1 = bitmapwidth - 1; j < bitmapwidth / 2; j++, j1--) {
+                    for (int i = 0; i < bitmapheight; i++) {
+                        jint tmp = pixels[j * bitmapheight + i];
+                        pixels[j * bitmapheight + i] = pixels[j1 * bitmapheight + i];
+                        pixels[j1 * bitmapheight + i] = tmp;
+                    }
+                }
+                //flip vertically
+                for (int i = 0, i1 = bitmapheight - 1; i < bitmapheight / 2; i++, i1--) {
+                    for (int j = 0; j < bitmapwidth; j++) {
+                        jint tmp = pixels[j * bitmapheight + i];
+                        pixels[j * bitmapheight + i] = pixels[j * bitmapheight + i1];
+                        pixels[j * bitmapheight + i1] = tmp;
+                    }
+                }
+                break;
+        }
+        free(barray);
+    }
 }
 
 void NativeDecoder::fixOrientation(jint *pixels, uint32 pixelsBufferSize, int bitmapwidth, int bitmapheight)

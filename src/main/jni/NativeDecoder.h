@@ -61,6 +61,7 @@ class NativeDecoder
         jint *getSampledRasterFromTile(int, int *, int *);
         int getDecodeMethod();
         void fixOrientation(jint *, uint32, int, int);
+        void fixTileOrientation(uint32 *, uint32 , int , int );
         jbyte * createBitmapAlpha8(jint *, int, int);
         unsigned short *createBitmapRGB565(jint *, int, int);
 
