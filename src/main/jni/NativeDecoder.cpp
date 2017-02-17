@@ -1134,19 +1134,20 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
             case ORIENTATION_TOPLEFT:
             case ORIENTATION_BOTLEFT:
             case ORIENTATION_LEFTTOP:
+            case ORIENTATION_TOPRIGHT:
                 //nothing
                 break;
-            case ORIENTATION_TOPRIGHT:
             case ORIENTATION_BOTRIGHT:
+                flipPixelsHorizontal(*bitmapwidth, *bitmapheight, pixels);
                 break;
             case ORIENTATION_LEFTBOT:
                 rotateRaster(pixels, 180, bitmapwidth, bitmapheight);
                 break;
             case ORIENTATION_RIGHTBOT:
-                flipPixelsHorizontal(*bitmapheight, *bitmapwidth, pixels);
+                flipPixelsVertical(*bitmapheight, *bitmapwidth, pixels);
                 break;
             case ORIENTATION_RIGHTTOP:
-                flipPixelsVertical(*bitmapheight, *bitmapwidth, pixels);
+                flipPixelsHorizontal(*bitmapheight, *bitmapwidth, pixels);
                 break;
         }
 
