@@ -766,9 +766,6 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                     rightTileExists = 0;
                 }
 
-                LOGII("left tile exist", leftTileExists);
-                LOGII("right tile exist", rightTileExists);
-
                 //if we have right tile - current tile already rotated and we need to rotate only right tile
                 if (rightTileExists) {
                     switch(origorientation) {
@@ -848,7 +845,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                         int blue = colorMask & crPix;
 
                                         //using kernel 3x3
-/*
+
                                         //topleft
                                         if (origTileX - 1 >= 0 && origTileY - 1 >= 0) {
                                             crPix = rasterTile[(origTileY - 1) * tileWidth + origTileX - 1];
@@ -998,7 +995,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                                 sum++;
                                             }
                                         }
-*/
+
                                         red /= sum;
                                         if (red > 255) red = 255;
                                         if (red < 0) red = 0;
@@ -1128,7 +1125,32 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
         }
 
         //rotateRaster(pixels, 90, bitmapwidth, bitmapheight);
+
+        /* case ORIENTATION_LEFTTOP:
+                      case ORIENTATION_RIGHTBOT:*/
+
         //fixOrientation(pixels, pixelsBufferSize, *bitmapwidth, *bitmapheight);
+        switch (origorientation) {
+            case ORIENTATION_TOPLEFT:
+            case ORIENTATION_BOTLEFT:
+            case ORIENTATION_LEFTTOP:
+                //nothing
+                break;
+            case ORIENTATION_TOPRIGHT:
+            case ORIENTATION_BOTRIGHT:
+                break;
+            case ORIENTATION_LEFTBOT:
+                rotateRaster(pixels, 180, bitmapwidth, bitmapheight);
+                break;
+            case ORIENTATION_RIGHTBOT:
+                flipPixelsHorizontal(*bitmapheight, *bitmapwidth, pixels);
+                break;
+            case ORIENTATION_RIGHTTOP:
+                flipPixelsVertical(*bitmapheight, *bitmapwidth, pixels);
+                break;
+        }
+
+
 
         int mbUsed = allocatedTotal/1024/1024;
         LOGII("Max memmory use ", mbUsed);
@@ -1348,6 +1370,32 @@ int NativeDecoder::getDecodeMethod()
 	return method;
 }
 
+void NativeDecoder::flipPixelsVertical(uint32 width, uint32 height, jint* raster) {
+    jint *bufferLine = (jint *) malloc(sizeof(jint) * width);
+    for (int line = 0; line < height / 2; line++) {
+        jint  *top_line, *bottom_line;
+        top_line = raster + width * line;
+        bottom_line = raster + width * (height - line -1);
+        _TIFFmemcpy(bufferLine, top_line, sizeof(jint) * width);
+        _TIFFmemcpy(top_line, bottom_line, sizeof(jint) * width);
+        _TIFFmemcpy(bottom_line, bufferLine, sizeof(jint) * width);
+    }
+    free(bufferLine);
+}
+
+void NativeDecoder::flipPixelsHorizontal(uint32 width, uint32 height, jint* raster) {
+    //jint *bufferLine = (jint *) malloc(sizeof(jint) * width);
+    jint buf;
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width / 2; x++) {
+            buf = raster[y * width + x];
+            raster[y * width + x] = raster[y * width + width - x - 1];
+            raster[y * width + width - x - 1] = buf;
+        }
+    }
+    //free(bufferLine);
+}
+
 void NativeDecoder::rotateRaster(jint *raster, int angle, int *width, int *height)
         {
             int rotatedWidth = *width;
@@ -1401,6 +1449,8 @@ void NativeDecoder::rotateRaster(jint *raster, int angle, int *width, int *heigh
             *height = rotatedHeight;
 
             memcpy(raster, rotated, sizeof(jint) * *width * *height);
+
+            free(rotated);
 
             //return rotated;
         }
