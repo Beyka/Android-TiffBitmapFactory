@@ -17,7 +17,7 @@ extern "C" {
 
 void throw_not_enought_memory_exception(JNIEnv *, int, int);
 void throw_decode_file_exception(JNIEnv *, jstring);
-void throw_no_such_file_exception(JNIEnv *, jstring);
+void throw_cant_open_file_exception(JNIEnv *, jstring);
 
 #ifdef __cplusplus
 }

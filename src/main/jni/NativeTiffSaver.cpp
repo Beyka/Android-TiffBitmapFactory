@@ -139,13 +139,13 @@ extern "C" {
                 fileDescriptor = open(strPath, mode, 0666);
                 if (fileDescriptor < 0) {
                     LOGE("Unable to create tif file descriptor");
-                    throw_no_such_file_exception(env, filePath);
+                    throw_cant_open_file_exception(env, filePath);
                     return JNI_FALSE;
                 } else {
                     if ((output_image = TIFFFdOpen(fileDescriptor, strPath, "w")) == NULL) {
                         close(fileDescriptor);
                         LOGE("Unable to write tif file");
-                        throw_no_such_file_exception(env, filePath);
+                        throw_cant_open_file_exception(env, filePath);
                         return JNI_FALSE;
                     }
                 }
@@ -158,13 +158,13 @@ extern "C" {
                 fileDescriptor = open(strPath, mode, 0666);
                 if (fileDescriptor < 0) {
                     LOGE("Unable to create tif file descriptor");
-                    throw_no_such_file_exception(env, filePath);
+                    throw_cant_open_file_exception(env, filePath);
                     return JNI_FALSE;
                 } else {
                     if ((output_image = TIFFFdOpen(fileDescriptor, strPath, "a")) == NULL) {
                         close(fileDescriptor);
                         LOGE("Unable to write tif file");
-                        throw_no_such_file_exception(env, filePath);
+                        throw_cant_open_file_exception(env, filePath);
                         return JNI_FALSE;
                     }
                 }

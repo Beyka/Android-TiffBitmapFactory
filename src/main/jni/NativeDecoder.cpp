@@ -25,15 +25,17 @@ NativeDecoder::NativeDecoder(JNIEnv *e, jclass c, jstring path, jobject opts)
     invertRedAndBlue = false;
     //availableMemory = -1;
 
+    preferedConfig = NULL;
+
 
 }
 
 NativeDecoder::~NativeDecoder()
 {
+    LOGI("Destructor");
     if (image) {
         TIFFClose(image);
         image = NULL;
-        LOGI("Tiff is closed");
     }
 
     //Release global reference for Bitmap.Config
@@ -50,11 +52,14 @@ jobject NativeDecoder::getBitmap()
         LOGIS("nativeTiffOpen", strPath);
 
         image = TIFFOpen(strPath, "r");
-        env->ReleaseStringUTFChars(jPath, strPath);
+
         if (image == NULL) {
-            throw_no_such_file_exception(env, jPath);
+            throw_cant_open_file_exception(env, jPath);
             LOGES("Can\'t open bitmap", strPath);
+            env->ReleaseStringUTFChars(jPath, strPath);
             return NULL;
+        } else {
+            env->ReleaseStringUTFChars(jPath, strPath);
         }
         LOGI("Tiff is open");
 
@@ -129,12 +134,14 @@ jobject NativeDecoder::getBitmap()
 jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
 {
 //Read Config from options. Use ordinal field from ImageConfig class
-    jclass configClass = env->FindClass(
+    jint configInt = ARGB_8888;
+    if(preferedConfig) {
+        jclass configClass = env->FindClass(
             "org/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageConfig");
-    jfieldID ordinalFieldID = env->GetFieldID(configClass, "ordinal", "I");
-    jint configInt = env->GetIntField(preferedConfig, ordinalFieldID);
-
-    env->DeleteLocalRef(configClass);
+        jfieldID ordinalFieldID = env->GetFieldID(configClass, "ordinal", "I");
+        configInt = env->GetIntField(preferedConfig, ordinalFieldID);
+        env->DeleteLocalRef(configClass);
+    }
 
     int bitdepth = 0;
     TIFFGetField(image, TIFFTAG_BITSPERSAMPLE, &bitdepth);

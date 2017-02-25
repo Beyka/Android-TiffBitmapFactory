@@ -44,12 +44,12 @@ void throw_decode_file_exception(JNIEnv *env, jstring str)
     env->Throw((jthrowable)exObj);
 }
 
-void throw_no_such_file_exception(JNIEnv *env, jstring str)
+void throw_cant_open_file_exception(JNIEnv *env, jstring str)
 {
     jclass exClass;
     jmethodID exConstructorID;
     jobject exObj;
-    char *className = "org/beyka/tiffbitmapfactory/exceptions/NoSuchFileException" ;
+    char *className = "org/beyka/tiffbitmapfactory/exceptions/CantOpenFileException" ;
 
     exClass = env->FindClass(className);
 
