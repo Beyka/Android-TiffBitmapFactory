@@ -25,21 +25,26 @@ void throw_not_enought_memory_exception(JNIEnv *env, int available, int need)
     env->Throw((jthrowable)exObj);
 }
 
-void throw_decode_file_exception(JNIEnv *env, jstring str)
+void throw_decode_file_exception(JNIEnv *env, jstring str, jstring additionalInfo)
 {
     jclass exClass;
     jmethodID exConstructorID;
     jobject exObj;
     char *className = "org/beyka/tiffbitmapfactory/exceptions/DecodeTiffException" ;
 
+    /*LOGIS("created", aditionalInfo);
+    LOGI("creating jstring");
+    jstring info = env->NewStringUTF(aditionalInfo);
+    LOGIS("created", info);
+*/
     exClass = env->FindClass(className);
 
-    exConstructorID = env->GetMethodID(exClass, "<init>", "(Ljava/lang/String;)V");
+    exConstructorID = env->GetMethodID(exClass, "<init>", "(Ljava/lang/String;Ljava/lang/String;)V");
 
     //Create java string
 //    jstring exString = env->NewStringUTF(str);
 
-    exObj = env->NewObject(exClass, exConstructorID, str);
+    exObj = env->NewObject(exClass, exConstructorID, str, additionalInfo);
 
     env->Throw((jthrowable)exObj);
 }

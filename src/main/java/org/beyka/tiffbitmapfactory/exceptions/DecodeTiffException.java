@@ -6,13 +6,24 @@ package org.beyka.tiffbitmapfactory.exceptions;
 public class DecodeTiffException extends RuntimeException {
 
     private String fileName;
+    private String aditionalInfo;
 
     public DecodeTiffException(String fileName){
         super("Could not decode tiff file " + fileName);
         this.fileName = fileName;
     }
 
+    public DecodeTiffException(String fileName, String aditionaInfo){
+        super("Could not decode tiff file " + fileName + "\n" + aditionaInfo);
+        this.fileName = fileName;
+        this.aditionalInfo = aditionaInfo;
+    }
+
     public String getFileName(){
         return fileName;
+    }
+
+    public String getAditionalInfo() {
+        return aditionalInfo;
     }
 }

@@ -26,6 +26,7 @@ NativeDecoder::NativeDecoder(JNIEnv *e, jclass c, jstring path, jobject opts)
     //availableMemory = -1;
 
     preferedConfig = NULL;
+    image = NULL;
 
 
 }
@@ -47,28 +48,24 @@ NativeDecoder::~NativeDecoder()
 
 jobject NativeDecoder::getBitmap()
 {
-        const char *strPath = NULL;
-        strPath = env->GetStringUTFChars(jPath, 0);
-        LOGIS("nativeTiffOpen", strPath);
-
-        image = TIFFOpen(strPath, "r");
-
-        if (image == NULL) {
-            throw_cant_open_file_exception(env, jPath);
-            LOGES("Can\'t open bitmap", strPath);
-            env->ReleaseStringUTFChars(jPath, strPath);
-            return NULL;
-        } else {
-            env->ReleaseStringUTFChars(jPath, strPath);
-        }
-        LOGI("Tiff is open");
-
-    //Get options
+        //Get options from TiffBitmapFactory$Options
         jclass jBitmapOptionsClass = env->FindClass(
                 "org/beyka/tiffbitmapfactory/TiffBitmapFactory$Options");
 
+        jfieldID gOptions_ThrowExceptionFieldID = env->GetFieldID(jBitmapOptionsClass,
+                                                                          "inThrowException",
+                                                                          "Z");
+        throwException = env->GetBooleanField(optionsObject, gOptions_ThrowExceptionFieldID);
+
         jfieldID gOptions_sampleSizeFieldID = env->GetFieldID(jBitmapOptionsClass, "inSampleSize", "I");
         jint inSampleSize = env->GetIntField(optionsObject, gOptions_sampleSizeFieldID);
+        if (inSampleSize % 2 != 0) {
+            char *message = "inSampleSize should be power of 2\0";
+            jstring adinf = env->NewStringUTF(message);
+            throw_decode_file_exception(env, jPath, adinf);
+            env->DeleteLocalRef(adinf);
+            return NULL;
+        }
 
         jfieldID gOptions_justDecodeBoundsFieldID = env->GetFieldID(jBitmapOptionsClass,
                                                                     "inJustDecodeBounds", "Z");
@@ -115,6 +112,27 @@ jobject NativeDecoder::getBitmap()
         //if directory number < 0 set it to 0
         if (inDirectoryNumber < 0) inDirectoryNumber = 0;
 
+        //Open tiff file
+        const char *strPath = NULL;
+        strPath = env->GetStringUTFChars(jPath, 0);
+        LOGIS("nativeTiffOpen", strPath);
+
+        image = TIFFOpen(strPath, "r");
+
+        if (image == NULL) {
+            if (throwException) {
+                throw_cant_open_file_exception(env, jPath);
+            }
+            LOGES("Can\'t open bitmap", strPath);
+            env->ReleaseStringUTFChars(jPath, strPath);
+            return NULL;
+        } else {
+            env->ReleaseStringUTFChars(jPath, strPath);
+        }
+        LOGI("Tiff is open");
+
+
+
         jobject java_bitmap = NULL;
 
         writeDataToOptions(inDirectoryNumber);
@@ -146,8 +164,13 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
     int bitdepth = 0;
     TIFFGetField(image, TIFFTAG_BITSPERSAMPLE, &bitdepth);
     if (bitdepth != 1 && bitdepth != 4 && bitdepth != 8 && bitdepth != 16) {
-        LOGE("Only 1, 4, 8, and 16 bits per sample supported");
-        throw_decode_file_exception(env, jPath);
+    char *message = "Only 1, 4, 8, and 16 bits per sample supported";
+        LOGE(*message);
+        if (throwException) {
+            jstring adinf = env->NewStringUTF(message);
+            throw_decode_file_exception(env, jPath, adinf);
+            env->DeleteLocalRef(adinf);
+        }
         return NULL;
     }
 
@@ -297,7 +320,9 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
     estimateMem += (sizeof(jint) * origwidth * 2); //bottom and top lines for reading pixel(matrixBottomLine, matrixTopLine)
     LOGII("estimateMem", estimateMem);
     if (estimateMem > availableMemory) {
-        throw_not_enought_memory_exception(env, availableMemory, estimateMem);
+        if (throwException) {
+            throw_not_enought_memory_exception(env, availableMemory, estimateMem);
+        }
         return NULL;
     }
 
@@ -697,7 +722,9 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
         estimateMem += (tileWidth * sizeof(uint32)); //work line for rotate tile
         LOGII("estimateMem", estimateMem);
         if (estimateMem > availableMemory) {
-            throw_not_enought_memory_exception(env, availableMemory, estimateMem);
+            if (throwException) {
+                throw_not_enought_memory_exception(env, availableMemory, estimateMem);
+            }
             return NULL;
         }
 
@@ -1189,7 +1216,9 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
     LOGII("estimateMem", estimateMem);
 
     if (estimateMem > availableMemory) {
-        throw_not_enought_memory_exception(env, availableMemory, estimateMem);
+        if (throwException) {
+            throw_not_enought_memory_exception(env, availableMemory, estimateMem);
+        }
         return NULL;
     }
 
@@ -1205,8 +1234,13 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
 	if (0 ==
         TIFFReadRGBAImageOriented(image, origwidth, origheight, origBuffer, ORIENTATION_TOPLEFT, 0)) {
 	    free(origBuffer);
-        LOGE("Error reading image.");
-        throw_decode_file_exception(env, jPath);
+	    char *message = "Error reading image";
+        LOGE(*message);
+        if (throwException) {
+            jstring adinf = env->NewStringUTF(message);
+            throw_decode_file_exception(env, jPath, adinf);
+            env->DeleteLocalRef(adinf);
+        }
         return NULL;
     }
 

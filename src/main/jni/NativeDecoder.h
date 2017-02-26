@@ -42,6 +42,7 @@ class NativeDecoder
         jclass clazz;
         jobject optionsObject;
         jstring jPath;
+        jboolean throwException;
         TIFF *image;
         int origwidth;
         int origheight;

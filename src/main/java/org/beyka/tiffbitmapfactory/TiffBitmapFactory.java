@@ -151,6 +151,7 @@ public class TiffBitmapFactory {
          * the same result from the decoder as if null were passed.
          */
         public Options() {
+            inThrowException = true;
             inSwapRedBlueColors = false;
             inJustDecodeBounds = false;
             inSampleSize = 1;
@@ -162,6 +163,12 @@ public class TiffBitmapFactory {
             outDirectoryCount = -1;
             outImageOrientation = Orientation.UNAVAILABLE;
         }
+
+        /**
+         * If set to true, decoder will throw exceptions if some errors appears while decoding.
+         * Otherwise  decoder will return null if some error appears.
+         */
+        public boolean inThrowException;
 
         /**
          * If set to true, the decoder will swap red and blue colors.
