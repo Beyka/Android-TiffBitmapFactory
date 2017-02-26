@@ -151,7 +151,8 @@ public class TiffBitmapFactory {
          * the same result from the decoder as if null were passed.
          */
         public Options() {
-            inThrowException = true;
+            inThrowException = false;
+            inUseOrientationTag = true;
             inSwapRedBlueColors = false;
             inJustDecodeBounds = false;
             inSampleSize = 1;
@@ -165,8 +166,16 @@ public class TiffBitmapFactory {
         }
 
         /**
+         * If set to true decoder will rotate and flip image according to TIFFTAG_ORIENTATION.
+         * Otherwise image will be returned as it decoded.
+         * Default value is true
+         */
+        public boolean inUseOrientationTag;
+
+        /**
          * If set to true, decoder will throw exceptions if some errors appears while decoding.
          * Otherwise  decoder will return null if some error appears.
+         * Default value is false
          */
         public boolean inThrowException;
 

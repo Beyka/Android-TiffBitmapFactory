@@ -43,6 +43,7 @@ class NativeDecoder
         jobject optionsObject;
         jstring jPath;
         jboolean throwException;
+        jboolean useOrientationTag;
         TIFF *image;
         int origwidth;
         int origheight;
