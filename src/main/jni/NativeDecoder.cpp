@@ -188,7 +188,7 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
     jint *raster = NULL;
 
 
-    switch(getDecodeMethod()) {
+    /*switch(getDecodeMethod()) {
         case DECODE_METHOD_IMAGE:
             raster = getSampledRasterFromImage(inSampleSize, &newBitmapWidth, &newBitmapHeight);
             break;
@@ -198,7 +198,8 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
         case DECODE_METHOD_STRIP:
             raster = getSampledRasterFromStrip(inSampleSize,  &newBitmapWidth, &newBitmapHeight);
             break;
-    }
+    }*/
+    raster = getSampledRasterFromTile(inSampleSize,  &newBitmapWidth, &newBitmapHeight);
 
     if (raster == NULL) {
         return NULL;
@@ -217,11 +218,6 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
                         ((tmp & 0xff) << 16);
             }
         }
-    }
-
-    if (origorientation > 4 && !useOrientationTag) {
-        rotateRaster(raster, 90, &newBitmapHeight, &newBitmapWidth);
-        flipPixelsHorizontal(newBitmapHeight, newBitmapWidth, raster);
     }
 
 
@@ -261,13 +257,24 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
     env->DeleteLocalRef(bitmapConfigClass);
 
     jobject java_bitmap = NULL;
-    if (origorientation > 4 /*&& useOrientationTag*/) {
+    //if (origorientation > 4 /*&& useOrientationTag*/) {
+     //   java_bitmap = env->CallStaticObjectMethod(bitmapClass, methodid, newBitmapHeight,
+     //                                             newBitmapWidth, config);
+    //} else {
+    //    java_bitmap = env->CallStaticObjectMethod(bitmapClass, methodid, newBitmapWidth,
+    //                                              newBitmapHeight, config);
+    //}
+    if (!useOrientationTag) {
+        java_bitmap = env->CallStaticObjectMethod(bitmapClass, methodid, newBitmapWidth,
+                                                      newBitmapHeight, config);
+    } else if (origorientation > 4) {
         java_bitmap = env->CallStaticObjectMethod(bitmapClass, methodid, newBitmapHeight,
                                                   newBitmapWidth, config);
     } else {
         java_bitmap = env->CallStaticObjectMethod(bitmapClass, methodid, newBitmapWidth,
                                                   newBitmapHeight, config);
     }
+
     //remove not used references
     env->DeleteLocalRef(config);
     env->DeleteLocalRef(bitmapClass);
@@ -675,8 +682,49 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
         }
         LOGI("matrixBottomLine");
 
+
+
         if (useOrientationTag) {
-            fixOrientation(pixels, pixelsBufferSize, *bitmapwidth, *bitmapheight);
+            uint32 buf;
+            //fixOrientation(pixels, pixelsBufferSize, *bitmapwidth, *bitmapheight);
+            switch(origorientation) {
+                 case ORIENTATION_TOPLEFT:
+                 case ORIENTATION_TOPRIGHT:
+                    break;
+                 case ORIENTATION_BOTRIGHT:
+                 case ORIENTATION_BOTLEFT:
+                    flipPixelsVertical(*bitmapwidth, *bitmapheight, pixels);
+                    break;
+                 case ORIENTATION_LEFTTOP:
+                    rotateRaster(pixels, 90, bitmapwidth, bitmapheight);
+                    flipPixelsHorizontal(*bitmapwidth, *bitmapheight, pixels);
+                    buf = *bitmapwidth;
+                    *bitmapwidth = *bitmapheight;
+                    *bitmapheight = buf;
+                    break;
+                 case ORIENTATION_RIGHTTOP:
+                    rotateRaster(pixels, 270, bitmapwidth, bitmapheight);
+                    flipPixelsHorizontal(*bitmapwidth, *bitmapheight, pixels);
+                    buf = *bitmapwidth;
+                    *bitmapwidth = *bitmapheight;
+                    *bitmapheight = buf;
+                    break;
+                 case ORIENTATION_RIGHTBOT:
+                    rotateRaster(pixels, 90, bitmapwidth, bitmapheight);
+                    buf= *bitmapwidth;
+                    *bitmapwidth = *bitmapheight;
+                    *bitmapheight = buf;
+                    break;
+                 case ORIENTATION_LEFTBOT:
+                    rotateRaster(pixels, 270, bitmapwidth, bitmapheight);
+                    buf = *bitmapwidth;
+                    *bitmapwidth = *bitmapheight;
+                    *bitmapheight = buf;
+                    break;
+            }
+
+        } else if (origorientation == 2 || origorientation == 3 || origorientation == 6 || origorientation == 7) {
+            flipPixelsHorizontal(*bitmapwidth, *bitmapheight, pixels);
         }
 
         int mbUsed = allocatedTotal/1024/1024;
@@ -1181,14 +1229,28 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
         if (useOrientationTag) {
             switch (origorientation) {
                 case ORIENTATION_TOPLEFT:
-                case ORIENTATION_BOTLEFT:
                 case ORIENTATION_LEFTTOP:
-                case ORIENTATION_TOPRIGHT:
-                    //nothing
                     break;
-                case ORIENTATION_BOTRIGHT:
+                case ORIENTATION_TOPRIGHT:
                     flipPixelsHorizontal(*bitmapwidth, *bitmapheight, pixels);
                     break;
+                case ORIENTATION_RIGHTTOP:
+                    flipPixelsHorizontal(*bitmapheight, *bitmapwidth, pixels);
+                    break;
+                //case ORIENTATION_RIGHTTOP:
+                  //  break;
+                case ORIENTATION_BOTRIGHT:
+                case ORIENTATION_RIGHTBOT:
+                    rotateRaster(pixels, 180, bitmapwidth, bitmapheight);
+                    break;
+                case ORIENTATION_BOTLEFT:
+                    flipPixelsVertical(*bitmapwidth, *bitmapheight, pixels);
+                    break;
+                case ORIENTATION_LEFTBOT:
+                    flipPixelsVertical(*bitmapheight, *bitmapwidth, pixels);
+                    break;
+
+                /*
                 case ORIENTATION_LEFTBOT:
                     rotateRaster(pixels, 180, bitmapwidth, bitmapheight);
                     break;
@@ -1198,7 +1260,18 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                 case ORIENTATION_RIGHTTOP:
                     flipPixelsHorizontal(*bitmapheight, *bitmapwidth, pixels);
                     break;
+                    */
             }
+        } else {
+            if (origorientation > 4) {
+                uint32 buf = *bitmapwidth;
+                *bitmapwidth = *bitmapheight;
+                *bitmapheight = buf;
+                rotateRaster(pixels, 90, bitmapwidth, bitmapheight);
+                flipPixelsHorizontal(*bitmapwidth, *bitmapheight, pixels);
+            }
+            //rotateRaster(pixels, 90, bitmapheight, bitmapwidth);
+            //flipPixelsHorizontal(*bitmapheight, *bitmapwidth, pixels);
         }
 
 
@@ -1394,6 +1467,52 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
 
     if (useOrientationTag) {
         fixOrientation(pixels, pixelsBufferSize, *bitmapwidth, *bitmapheight);
+    } else {
+        uint32 buf;
+        switch(origorientation) {
+                         case ORIENTATION_TOPLEFT:
+                         case ORIENTATION_LEFTTOP:
+                            break;
+                         case ORIENTATION_TOPRIGHT:
+                         case ORIENTATION_RIGHTTOP:
+                            flipPixelsHorizontal(*bitmapwidth, *bitmapheight, pixels);
+                            break;
+                         case ORIENTATION_BOTRIGHT:
+                         case ORIENTATION_RIGHTBOT:
+                            rotateRaster(pixels, 180, bitmapwidth, bitmapheight);
+                            break;
+                         case ORIENTATION_BOTLEFT:
+                         case ORIENTATION_LEFTBOT:
+                            rotateRaster(pixels, 180, bitmapwidth, bitmapheight);
+                            flipPixelsHorizontal(*bitmapwidth, *bitmapheight, pixels);
+                            break;
+                         /*
+                            rotateRaster(pixels, 90, bitmapwidth, bitmapheight);
+                            flipPixelsHorizontal(*bitmapwidth, *bitmapheight, pixels);
+                            buf = *bitmapwidth;
+                            *bitmapwidth = *bitmapheight;
+                            *bitmapheight = buf;
+                            break;
+                         case ORIENTATION_RIGHTTOP:
+                            rotateRaster(pixels, 270, bitmapwidth, bitmapheight);
+                            flipPixelsHorizontal(*bitmapwidth, *bitmapheight, pixels);
+                            buf = *bitmapwidth;
+                            *bitmapwidth = *bitmapheight;
+                            *bitmapheight = buf;
+                            break;
+                         case ORIENTATION_RIGHTBOT:
+                            rotateRaster(pixels, 90, bitmapwidth, bitmapheight);
+                            buf= *bitmapwidth;
+                            *bitmapwidth = *bitmapheight;
+                            *bitmapheight = buf;
+                            break;
+                         case ORIENTATION_LEFTBOT:
+                            rotateRaster(pixels, 270, bitmapwidth, bitmapheight);
+                            buf = *bitmapwidth;
+                            *bitmapwidth = *bitmapheight;
+                            *bitmapheight = buf;
+                            break;*/
+                            }
     }
 
     int mbUsed = allocatedTotal/1024/1024;
