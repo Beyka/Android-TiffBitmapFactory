@@ -188,7 +188,7 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
     jint *raster = NULL;
 
 
-    /*switch(getDecodeMethod()) {
+    switch(getDecodeMethod()) {
         case DECODE_METHOD_IMAGE:
             raster = getSampledRasterFromImage(inSampleSize, &newBitmapWidth, &newBitmapHeight);
             break;
@@ -198,8 +198,7 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
         case DECODE_METHOD_STRIP:
             raster = getSampledRasterFromStrip(inSampleSize,  &newBitmapWidth, &newBitmapHeight);
             break;
-    }*/
-    raster = getSampledRasterFromTile(inSampleSize,  &newBitmapWidth, &newBitmapHeight);
+    }
 
     if (raster == NULL) {
         return NULL;
