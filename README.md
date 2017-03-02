@@ -1,8 +1,6 @@
 # Android-TiffBitmapFactory
 TiffBitmapFactory is an Android library that allows opening and saving images in *.tif format (See [Wikipedia](https://en.wikipedia.org/wiki/Tagged_Image_File_Format)) on Android devices.
 
-This fork enables large Tiff files to be read and sampled incrementally. The caller specifies how much memory is available for processing. If there is sufficient memory the entire file is read in at once, sampled, and the bitmap is created. If there is insufficient memory, the file is read a Tile or Strip at a time, sampled, and the bitmap is created.
-
 For decoding and encoding *.tif files it uses the native library [libtiff](https://github.com/dumganhar/libtiff). Also for images that compressed with jpeg compression scheme used [libjpeg9 for android](https://github.com/Suvitruf/libjpeg-version-9-android) (the IJG code)
 
 Just now it has possibility to open tif image as mutable bitmap, read count of directory in file, apply sample rate for bitmap decoding and choose directory to decode.
@@ -10,12 +8,12 @@ While saving there is available few(most popular) compression mods and some addi
 
 Minimum Android API level 8
 
-Starting from version 0.8 library has support for all architectures
+Supported architectures: all
 
 ### Installation
 Just add to your gradle dependencies :
 ```
-compile 'com.github.beyka:androidtiffbitmapfactory:0.9.1'
+compile 'com.github.beyka:androidtiffbitmapfactory:0.9.5'
 ```
 And do not forget to add WRITE_EXTERNAL_STORAGE permission to main project manifest
 
@@ -37,7 +35,6 @@ options.inJustDecodeBounds = true;
 TiffBitmapFactory.decodeFile(file, options);
 
 int dirCount = options.outDirectoryCount;
-
 
 //Read and process all images in file
 for (int i = 0; i < dirCount; i++) {
@@ -71,12 +68,10 @@ for (int i = 0; i < dirCount; i++) {
 }
 ```
 
-In case you open realy heavy images and to avoid crashes of application you can use inAvailableMemory option:
-```Java
-TiffBitmapFactory.Options options = new TiffBitmapFactory.Options();
-options.inAvailableMemory = 1024 * 1024 * 10; //10 mb
-Bitmap bmp = TiffBitmapFactory.decodeFile(file, options);
-```
+### Memory processing
+While decoding images library use native memory mechanism, so it could use all memory available for operating system. This could produce crash of your app and close other applications which are running on the device. Also in some cases it could crash operating system. 
+Also in case of using more than one thread for decoding images every thread could try to use all device memory.
+For avoiding of memory errors, library now has option called inAvailableMemory. Default value for this variable is 8000*8000*4 that equal to 244Mb. -1 means that decoder could use all available memory, but also it could be root of application crashes. Each separate thread that decoding tiff image will estimate how many memory it will use in decoding process. If estimate memory is less than available memory, decoder will decode image. Otherwise decoder will throw error or just return NULL(see inThrowException option).
 
 #### Saving tiff file
 ```Java
