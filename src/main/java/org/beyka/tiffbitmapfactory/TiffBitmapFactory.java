@@ -67,7 +67,7 @@ public class TiffBitmapFactory {
      *         decoded
      *
      * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while decoding image
-     * @throws CantOpenFileException when {@code file} not exist
+     * @throws org.beyka.tiffbitmapfactory.exceptions.CantOpenFileException when {@code file} not exist or {@code file} is not tiff image
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
      */
     public static Bitmap decodeFile(File file) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
@@ -86,10 +86,9 @@ public class TiffBitmapFactory {
      * @return The decoded bitmap, or null if the image data could not be
      *         decoded, or, if options is non-null, if options requested only the
      *         size be returned (in {@link Options#outWidth}, {@link Options#outHeight}, {@link Options#outDirectoryCount})
-     * @throws DecodeTiffException when error occure while decoding image
-     * @throws CantOpenFileException when {@code file} not exist
+     * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while decoding image
+     * @throws org.beyka.tiffbitmapfactory.exceptions.CantOpenFileException when {@code file} not exist or {@code file} is not tiff image
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when {@link Options#inAvailableMemory} not enought to decode image
-     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
      */
     public static Bitmap decodeFile(File file, Options options) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
         long time = System.currentTimeMillis();
@@ -106,8 +105,8 @@ public class TiffBitmapFactory {
      * @return The decoded bitmap, or null if the image data could not be
      *         decoded
      *
-     * @throws DecodeTiffException when error occure while decoding image
-     * @throws CantOpenFileException when {@code path} not exist
+     * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while decoding image
+     * @throws org.beyka.tiffbitmapfactory.exceptions.CantOpenFileException when {@code file} not exist or {@code file} is not tiff image
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
      */
     public static Bitmap decodePath(String path) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
@@ -127,8 +126,8 @@ public class TiffBitmapFactory {
      *         decoded, or, if options is non-null, if options requested only the
      *         size be returned (in {@link Options#outWidth}, {@link Options#outHeight}, {@link Options#outDirectoryCount})
      *
-     * @throws DecodeTiffException when error occure while decoding image
-     * @throws CantOpenFileException when {@code path} not exist
+     * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while decoding image
+     * @throws org.beyka.tiffbitmapfactory.exceptions.CantOpenFileException when {@code file} not exist or {@code file} is not tiff image
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
      */
     public static Bitmap decodePath(String path, Options options) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
@@ -157,7 +156,7 @@ public class TiffBitmapFactory {
             inJustDecodeBounds = false;
             inSampleSize = 1;
             inDirectoryNumber = 0;
-            inAvailableMemory = -1;
+            inAvailableMemory = 8000*8000*4;
 
             outWidth = -1;
             outHeight = -1;
@@ -168,13 +167,15 @@ public class TiffBitmapFactory {
         /**
          * If set to true decoder will rotate and flip image according to TIFFTAG_ORIENTATION.
          * Otherwise image will be returned as it decoded.
-         * Default value is false
+         * <p>The specification considers this a baseline tag, but does add that support for orientations other than 1 is not a Baseline TIFF requirement.</p>
+         * So for almost all cases this variable may be false.
+         * <p>Default value is false</p>
          */
         public boolean inUseOrientationTag;
 
         /**
-         * If set to true, decoder will throw exceptions if some errors appears while decoding.
-         * Otherwise  decoder will return null if some error appears.
+         * If set to true, decoder will throw exceptions if some errors appeared while decoding.
+         * Otherwise  decoder will just return null.
          * Default value is false
          */
         public boolean inThrowException;
@@ -213,7 +214,8 @@ public class TiffBitmapFactory {
         
         /**
          * Number of bytes that may be allocated during the Tiff file operations.
-         * -1 means memory is unlimited.
+         * <p>-1 means memory is unlimited.</p>
+         * <p>Default value is 244Mb</p>
          */
         public long inAvailableMemory;
 

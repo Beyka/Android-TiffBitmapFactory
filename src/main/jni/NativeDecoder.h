@@ -68,15 +68,6 @@ class NativeDecoder
         void rotateRaster(jint *, int, int *, int *);
         jbyte * createBitmapAlpha8(jint *, int, int);
         unsigned short *createBitmapRGB565(jint *, int, int);
-
-        /*jbyte * createBitmapAlpha8(JNIEnv *, jint *, int, int);
-        unsigned short *createBitmapRGB565(JNIEnv *, jint *, int, int);
-        jobject createBlankBitmap(JNIEnv *, int width, int height);
-        void releaseImage(JNIEnv *);
-        jint *getSampledRasterFromImage(JNIEnv *, int , int *, int *);
-        jint *getSampledRasterFromStrip(JNIEnv *, int , int *, int *);
-        */
-
 };
 
 #endif //TIFFSAMPLE_NATIVEDECODER_H
