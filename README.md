@@ -68,7 +68,7 @@ for (int i = 0; i < dirCount; i++) {
 }
 ```
 
-### Memory processing
+##### Memory processing
 While decoding images library use native memory mechanism, so it could use all memory available for operating system. This could produce crash of your app and close other applications which are running on the device. Also in some cases it could crash operating system. 
 Also in case of using more than one thread for decoding images every thread could try to use all device memory.
 For avoiding of memory errors, library now has option called inAvailableMemory. Default value for this variable is 8000*8000*4 that equal to 244Mb. -1 means that decoder could use all available memory, but also it could be root of application crashes. Each separate thread that decoding tiff image will estimate how many memory it will use in decoding process. If estimate memory is less than available memory, decoder will decode image. Otherwise decoder will throw error or just return NULL(see inThrowException option).
