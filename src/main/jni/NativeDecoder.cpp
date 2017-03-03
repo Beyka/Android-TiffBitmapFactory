@@ -351,15 +351,15 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
 
     int isSecondRasterExist = 0;
     int ok = 1;
-    for (int i = 0; i < origheight - rowPerStrip; i += rowPerStrip) {
+    uint32 rows_to_write = 0;
 
-        uint32 rows_to_write = 0;
+    for (int i = 0; i < stripMax*rowPerStrip; i += rowPerStrip) {
             //if second raster is exist - copy it to work raster end decode next strip
             if (isSecondRasterExist) {
                 _TIFFmemcpy(raster, rasterForBottomLine, origwidth * rowPerStrip * sizeof (uint32));
 
                 //If next strip is exist - decode it, invert lines
-                if (i + rowPerStrip < origheight) {
+                if (i + rowPerStrip < stripMax*rowPerStrip) {
                     TIFFReadRGBAStrip(image, i+rowPerStrip, rasterForBottomLine);
                     isSecondRasterExist = 1;
 
@@ -370,11 +370,11 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
                         rows_to_write = rowPerStrip;
 
                     if (origorientation <= 4) {
-                        for (int line = 0; line < rows_to_write / 2; line++) {
+                        for (int line = 0; line < rowPerStrip / 2; line++) {
                             unsigned int  *top_line, *bottom_line;
 
                             top_line = rasterForBottomLine + origwidth * line;
-                            bottom_line = rasterForBottomLine + origwidth * (rows_to_write - line - 1);
+                            bottom_line = rasterForBottomLine + origwidth * (rowPerStrip - line - 1);
 
                             _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * origwidth);
                             _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * origwidth);
@@ -395,11 +395,11 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
                     rows_to_write = rowPerStrip;
 
                  if (origorientation <= 4) {
-                     for (int line = 0; line < rows_to_write / 2; line++) {
+                     for (int line = 0; line < rowPerStrip / 2; line++) {
                          unsigned int  *top_line, *bottom_line;
 
                          top_line = raster + origwidth * line;
-                         bottom_line = raster + origwidth * (rows_to_write - line - 1);
+                         bottom_line = raster + origwidth * (rowPerStrip - line - 1);
 
                          _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * origwidth);
                          _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * origwidth);
