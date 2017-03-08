@@ -10,6 +10,14 @@ public enum CompressionScheme {
      */
     COMPRESSION_NONE(1),
     /**
+     * CCITT Group 3 fax encoding
+     */
+    COMPRESSION_CCITTFAX3(3),
+    /**
+     * CCITT Group 4 fax encoding
+     */
+    COMPRESSION_CCITTFAX4(4),
+    /**
      * LZW
      */
     COMPRESSION_LZW(5),

@@ -1699,6 +1699,16 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
                 "COMPRESSION_NONE",
                 "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
             break;
+        case COMPRESSION_CCITTFAX3:
+            gOptions_ImageCompressionFieldId = env->GetStaticFieldID(gOptions_ImageCompressionClass,
+                "COMPRESSION_CCITTFAX3",
+                "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
+                break;
+        case COMPRESSION_CCITTFAX4:
+            gOptions_ImageCompressionFieldId = env->GetStaticFieldID(gOptions_ImageCompressionClass,
+            "COMPRESSION_CCITTFAX4",
+            "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
+            break;
         case COMPRESSION_LZW:
             gOptions_ImageCompressionFieldId = env->GetStaticFieldID(gOptions_ImageCompressionClass,
                 "COMPRESSION_LZW",

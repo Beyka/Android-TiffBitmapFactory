@@ -29,6 +29,8 @@ extern "C" {
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffSaver_save
   (JNIEnv *, jclass, jstring, jintArray, jobject, jint, jint, jboolean);
 
+unsigned char *convertArgbToBilevel(uint32 *, jint, jint);
+
 char *getCreationDate();
 
 char *concat(const char *, const char *);

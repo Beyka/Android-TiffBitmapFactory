@@ -104,14 +104,12 @@ extern "C" {
             LOGIS("Release: ", releaseString);
         }
         char *fullReleaseName = concat("Android ", releaseString);
-        //strcpy(fullReleaseName, android);
-        //strcpy(fullReleaseName, releaseString);
         LOGIS("Full Release: ", fullReleaseName);
 
         int pixelsBufferSize = img_width * img_height;
-        int* array = (int *) malloc(sizeof(int) * pixelsBufferSize);
+        uint32 *array = (uint32 *) malloc(sizeof(uint32) * pixelsBufferSize);
         if (!array) {
-            throw_not_enought_memory_exception(env, sizeof(int) * pixelsBufferSize, 0);//todo change for estimating memory
+            throw_not_enought_memory_exception(env, sizeof(uint32) * pixelsBufferSize, 0);//todo change for estimating memory
             return JNI_FALSE;
         }
         for (int i = 0; i < img_width; i++) {
@@ -171,15 +169,27 @@ extern "C" {
             }
         }
 
-        //Write tiff tags for saveing
-        TIFFSetField(output_image, TIFFTAG_IMAGEWIDTH, img_width);
-        TIFFSetField(output_image, TIFFTAG_IMAGELENGTH, img_height);
-        TIFFSetField(output_image, TIFFTAG_BITSPERSAMPLE, 8);
-        TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL, 4);
-        TIFFSetField(output_image, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-        TIFFSetField(output_image, TIFFTAG_COMPRESSION, compressionInt);
-        TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
-        TIFFSetField(output_image, TIFFTAG_ORIENTATION, orientationInt);
+        if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
+            TIFFSetField(output_image, TIFFTAG_IMAGEWIDTH, img_width);
+            TIFFSetField(output_image, TIFFTAG_IMAGELENGTH, img_height);
+            TIFFSetField(output_image, TIFFTAG_BITSPERSAMPLE,	1);
+            TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL,	1);
+            TIFFSetField(output_image, TIFFTAG_ROWSPERSTRIP, 1);
+            TIFFSetField(output_image, TIFFTAG_COMPRESSION, compressionInt);
+            TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
+            TIFFSetField(output_image, TIFFTAG_FILLORDER, FILLORDER_MSB2LSB);
+            TIFFSetField(output_image, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+            TIFFSetField(output_image, TIFFTAG_ORIENTATION, orientationInt);
+        } else {
+            TIFFSetField(output_image, TIFFTAG_IMAGEWIDTH, img_width);
+            TIFFSetField(output_image, TIFFTAG_IMAGELENGTH, img_height);
+            TIFFSetField(output_image, TIFFTAG_BITSPERSAMPLE, 8);
+            TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL, 4);
+            TIFFSetField(output_image, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+            TIFFSetField(output_image, TIFFTAG_COMPRESSION, compressionInt);
+            TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
+            TIFFSetField(output_image, TIFFTAG_ORIENTATION, orientationInt);
+        }
 
         //Write additiona tags
         //CreationDate tag
@@ -207,8 +217,17 @@ extern "C" {
         }
 
         // Write the information to the file
-        for (int row = 0; row < img_height; row++) {
-            TIFFWriteScanline(output_image, &array[row * img_width], row, 0);
+        if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
+            unsigned char *bilevel = convertArgbToBilevel(array, img_width, img_height);
+            int compressedWidth = (img_width/8 + 0.5);
+            for (int i = 0; i < img_height; i++) {
+                TIFFWriteEncodedStrip(output_image, i, &bilevel[i * compressedWidth], (compressedWidth));
+            }
+            free(bilevel);
+        } else {
+            for (int row = 0; row < img_height; row++) {
+                TIFFWriteScanline(output_image, &array[row * img_width], row, 0);
+            }
         }
         int ret = TIFFWriteDirectory(output_image);
         LOGII("ret = ", ret);
@@ -246,6 +265,50 @@ extern "C" {
 
         if (ret == -1) return JNI_FALSE;
         return JNI_TRUE;
+    }
+
+    unsigned char *convertArgbToBilevel(uint32 *source, jint width, jint height) {
+        long long threshold = 0;
+        uint32 crPix;
+        uint32 grayPix;
+        int bilevelWidth = (width / 8 + 0.5);
+
+        unsigned char *dest = (unsigned char *) malloc(sizeof(unsigned char) * bilevelWidth * height);
+
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                crPix = source[j * width + i];
+                grayPix = (0.2125 * (colorMask & crPix >> 16) + 0.7154 * (colorMask & crPix >> 8) + 0.0721 * (colorMask & crPix));
+                threshold += grayPix;
+            }
+        }
+
+        uint32 shift = 0;
+        unsigned char charsum = 0;
+        int k = 7;
+        long long barier = threshold / (width * height);
+        for (int j = 0; j < height; j++) {
+            shift = 0;
+            charsum = 0;
+            k = 7;
+            for (int i = 0; i < width; i++) {
+                crPix = source[j * width + i];
+                grayPix = (0.2125 * (colorMask & crPix >> 16) + 0.7154 * (colorMask & crPix >> 8) + 0.0721 * (colorMask & crPix));
+
+                if (grayPix < barier) charsum &= ~(1 << k);
+                else charsum |= 1 << k;
+
+                if (k == 0) {
+                    dest[j * bilevelWidth + shift] = charsum;
+                    shift++;
+                    k = 7;
+                    charsum = 0;
+                } else {
+                    k--;
+                }
+            }
+        }
+        return dest;
     }
 
     char *getCreationDate() {
