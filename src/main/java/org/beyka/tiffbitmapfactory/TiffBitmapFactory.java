@@ -262,8 +262,6 @@ public class TiffBitmapFactory {
         /**
          * The count of directory in image file.
          * <p>outDirectoryCount will be set to -1 if there is an error trying to decode.</p>
-         * <p>outDirectoryCount will be set to 0 if {@link #inJustDecodeBounds} is
-         * set to false and image decoded successful.</p>
          */
         public int outDirectoryCount;
 
