@@ -1,9 +1,13 @@
-0.9.5 
-- Added algorithms for efficient memory usage
-- Added switchers for throwing exceptions and using of tiff tag orientation
+0.9.6.2
+- Added support for TIFFTAG_XRESOLUTION, TIFFTAG_YRESOLUTION, TIFFTAG_RESOLUTIONUNIT
+
+0.9.6
+- Added support for CCITT Group 3 and CCITT Group 4 compression schemes
 
 0.9.5.1
 - Fixed decoding algorithm for stripped images
 
-0.9.6
-- Added support for CCITT Group 3 and CCITT Group 4 compression schemes
+0.9.5 
+- Added algorithms for efficient memory usage
+- Added switchers for throwing exceptions and using of tiff tag orientation
+
