@@ -162,7 +162,7 @@ public class TiffSaver {
         public Orientation orientation;
 
         /**
-         * The number of pixels per ResolutionUnit in the ImageWidth direction.
+         * The number of pixels per {@link org.beyka.tiffbitmapfactory.TiffSaver.SaveOptions#resUnit} in the ImageWidth direction.
          * <p> It is not mandatory that the image be actually displayed or printed at the size implied by this parameter.
          * It is up to the application to use this information as it wishes.</p>
          * <p>Defualt value is 0</p>
@@ -170,7 +170,7 @@ public class TiffSaver {
         public float xResolution;
 
         /**
-         * The number of pixels per ResolutionUnit in the ImageHeight direction.
+         * The number of pixels per {@link org.beyka.tiffbitmapfactory.TiffSaver.SaveOptions#resUnit} in the ImageHeight direction.
          * <p> It is not mandatory that the image be actually displayed or printed at the size implied by this parameter.
          * It is up to the application to use this information as it wishes.</p>
          * <p>Defualt value is 0</p>

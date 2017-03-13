@@ -280,10 +280,25 @@ public class TiffBitmapFactory {
          */
         public CompressionScheme outCompressionScheme;
 
+        /**
+         * The number of pixels per {@link org.beyka.tiffbitmapfactory.TiffBitmapFactory.Options#outResolutionUnit} in the ImageWidth direction.
+         */
         public float outXResolution;
 
+        /**
+         * The number of pixels per {@link org.beyka.tiffbitmapfactory.TiffBitmapFactory.Options#outResolutionUnit} in the ImageHeight direction.
+         */
         public float outYResolution;
 
+        /**
+         * The unit of measurement for XResolution and YResolution.
+         * <p>The specification defines these values: </p>
+         * <ul>
+         *     <li>RESUNIT_NONE</li>
+         *     <li>RESUNIT_INCH</li>
+         *     <li>RESUNIT_CENTIMETER</li>
+         * </ul>
+         */
         public ResolutionUnit outResolutionUnit;
 
         /**
