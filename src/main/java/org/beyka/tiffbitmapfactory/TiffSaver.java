@@ -142,6 +142,9 @@ public class TiffSaver {
         public SaveOptions() {
             compressionScheme = CompressionScheme.COMPRESSION_NONE;
             orientation = Orientation.ORIENTATION_TOPLEFT;
+            xResolution = 0;
+            yResolution = 0;
+            resUnit = ResolutionUnit.RESUNIT_NONE;
         }
 
         /**
@@ -157,6 +160,35 @@ public class TiffSaver {
          * <p>This parameter is link to TIFFTAG_ORIENTATION tag</p>
          */
         public Orientation orientation;
+
+        /**
+         * The number of pixels per ResolutionUnit in the ImageWidth direction.
+         * <p> It is not mandatory that the image be actually displayed or printed at the size implied by this parameter.
+         * It is up to the application to use this information as it wishes.</p>
+         * <p>Defualt value is 0</p>
+         */
+        public float xResolution;
+
+        /**
+         * The number of pixels per ResolutionUnit in the ImageHeight direction.
+         * <p> It is not mandatory that the image be actually displayed or printed at the size implied by this parameter.
+         * It is up to the application to use this information as it wishes.</p>
+         * <p>Defualt value is 0</p>
+         */
+        public float yResolution;
+
+        /**
+         * The unit of measurement for XResolution and YResolution.
+         * <p>To be used with xResolution and yResolution. </p>
+         * <p>The specification defines these values: </p>
+         * <ul>
+         *     <li>RESUNIT_NONE</li>
+         *     <li>RESUNIT_INCH</li>
+         *     <li>RESUNIT_CENTIMETER</li>
+         * </ul>
+         * <p>Default value is {@link org.beyka.tiffbitmapfactory.ResolutionUnit#RESUNIT_NONE}</p>
+         */
+        public ResolutionUnit resUnit;
 
         /**
          * Author for writing to file.

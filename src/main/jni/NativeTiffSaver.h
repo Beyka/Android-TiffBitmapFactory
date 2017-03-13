@@ -11,6 +11,7 @@
 
 #define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffSaver", "%s", x)
 #define LOGII(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffSaver", "%s %d", x, y)
+#define LOGIF(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffSaver", "%s %f", x, y)
 #define LOGIS(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffSaver", "%s %s", x, y)
 
 #define LOGE(x) __android_log_print(ANDROID_LOG_ERROR, "NativeTiffSaver", "%s", x)

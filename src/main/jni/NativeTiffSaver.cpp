@@ -55,6 +55,22 @@ extern "C" {
         "org/beyka/tiffbitmapfactory/Orientation");
         jfieldID orientationOrdinalFieldID = env->GetFieldID(orientationClass, "ordinal", "I");
         jint orientationInt = env->GetIntField(orientation, orientationOrdinalFieldID);
+        env->DeleteLocalRef(orientationClass);
+
+        // variables for resolution
+        jfieldID gOptions_xResolutionFieldID = env->GetFieldID(jSaveOptionsClass, "xResolution", "F");
+        float xRes = env->GetFloatField(options, gOptions_xResolutionFieldID);
+        jfieldID gOptions_yResolutionFieldID = env->GetFieldID(jSaveOptionsClass, "yResolution", "F");
+        float yRes = env->GetFloatField(options, gOptions_yResolutionFieldID);
+        jfieldID gOptions_resUnitFieldID = env->GetFieldID(jSaveOptionsClass,
+                                                           "resUnit",
+                                                           "Lorg/beyka/tiffbitmapfactory/ResolutionUnit;");
+        jobject resUnitObject = env->GetObjectField(options, gOptions_resUnitFieldID);
+        //Get res int from resUnitObject
+        jclass resolutionUnitClass = env->FindClass("org/beyka/tiffbitmapfactory/ResolutionUnit");
+        jfieldID resUnitOrdinalFieldID = env->GetFieldID(resolutionUnitClass, "ordinal", "I");
+        uint16 resUnit = env->GetIntField(resUnitObject, resUnitOrdinalFieldID);
+        env->DeleteLocalRef(resolutionUnitClass);
 
         //Get author field if exist
         jfieldID gOptions_authorFieldID = env->GetFieldID(jSaveOptionsClass, "author", "Ljava/lang/String;");
@@ -169,26 +185,25 @@ extern "C" {
             }
         }
 
+        TIFFSetField(output_image, TIFFTAG_IMAGEWIDTH, img_width);
+        TIFFSetField(output_image, TIFFTAG_IMAGELENGTH, img_height);
+        TIFFSetField(output_image, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+        TIFFSetField(output_image, TIFFTAG_COMPRESSION, compressionInt);
+        TIFFSetField(output_image, TIFFTAG_ORIENTATION, orientationInt);
+        TIFFSetField(output_image, TIFFTAG_XRESOLUTION, xRes);
+        TIFFSetField(output_image, TIFFTAG_YRESOLUTION, yRes);
+        TIFFSetField(output_image, TIFFTAG_RESOLUTIONUNIT, resUnit);
+
         if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
-            TIFFSetField(output_image, TIFFTAG_IMAGEWIDTH, img_width);
-            TIFFSetField(output_image, TIFFTAG_IMAGELENGTH, img_height);
             TIFFSetField(output_image, TIFFTAG_BITSPERSAMPLE,	1);
             TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL,	1);
             TIFFSetField(output_image, TIFFTAG_ROWSPERSTRIP, 1);
-            TIFFSetField(output_image, TIFFTAG_COMPRESSION, compressionInt);
             TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
             TIFFSetField(output_image, TIFFTAG_FILLORDER, FILLORDER_MSB2LSB);
-            TIFFSetField(output_image, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-            TIFFSetField(output_image, TIFFTAG_ORIENTATION, orientationInt);
         } else {
-            TIFFSetField(output_image, TIFFTAG_IMAGEWIDTH, img_width);
-            TIFFSetField(output_image, TIFFTAG_IMAGELENGTH, img_height);
             TIFFSetField(output_image, TIFFTAG_BITSPERSAMPLE, 8);
             TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL, 4);
-            TIFFSetField(output_image, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-            TIFFSetField(output_image, TIFFTAG_COMPRESSION, compressionInt);
             TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
-            TIFFSetField(output_image, TIFFTAG_ORIENTATION, orientationInt);
         }
 
         //Write additiona tags

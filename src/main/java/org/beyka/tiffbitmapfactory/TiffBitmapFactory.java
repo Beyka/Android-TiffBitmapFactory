@@ -280,6 +280,12 @@ public class TiffBitmapFactory {
          */
         public CompressionScheme outCompressionScheme;
 
+        public float outXResolution;
+
+        public float outYResolution;
+
+        public ResolutionUnit outResolutionUnit;
+
         /**
          * Author of file.
          * <p>This parameter is link to TIFFTAG_ARTIST tag</p>

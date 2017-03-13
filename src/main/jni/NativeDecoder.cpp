@@ -1628,50 +1628,50 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         bool flipHW = false;
         LOGII("Orientation", origorientation);
         switch (origorientation) {
-        case ORIENTATION_TOPLEFT:
-            gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
-                "ORIENTATION_TOPLEFT",
-                "Lorg/beyka/tiffbitmapfactory/Orientation;");
-            break;
-        case ORIENTATION_TOPRIGHT:
-            gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
-                "ORIENTATION_TOPRIGHT",
-                "Lorg/beyka/tiffbitmapfactory/Orientation;");
-            break;
-        case ORIENTATION_BOTRIGHT:
-            gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
-                "ORIENTATION_BOTRIGHT",
-                "Lorg/beyka/tiffbitmapfactory/Orientation;");
-            break;
-        case ORIENTATION_BOTLEFT:
-            gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
-                "ORIENTATION_BOTLEFT",
-                "Lorg/beyka/tiffbitmapfactory/Orientation;");
-            break;
-        case ORIENTATION_LEFTTOP:
-            flipHW = true;
-            gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
-                "ORIENTATION_LEFTTOP",
-                "Lorg/beyka/tiffbitmapfactory/Orientation;");
-            break;
-        case ORIENTATION_RIGHTTOP:
-            flipHW = true;
-            gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
-                "ORIENTATION_RIGHTTOP",
-                "Lorg/beyka/tiffbitmapfactory/Orientation;");
-            break;
-        case ORIENTATION_RIGHTBOT:
-            flipHW = true;
-            gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
-                "ORIENTATION_RIGHTBOT",
-                "Lorg/beyka/tiffbitmapfactory/Orientation;");
-            break;
-        case ORIENTATION_LEFTBOT:
-            flipHW = true;
-            gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
-                "ORIENTATION_LEFTBOT",
-                "Lorg/beyka/tiffbitmapfactory/Orientation;");
-            break;
+            case ORIENTATION_TOPLEFT:
+                gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
+                    "ORIENTATION_TOPLEFT",
+                    "Lorg/beyka/tiffbitmapfactory/Orientation;");
+                break;
+            case ORIENTATION_TOPRIGHT:
+                gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
+                    "ORIENTATION_TOPRIGHT",
+                    "Lorg/beyka/tiffbitmapfactory/Orientation;");
+                break;
+            case ORIENTATION_BOTRIGHT:
+                gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
+                    "ORIENTATION_BOTRIGHT",
+                    "Lorg/beyka/tiffbitmapfactory/Orientation;");
+                break;
+            case ORIENTATION_BOTLEFT:
+                gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
+                    "ORIENTATION_BOTLEFT",
+                    "Lorg/beyka/tiffbitmapfactory/Orientation;");
+                break;
+            case ORIENTATION_LEFTTOP:
+                flipHW = true;
+                gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
+                    "ORIENTATION_LEFTTOP",
+                    "Lorg/beyka/tiffbitmapfactory/Orientation;");
+                break;
+            case ORIENTATION_RIGHTTOP:
+                flipHW = true;
+                gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
+                    "ORIENTATION_RIGHTTOP",
+                    "Lorg/beyka/tiffbitmapfactory/Orientation;");
+                break;
+            case ORIENTATION_RIGHTBOT:
+                flipHW = true;
+                gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
+                    "ORIENTATION_RIGHTBOT",
+                    "Lorg/beyka/tiffbitmapfactory/Orientation;");
+                break;
+            case ORIENTATION_LEFTBOT:
+                flipHW = true;
+                gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
+                    "ORIENTATION_LEFTBOT",
+                    "Lorg/beyka/tiffbitmapfactory/Orientation;");
+                break;
         }
         if (gOptions_ImageOrientationFieldId != NULL) {
             jobject gOptions_ImageOrientationObj = env->GetStaticObjectField(
@@ -1684,6 +1684,58 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
                 "Lorg/beyka/tiffbitmapfactory/Orientation;");
             env->SetObjectField(optionsObject, gOptions_outImageOrientationField,
                 gOptions_ImageOrientationObj);
+        }
+
+        //Get resolution variables
+        /*
+        jfieldID gOptions_outDirectoryCountFieldId = env->GetFieldID(jOptionsClass,
+                    "outDirectoryCount", "I");
+                int dircount = getDyrectoryCount();
+                env->SetIntField(optionsObject, gOptions_outDirectoryCountFieldId, dircount);
+        */
+        float xresolution, yresolution;
+        uint16 resunit;
+        TIFFGetField(image, TIFFTAG_XRESOLUTION, &xresolution);
+        LOGIF("xres", xresolution);
+        jfieldID gOptions_outXResolutionFieldID = env->GetFieldID(jOptionsClass, "outXResolution", "F");
+        env->SetFloatField(optionsObject, gOptions_outXResolutionFieldID, xresolution);
+        TIFFGetField(image, TIFFTAG_YRESOLUTION, &yresolution);
+        LOGIF("yres", yresolution);
+        jfieldID gOptions_outYResolutionFieldID = env->GetFieldID(jOptionsClass, "outYResolution", "F");
+        env->SetFloatField(optionsObject, gOptions_outYResolutionFieldID, yresolution);
+        TIFFGetField(image, TIFFTAG_RESOLUTIONUNIT, &resunit);
+        LOGII("resunit", resunit);
+        jclass gOptions_ResolutionUnitClass = env->FindClass("org/beyka/tiffbitmapfactory/ResolutionUnit");
+        jfieldID gOptions_ResolutionUnitFieldId = NULL;
+        switch(resunit) {
+            case RESUNIT_INCH:
+                gOptions_ResolutionUnitFieldId = env->GetStaticFieldID(gOptions_ResolutionUnitClass,
+                            "RESUNIT_INCH",
+                            "Lorg/beyka/tiffbitmapfactory/ResolutionUnit;");
+                break;
+            case RESUNIT_CENTIMETER:
+                gOptions_ResolutionUnitFieldId = env->GetStaticFieldID(gOptions_ResolutionUnitClass,
+                            "RESUNIT_CENTIMETER",
+                            "Lorg/beyka/tiffbitmapfactory/ResolutionUnit;");
+                break;
+            case RESUNIT_NONE:
+            default:
+                gOptions_ResolutionUnitFieldId = env->GetStaticFieldID(gOptions_ResolutionUnitClass,
+                            "RESUNIT_NONE",
+                            "Lorg/beyka/tiffbitmapfactory/ResolutionUnit;");
+                break;
+        }
+        if (gOptions_ResolutionUnitFieldId != NULL) {
+            jobject gOptions_ResolutionUnitObj = env->GetStaticObjectField(
+                        gOptions_ResolutionUnitClass,
+                        gOptions_ResolutionUnitFieldId);
+
+            //Set resolution unit field to options object
+            jfieldID gOptions_outResUnitField = env->GetFieldID(jOptionsClass,
+                        "outResolutionUnit",
+                        "Lorg/beyka/tiffbitmapfactory/ResolutionUnit;");
+            env->SetObjectField(optionsObject, gOptions_outResUnitField,
+                        gOptions_ResolutionUnitObj);
         }
 
         //Getting image compression scheme and createing CompressionScheme enum
