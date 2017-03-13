@@ -80,9 +80,9 @@ Bitmap bitmap = BitmapFactory.decodeFile("sdcard/image.png");
 //Create options for saving
 TiffSaver.SaveOptions options = new TiffSaver.SaveOptions();
 //By default compression mode is none
-options.compressionMode = TiffSaver.CompressionMode.COMPRESSION_LZW;
+options.compressionScheme = CompressionScheme.COMPRESSION_LZW;
 //By default orientation is top left
-options.orientation = TiffSaver.Orientation.ORIENTATION_LEFTTOP;
+options.orientation = Orientation.ORIENTATION_LEFTTOP;
 //Add author tag to output file
 options.author = "beyka";
 //Add copyright tag to output file
@@ -98,9 +98,9 @@ Bitmap bitmap = BitmapFactory.decodeFile("sdcard/image.png");
 //Create options for saving
 TiffSaver.SaveOptions options = new TiffSaver.SaveOptions();
 //By default compression mode is none
-options.compressionMode = TiffSaver.CompressionMode.COMPRESSION_LZW;
+options.compressionScheme = CompressionScheme.COMPRESSION_LZW;
 //By default orientation is top left
-options.orientation = TiffSaver.Orientation.ORIENTATION_LEFTTOP;
+options.orientation = Orientation.ORIENTATION_LEFTTOP;
 //Add author tag to output file
 options.author = "beyka";
 //Add copyright tag to output file
