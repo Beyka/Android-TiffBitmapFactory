@@ -150,6 +150,8 @@ public class TiffBitmapFactory {
          * the same result from the decoder as if null were passed.
          */
         public Options() {
+            isStoped = false;
+
             inThrowException = false;
             inUseOrientationTag = false;
             inSwapRedBlueColors = false;
@@ -162,6 +164,19 @@ public class TiffBitmapFactory {
             outHeight = -1;
             outDirectoryCount = -1;
             outImageOrientation = Orientation.UNAVAILABLE;
+        }
+
+        /**
+         * Uses for stoping of native thread
+         */
+        private volatile boolean isStoped;
+
+        /**
+         * Stop native decoding thread
+         * If decoding is started in any thread except main, calling of this method will cause force stop of decoding and returning of null object.
+         */
+        public void stop() {
+            isStoped = true;
         }
 
         /**

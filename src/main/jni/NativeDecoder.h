@@ -69,6 +69,7 @@ class NativeDecoder
         void rotateRaster(jint *, int, int *, int *);
         jbyte * createBitmapAlpha8(jint *, int, int);
         unsigned short *createBitmapRGB565(jint *, int, int);
+        jboolean checkStop();
 };
 
 #endif //TIFFSAMPLE_NATIVEDECODER_H
