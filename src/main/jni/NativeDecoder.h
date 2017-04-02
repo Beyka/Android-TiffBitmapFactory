@@ -42,6 +42,7 @@ class NativeDecoder
         JNIEnv *env;
         jclass clazz;
         jobject optionsObject;
+        jclass jBitmapOptionsClass;
         jstring jPath;
         jboolean throwException;
         jboolean useOrientationTag;

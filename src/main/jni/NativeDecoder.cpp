@@ -20,6 +20,9 @@ NativeDecoder::NativeDecoder(JNIEnv *e, jclass c, jstring path, jobject opts)
 
     preferedConfig = NULL;
     image = NULL;
+
+    jBitmapOptionsClass = env->FindClass(
+                        "org/beyka/tiffbitmapfactory/TiffBitmapFactory$Options");
 }
 
 NativeDecoder::~NativeDecoder()
@@ -35,14 +38,16 @@ NativeDecoder::~NativeDecoder()
         env->DeleteGlobalRef(preferedConfig);
         preferedConfig = NULL;
     }
+
+    if (jBitmapOptionsClass) {
+        env->DeleteLocalRef(jBitmapOptionsClass);
+        jBitmapOptionsClass = NULL;
+    }
 }
 
 jobject NativeDecoder::getBitmap()
 {
         //Get options from TiffBitmapFactory$Options
-        jclass jBitmapOptionsClass = env->FindClass(
-                "org/beyka/tiffbitmapfactory/TiffBitmapFactory$Options");
-
         jfieldID gOptions_ThrowExceptionFieldID = env->GetFieldID(jBitmapOptionsClass,
                                                                           "inThrowException",
                                                                           "Z");
@@ -89,8 +94,6 @@ jobject NativeDecoder::getBitmap()
                                                                   "inPreferredConfig",
                                                                   "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$ImageConfig;");
         jobject config = env->GetObjectField(optionsObject, gOptions_PreferedConfigFieldID);
-
-        env->DeleteLocalRef(jBitmapOptionsClass);
 
         if (inAvailableMemory > 0) {
             availableMemory = inAvailableMemory;
@@ -206,6 +209,13 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
         }
     }
 
+    if(checkStop()) {
+        if (raster) {
+            free(raster);
+        }
+        LOGI("Thread stopped");
+        return NULL;
+    }
 
     //Class and field for Bitmap.Config
     jclass bitmapConfigClass = env->FindClass("android/graphics/Bitmap$Config");
@@ -243,6 +253,16 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
     env->DeleteLocalRef(bitmapConfigClass);
 
     jobject java_bitmap = NULL;
+
+    if(checkStop()) {
+        env->DeleteLocalRef(config);
+        env->DeleteLocalRef(bitmapClass);
+        if (processedBuffer) {
+            free(processedBuffer);
+        }
+        LOGI("Thread stopped");
+        return NULL;
+    }
 
     if (!useOrientationTag) {
         java_bitmap = env->CallStaticObjectMethod(bitmapClass, methodid, newBitmapWidth,
@@ -449,30 +469,31 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
                 }
                  int workWritedLines = writedLines;
                  for (int resBmpY = workWritedLines, workY = 0; resBmpY < *bitmapheight && workY < rowPerStrip; /*wj++,*/ workY ++/*= inSampleSize*/) {
+
+                 if (checkStop()) {
+                     if (raster) {
+                         _TIFFfree(raster);
+                         raster = NULL;
+                     }
+                     if (rasterForBottomLine) {
+                         _TIFFfree(rasterForBottomLine);
+                         rasterForBottomLine = NULL;
+                     }
+                     if (matrixTopLine) {
+                         _TIFFfree(matrixTopLine);
+                         matrixTopLine = NULL;
+                     }
+                     if (matrixBottomLine) {
+                         _TIFFfree(matrixBottomLine);
+                         matrixBottomLine = NULL;
+                     }
+                     LOGI("Thread stopped");
+                     return NULL;
+                 }
+
                     // if total line of source image is equal to inSampleSize*N then process this line
                     if (globalLineCounter % inSampleSize == 0) {
                         for (int resBmpX = 0, workX = 0; resBmpX < *bitmapwidth; resBmpX++, workX += inSampleSize) {
-
-                            if (checkStop()) {
-                                if (raster) {
-                                    _TIFFfree(raster);
-                                    raster = NULL;
-                                }
-                                if (rasterForBottomLine) {
-                                    _TIFFfree(rasterForBottomLine);
-                                    rasterForBottomLine = NULL;
-                                }
-                                if (matrixTopLine) {
-                                    _TIFFfree(matrixTopLine);
-                                    matrixTopLine = NULL;
-                                }
-                                if (matrixBottomLine) {
-                                    _TIFFfree(matrixBottomLine);
-                                    matrixBottomLine = NULL;
-                                }
-                                LOGI("Thread stopped");
-                                return NULL;
-                            }
 
                             //Apply filter to pixel
                             jint crPix = raster[workY * origwidth + workX];
@@ -866,6 +887,28 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                     int tileStartDataY = -1;
 
                     for (int origTileY = 0, pixY = row/inSampleSize; origTileY < tileHeight && pixY < *bitmapheight; origTileY++) {
+
+                        if (checkStop()) {
+                            if (rasterTile) {
+                                _TIFFfree(rasterTile);
+                                rasterTile = NULL;
+                            }
+                            if (rasterTileLeft) {
+                                _TIFFfree(rasterTileLeft);
+                                rasterTileLeft = NULL;
+                            }
+                            if (rasterTileRight) {
+                                _TIFFfree(rasterTileRight);
+                                rasterTileRight = NULL;
+                            }
+                            if (work_line_buf) {
+                                _TIFFfree(work_line_buf);
+                                work_line_buf = NULL;
+                            }
+                            LOGI("Thread stopped");
+                            return NULL;
+                        }
+
                         if (tileStartDataY != -1 && globalProcessedY % inSampleSize != 0) {
                             if (tileStartDataY != -1) {
                                 globalProcessedY++;
@@ -874,27 +917,6 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                         else
                         {
                             for (int origTileX = 0, pixX = column/inSampleSize; origTileX < tileWidth && pixX < *bitmapwidth; origTileX++) {
-                                if (checkStop()) {
-                                    if (rasterTile) {
-                                        _TIFFfree(rasterTile);
-                                        rasterTile = NULL;
-                                    }
-                                    if (rasterTileLeft) {
-                                        _TIFFfree(rasterTileLeft);
-                                        rasterTileLeft = NULL;
-                                    }
-                                    if (rasterTileRight) {
-                                        _TIFFfree(rasterTileRight);
-                                        rasterTileRight = NULL;
-                                    }
-                                    if (work_line_buf) {
-                                        _TIFFfree(work_line_buf);
-                                        work_line_buf = NULL;
-                                    }
-                                    LOGI("Thread stopped");
-                                    return NULL;
-                                }
-
                                 if (tileStartDataX != -1 && globalProcessedX % inSampleSize != 0)
                                 {
                                     if (tileStartDataX != -1) {
@@ -1256,22 +1278,22 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
         }
         else {
             for (int i = 0, i1 = 0; i < *bitmapwidth; i++, i1 += inSampleSize) {
-                for (int j = 0, j1 = 0; j < *bitmapheight; j++, j1 += inSampleSize) {
 
-                    if (checkStop()) {
-                        //TODO clear memory
-                        if (origBuffer) {
-                            _TIFFfree(origBuffer);
-                            origBuffer = NULL;
-                        }
-                        if (pixels) {
-                            free(pixels);
-                            pixels = NULL;
-                        }
-                        LOGI("Thread stopped");
-                        return NULL;
+                if (checkStop()) {
+                    //TODO clear memory
+                    if (origBuffer) {
+                        _TIFFfree(origBuffer);
+                        origBuffer = NULL;
                     }
+                    if (pixels) {
+                        free(pixels);
+                        pixels = NULL;
+                    }
+                    LOGI("Thread stopped");
+                    return NULL;
+                }
 
+                for (int j = 0, j1 = 0; j < *bitmapheight; j++, j1 += inSampleSize) {
                     //Apply filter to pixel
                     jint crPix = origBuffer[j1 * origwidth + i1];
                     int sum = 1;
@@ -1597,15 +1619,16 @@ jbyte * NativeDecoder::createBitmapAlpha8(jint *raster, int bitmapwidth, int bit
     }
 
 	for (int i = 0; i < bitmapwidth; i++) {
+
+	    if (checkStop()) {
+            if (pixels) {
+                free(pixels);
+                pixels = NULL;
+            }
+            LOGI("Thread stopped");
+            return NULL;
+        }
     		for (int j = 0; j < bitmapheight; j++) {
-    		    if (checkStop()) {
-    		        if (pixels) {
-    		            free(pixels);
-    		            pixels = NULL;
-    		        }
-    		        LOGI("Thread stopped");
-    		        return NULL;
-    		    }
     			uint32 crPix = raster[j * bitmapwidth + i];
     			int alpha = colorMask & crPix >> 24;
     			pixels[j * bitmapwidth + i] = alpha;
@@ -1632,15 +1655,18 @@ unsigned short * NativeDecoder::createBitmapRGB565(jint *buffer, int bitmapwidth
     }
 
     for (int i = 0; i < bitmapwidth; i++) {
-		for (int j = 0; j < bitmapheight; j++) {
-		    if (checkStop()) {
-                if (pixels) {
-                    free(pixels);
-                    pixels = NULL;
-                }
-                LOGI("Thread stopped");
-                return NULL;
+
+        if (checkStop()) {
+            if (pixels) {
+                free(pixels);
+                pixels = NULL;
             }
+            LOGI("Thread stopped");
+            return NULL;
+        }
+
+		for (int j = 0; j < bitmapheight; j++) {
+
 
 			jint crPix = buffer[j * bitmapwidth + i];
 			int blue = colorMask & crPix >> 16;
@@ -1677,10 +1703,7 @@ int NativeDecoder::getDyrectoryCount()
 void NativeDecoder::writeDataToOptions(int directoryNumber)
 {
     TIFFSetDirectory(image, directoryNumber);
-    jclass jOptionsClass = env->FindClass(
-            "org/beyka/tiffbitmapfactory/TiffBitmapFactory$Options");
-
-        jfieldID gOptions_outDirectoryCountFieldId = env->GetFieldID(jOptionsClass,
+        jfieldID gOptions_outDirectoryCountFieldId = env->GetFieldID(jBitmapOptionsClass,
             "outDirectoryCount", "I");
         int dircount = getDyrectoryCount();
         env->SetIntField(optionsObject, gOptions_outDirectoryCountFieldId, dircount);
@@ -1752,7 +1775,7 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
                 gOptions_ImageOrientationFieldId);
 
             //Set outImageOrientation field to options object
-            jfieldID gOptions_outImageOrientationField = env->GetFieldID(jOptionsClass,
+            jfieldID gOptions_outImageOrientationField = env->GetFieldID(jBitmapOptionsClass,
                 "outImageOrientation",
                 "Lorg/beyka/tiffbitmapfactory/Orientation;");
             env->SetObjectField(optionsObject, gOptions_outImageOrientationField,
@@ -1770,11 +1793,11 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         uint16 resunit;
         TIFFGetField(image, TIFFTAG_XRESOLUTION, &xresolution);
         LOGIF("xres", xresolution);
-        jfieldID gOptions_outXResolutionFieldID = env->GetFieldID(jOptionsClass, "outXResolution", "F");
+        jfieldID gOptions_outXResolutionFieldID = env->GetFieldID(jBitmapOptionsClass, "outXResolution", "F");
         env->SetFloatField(optionsObject, gOptions_outXResolutionFieldID, xresolution);
         TIFFGetField(image, TIFFTAG_YRESOLUTION, &yresolution);
         LOGIF("yres", yresolution);
-        jfieldID gOptions_outYResolutionFieldID = env->GetFieldID(jOptionsClass, "outYResolution", "F");
+        jfieldID gOptions_outYResolutionFieldID = env->GetFieldID(jBitmapOptionsClass, "outYResolution", "F");
         env->SetFloatField(optionsObject, gOptions_outYResolutionFieldID, yresolution);
         TIFFGetField(image, TIFFTAG_RESOLUTIONUNIT, &resunit);
         LOGII("resunit", resunit);
@@ -1804,7 +1827,7 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
                         gOptions_ResolutionUnitFieldId);
 
             //Set resolution unit field to options object
-            jfieldID gOptions_outResUnitField = env->GetFieldID(jOptionsClass,
+            jfieldID gOptions_outResUnitField = env->GetFieldID(jBitmapOptionsClass,
                         "outResolutionUnit",
                         "Lorg/beyka/tiffbitmapfactory/ResolutionUnit;");
             env->SetObjectField(optionsObject, gOptions_outResUnitField,
@@ -1871,28 +1894,28 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
                 gOptions_ImageCompressionFieldId);
 
             //Set outImageOrientation field to options object
-            jfieldID gOptions_outCompressionSchemeField = env->GetFieldID(jOptionsClass,
+            jfieldID gOptions_outCompressionSchemeField = env->GetFieldID(jBitmapOptionsClass,
                 "outCompressionScheme",
                 "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
             env->SetObjectField(optionsObject, gOptions_outCompressionSchemeField,
                 gOptions_ImageCompressionObj);
         }
 
-        jfieldID gOptions_OutCurDirNumberFieldID = env->GetFieldID(jOptionsClass,
+        jfieldID gOptions_OutCurDirNumberFieldID = env->GetFieldID(jBitmapOptionsClass,
             "outCurDirectoryNumber",
             "I");
         env->SetIntField(optionsObject, gOptions_OutCurDirNumberFieldID, directoryNumber);
         if (!flipHW) {
-            jfieldID gOptions_outWidthFieldId = env->GetFieldID(jOptionsClass, "outWidth", "I");
+            jfieldID gOptions_outWidthFieldId = env->GetFieldID(jBitmapOptionsClass, "outWidth", "I");
             env->SetIntField(optionsObject, gOptions_outWidthFieldId, origwidth);
 
-            jfieldID gOptions_outHeightFieldId = env->GetFieldID(jOptionsClass, "outHeight", "I");
+            jfieldID gOptions_outHeightFieldId = env->GetFieldID(jBitmapOptionsClass, "outHeight", "I");
             env->SetIntField(optionsObject, gOptions_outHeightFieldId, origheight);
         } else {
-            jfieldID gOptions_outWidthFieldId = env->GetFieldID(jOptionsClass, "outWidth", "I");
+            jfieldID gOptions_outWidthFieldId = env->GetFieldID(jBitmapOptionsClass, "outWidth", "I");
             env->SetIntField(optionsObject, gOptions_outWidthFieldId, origheight);
 
-            jfieldID gOptions_outHeightFieldId = env->GetFieldID(jOptionsClass, "outHeight", "I");
+            jfieldID gOptions_outHeightFieldId = env->GetFieldID(jBitmapOptionsClass, "outHeight", "I");
             env->SetIntField(optionsObject, gOptions_outHeightFieldId, origwidth);
         }
 
@@ -1904,7 +1927,7 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         if (tagRead == 1) {
             LOGI(artist);
             jstring jauthor = env->NewStringUTF(artist);
-            jfieldID gOptions_outAuthorFieldId = env->GetFieldID(jOptionsClass, "outAuthor", "Ljava/lang/String;");
+            jfieldID gOptions_outAuthorFieldId = env->GetFieldID(jBitmapOptionsClass, "outAuthor", "Ljava/lang/String;");
             env->SetObjectField(optionsObject, gOptions_outAuthorFieldId, jauthor);
             env->DeleteLocalRef(jauthor);
             //free(artist);
@@ -1916,7 +1939,7 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         if (tagRead == 1) {
             LOGI(copyright);
             jstring jcopyright = env->NewStringUTF(copyright);
-            jfieldID gOptions_outCopyrightFieldId = env->GetFieldID(jOptionsClass, "outCopyright", "Ljava/lang/String;");
+            jfieldID gOptions_outCopyrightFieldId = env->GetFieldID(jBitmapOptionsClass, "outCopyright", "Ljava/lang/String;");
             env->SetObjectField(optionsObject, gOptions_outCopyrightFieldId, jcopyright);
             env->DeleteLocalRef(jcopyright);
             //free(copyright);
@@ -1928,7 +1951,7 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         if (tagRead == 1) {
             LOGI(imgDescr);
             jstring jimgDescr = env->NewStringUTF(imgDescr);
-            jfieldID gOptions_outimgDescrFieldId = env->GetFieldID(jOptionsClass, "outImageDescription", "Ljava/lang/String;");
+            jfieldID gOptions_outimgDescrFieldId = env->GetFieldID(jBitmapOptionsClass, "outImageDescription", "Ljava/lang/String;");
             env->SetObjectField(optionsObject, gOptions_outimgDescrFieldId, jimgDescr);
             env->DeleteLocalRef(jimgDescr);
             //free(imgDescr);
@@ -1940,7 +1963,7 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         if (tagRead == 1) {
             LOGI(software);
             jstring jsoftware = env->NewStringUTF(software);
-            jfieldID gOptions_outsoftwareFieldId = env->GetFieldID(jOptionsClass, "outSoftware", "Ljava/lang/String;");
+            jfieldID gOptions_outsoftwareFieldId = env->GetFieldID(jBitmapOptionsClass, "outSoftware", "Ljava/lang/String;");
             env->SetObjectField(optionsObject, gOptions_outsoftwareFieldId, jsoftware);
             env->DeleteLocalRef(jsoftware);
             //free(software);
@@ -1952,7 +1975,7 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         if (tagRead == 1) {
             LOGI(datetime);
             jstring jdatetime = env->NewStringUTF(datetime);
-            jfieldID gOptions_outdatetimeFieldId = env->GetFieldID(jOptionsClass, "outDatetime", "Ljava/lang/String;");
+            jfieldID gOptions_outdatetimeFieldId = env->GetFieldID(jBitmapOptionsClass, "outDatetime", "Ljava/lang/String;");
             env->SetObjectField(optionsObject, gOptions_outdatetimeFieldId, jdatetime);
             env->DeleteLocalRef(jdatetime);
             //free(datetime);
@@ -1964,25 +1987,19 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         if (tagRead == 1) {
             LOGI(host);
             jstring jhost = env->NewStringUTF(host);
-            jfieldID gOptions_outhostFieldId = env->GetFieldID(jOptionsClass, "outHostComputer", "Ljava/lang/String;");
+            jfieldID gOptions_outhostFieldId = env->GetFieldID(jBitmapOptionsClass, "outHostComputer", "Ljava/lang/String;");
             env->SetObjectField(optionsObject, gOptions_outhostFieldId, jhost);
             env->DeleteLocalRef(jhost);
             //free(host);
         }
 
-        env->DeleteLocalRef(jOptionsClass);
 }
 
 jboolean NativeDecoder::checkStop() {
-    jclass jBitmapOptionsClass = env->FindClass(
-                    "org/beyka/tiffbitmapfactory/TiffBitmapFactory$Options");
-
     jfieldID stopFieldId = env->GetFieldID(jBitmapOptionsClass,
                                            "isStoped",
                                            "Z");
     jboolean stop = env->GetBooleanField(optionsObject, stopFieldId);
-
-    env->DeleteLocalRef(jBitmapOptionsClass);
 
     return stop;
 }
