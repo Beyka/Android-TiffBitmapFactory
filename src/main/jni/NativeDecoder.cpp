@@ -3,6 +3,7 @@
 //
 
 #include "NativeDecoder.h"
+#include <string>
 
 NativeDecoder::NativeDecoder(JNIEnv *e, jclass c, jstring path, jobject opts)
 {
@@ -1453,7 +1454,7 @@ int NativeDecoder::getDecodeMethod()
     	LOGII("RPS", rowPerStrip);
     	LOGII("stripSize", stripSize);
     	LOGII("stripMax", stripMax);
-    	if (rowPerStrip != -1 && stripSize > 0 && stripMax > 1) {
+    	if (rowPerStrip != -1 && stripSize > 0 && stripMax > 1 && rowPerStrip < origheight) {
     	    method = DECODE_METHOD_STRIP;
     	} else {
     	method = DECODE_METHOD_IMAGE;
@@ -1926,7 +1927,7 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         tagRead = TIFFGetField(image, TIFFTAG_ARTIST, & artist);
         if (tagRead == 1) {
             LOGI(artist);
-            jstring jauthor = env->NewStringUTF(artist);
+            jstring jauthor = charsToJString(artist);//env->NewStringUTF(artist);
             jfieldID gOptions_outAuthorFieldId = env->GetFieldID(jBitmapOptionsClass, "outAuthor", "Ljava/lang/String;");
             env->SetObjectField(optionsObject, gOptions_outAuthorFieldId, jauthor);
             env->DeleteLocalRef(jauthor);
@@ -1938,7 +1939,7 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         tagRead = TIFFGetField(image, TIFFTAG_COPYRIGHT, & copyright);
         if (tagRead == 1) {
             LOGI(copyright);
-            jstring jcopyright = env->NewStringUTF(copyright);
+            jstring jcopyright = charsToJString(copyright);//env->NewStringUTF(copyright);
             jfieldID gOptions_outCopyrightFieldId = env->GetFieldID(jBitmapOptionsClass, "outCopyright", "Ljava/lang/String;");
             env->SetObjectField(optionsObject, gOptions_outCopyrightFieldId, jcopyright);
             env->DeleteLocalRef(jcopyright);
@@ -1950,7 +1951,7 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         tagRead = TIFFGetField(image, TIFFTAG_IMAGEDESCRIPTION, & imgDescr);
         if (tagRead == 1) {
             LOGI(imgDescr);
-            jstring jimgDescr = env->NewStringUTF(imgDescr);
+            jstring jimgDescr = charsToJString(imgDescr);//env->NewStringUTF(imgDescr);
             jfieldID gOptions_outimgDescrFieldId = env->GetFieldID(jBitmapOptionsClass, "outImageDescription", "Ljava/lang/String;");
             env->SetObjectField(optionsObject, gOptions_outimgDescrFieldId, jimgDescr);
             env->DeleteLocalRef(jimgDescr);
@@ -1962,7 +1963,7 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         tagRead = TIFFGetField(image, TIFFTAG_SOFTWARE, & software);
         if (tagRead == 1) {
             LOGI(software);
-            jstring jsoftware = env->NewStringUTF(software);
+            jstring jsoftware = charsToJString(software);//env->NewStringUTF(software);
             jfieldID gOptions_outsoftwareFieldId = env->GetFieldID(jBitmapOptionsClass, "outSoftware", "Ljava/lang/String;");
             env->SetObjectField(optionsObject, gOptions_outsoftwareFieldId, jsoftware);
             env->DeleteLocalRef(jsoftware);
@@ -1974,7 +1975,7 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         tagRead = TIFFGetField(image, TIFFTAG_DATETIME, & datetime);
         if (tagRead == 1) {
             LOGI(datetime);
-            jstring jdatetime = env->NewStringUTF(datetime);
+            jstring jdatetime = charsToJString(datetime);//env->NewStringUTF(datetime);
             jfieldID gOptions_outdatetimeFieldId = env->GetFieldID(jBitmapOptionsClass, "outDatetime", "Ljava/lang/String;");
             env->SetObjectField(optionsObject, gOptions_outdatetimeFieldId, jdatetime);
             env->DeleteLocalRef(jdatetime);
@@ -1986,13 +1987,25 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         tagRead = TIFFGetField(image, TIFFTAG_HOSTCOMPUTER, & host);
         if (tagRead == 1) {
             LOGI(host);
-            jstring jhost = env->NewStringUTF(host);
+            jstring jhost = charsToJString(host);//env->NewStringUTF(host);
             jfieldID gOptions_outhostFieldId = env->GetFieldID(jBitmapOptionsClass, "outHostComputer", "Ljava/lang/String;");
             env->SetObjectField(optionsObject, gOptions_outhostFieldId, jhost);
             env->DeleteLocalRef(jhost);
             //free(host);
         }
+}
 
+jstring NativeDecoder::charsToJString(char *chars) {
+
+    std::string str(chars);
+    jbyteArray array = env->NewByteArray(str.size());
+    env->SetByteArrayRegion(array, 0, str.size(), (const jbyte*)str.c_str());
+    jstring strEncode = env->NewStringUTF("UTF-8");
+    jclass cls = env->FindClass("java/lang/String");
+    jmethodID ctor = env->GetMethodID(cls, "<init>", "([BLjava/lang/String;)V");
+    jstring object = (jstring) env->NewObject(cls, ctor, array, strEncode);
+    return object;
+ //return NULL;
 }
 
 jboolean NativeDecoder::checkStop() {

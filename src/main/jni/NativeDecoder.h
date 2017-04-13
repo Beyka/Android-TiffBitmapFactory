@@ -70,6 +70,7 @@ class NativeDecoder
         void rotateRaster(jint *, int, int *, int *);
         jbyte * createBitmapAlpha8(jint *, int, int);
         unsigned short *createBitmapRGB565(jint *, int, int);
+        jstring charsToJString(char *);
         jboolean checkStop();
 };
 
