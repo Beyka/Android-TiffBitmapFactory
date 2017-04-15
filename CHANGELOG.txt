@@ -1,3 +1,7 @@
+0.9.7
+- Added possibility to stop decoding that runs in separate thread
+- Fixed crashing when decoding images with bad metadata
+
 0.9.6.2
 - Added support for TIFFTAG_XRESOLUTION, TIFFTAG_YRESOLUTION, TIFFTAG_RESOLUTIONUNIT
 
