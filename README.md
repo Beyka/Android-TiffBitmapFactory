@@ -134,3 +134,6 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 Special thanks to [dennis508](https://github.com/dennis508)    for providing of incremental reading of TIFF file
 
 
+###Applications that uses library:
+[B Tiff Viewer](https://play.google.com/store/apps/details?id=com.beyka.btiffviewer)
+
