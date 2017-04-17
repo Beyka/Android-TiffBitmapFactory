@@ -1442,7 +1442,7 @@ int NativeDecoder::getDecodeMethod()
 	uint32 tileWidth, tileHeight;
 	int readTW = 0, readTH = 0;
     readTW = TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileWidth);
-    readTH = TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileHeight);
+    readTH = TIFFGetField(image, TIFFTAG_TILELENGTH, &tileHeight);
     if (tileWidth > 0 && tileHeight > 0 && readTH > 0 && readTW > 0) {
         method = DECODE_METHOD_TILE;
     } else {
@@ -1727,46 +1727,46 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         switch (origorientation) {
             case ORIENTATION_TOPLEFT:
                 gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
-                    "ORIENTATION_TOPLEFT",
+                    "TOP_LEFT",
                     "Lorg/beyka/tiffbitmapfactory/Orientation;");
                 break;
             case ORIENTATION_TOPRIGHT:
                 gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
-                    "ORIENTATION_TOPRIGHT",
+                    "TOP_RIGHT",
                     "Lorg/beyka/tiffbitmapfactory/Orientation;");
                 break;
             case ORIENTATION_BOTRIGHT:
                 gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
-                    "ORIENTATION_BOTRIGHT",
+                    "BOT_RIGHT",
                     "Lorg/beyka/tiffbitmapfactory/Orientation;");
                 break;
             case ORIENTATION_BOTLEFT:
                 gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
-                    "ORIENTATION_BOTLEFT",
+                    "BOT_LEFT",
                     "Lorg/beyka/tiffbitmapfactory/Orientation;");
                 break;
             case ORIENTATION_LEFTTOP:
                 flipHW = true;
                 gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
-                    "ORIENTATION_LEFTTOP",
+                    "LEFT_TOP",
                     "Lorg/beyka/tiffbitmapfactory/Orientation;");
                 break;
             case ORIENTATION_RIGHTTOP:
                 flipHW = true;
                 gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
-                    "ORIENTATION_RIGHTTOP",
+                    "RIGHT_TOP",
                     "Lorg/beyka/tiffbitmapfactory/Orientation;");
                 break;
             case ORIENTATION_RIGHTBOT:
                 flipHW = true;
                 gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
-                    "ORIENTATION_RIGHTBOT",
+                    "RIGHT_BOT",
                     "Lorg/beyka/tiffbitmapfactory/Orientation;");
                 break;
             case ORIENTATION_LEFTBOT:
                 flipHW = true;
                 gOptions_ImageOrientationFieldId = env->GetStaticFieldID(gOptions_ImageOrientationClass,
-                    "ORIENTATION_LEFTBOT",
+                    "LEFT_BOT",
                     "Lorg/beyka/tiffbitmapfactory/Orientation;");
                 break;
         }
@@ -1807,18 +1807,18 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         switch(resunit) {
             case RESUNIT_INCH:
                 gOptions_ResolutionUnitFieldId = env->GetStaticFieldID(gOptions_ResolutionUnitClass,
-                            "RESUNIT_INCH",
+                            "INCH",
                             "Lorg/beyka/tiffbitmapfactory/ResolutionUnit;");
                 break;
             case RESUNIT_CENTIMETER:
                 gOptions_ResolutionUnitFieldId = env->GetStaticFieldID(gOptions_ResolutionUnitClass,
-                            "RESUNIT_CENTIMETER",
+                            "CENTIMETER",
                             "Lorg/beyka/tiffbitmapfactory/ResolutionUnit;");
                 break;
             case RESUNIT_NONE:
             default:
                 gOptions_ResolutionUnitFieldId = env->GetStaticFieldID(gOptions_ResolutionUnitClass,
-                            "RESUNIT_NONE",
+                            "NONE",
                             "Lorg/beyka/tiffbitmapfactory/ResolutionUnit;");
                 break;
         }
@@ -1835,6 +1835,36 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
                         gOptions_ResolutionUnitObj);
         }
 
+        //Get image planar config
+        int planarConfig = 0;
+        TIFFGetField(image, TIFFTAG_PLANARCONFIG, &planarConfig);
+        LOGII("planar config", planarConfig);
+        jclass gOptions_PlanarConfigClass = env->FindClass("org/beyka/tiffbitmapfactory/PlanarConfig");
+        jfieldID gOptions_PlanarConfigFieldId = NULL;
+        switch(planarConfig) {
+            case PLANARCONFIG_CONTIG:
+                gOptions_PlanarConfigFieldId = env->GetStaticFieldID(gOptions_PlanarConfigClass,
+                "CONTIG",
+                "Lorg/beyka/tiffbitmapfactory/PlanarConfig;");
+                break;
+            case PLANARCONFIG_SEPARATE:
+                gOptions_PlanarConfigFieldId = env->GetStaticFieldID(gOptions_PlanarConfigClass,
+                "SEPARATE",
+                "Lorg/beyka/tiffbitmapfactory/PlanarConfig;");
+                break;
+        }
+        if (gOptions_PlanarConfigFieldId != NULL) {
+            jobject gOptions_PlanarConfigObj = env->GetStaticObjectField(
+                    gOptions_PlanarConfigClass,
+                    gOptions_PlanarConfigFieldId);
+
+            jfieldID gOptions_outPlanarConfigField = env->GetFieldID(jBitmapOptionsClass,
+                    "outPlanarConfig",
+                    "Lorg/beyka/tiffbitmapfactory/PlanarConfig;");
+            env->SetObjectField(optionsObject, gOptions_outPlanarConfigField,
+                    gOptions_PlanarConfigObj);
+        }
+
         //Getting image compression scheme and createing CompressionScheme enum
         TIFFGetField(image, TIFFTAG_COMPRESSION, & origcompressionscheme);
         LOGII("compression", origcompressionscheme);
@@ -1845,42 +1875,42 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         switch (origcompressionscheme) {
         case COMPRESSION_NONE:
             gOptions_ImageCompressionFieldId = env->GetStaticFieldID(gOptions_ImageCompressionClass,
-                "COMPRESSION_NONE",
+                "NONE",
                 "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
             break;
         case COMPRESSION_CCITTFAX3:
             gOptions_ImageCompressionFieldId = env->GetStaticFieldID(gOptions_ImageCompressionClass,
-                "COMPRESSION_CCITTFAX3",
+                "CCITTFAX3",
                 "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
                 break;
         case COMPRESSION_CCITTFAX4:
             gOptions_ImageCompressionFieldId = env->GetStaticFieldID(gOptions_ImageCompressionClass,
-            "COMPRESSION_CCITTFAX4",
+            "CCITTFAX4",
             "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
             break;
         case COMPRESSION_LZW:
             gOptions_ImageCompressionFieldId = env->GetStaticFieldID(gOptions_ImageCompressionClass,
-                "COMPRESSION_LZW",
+                "LZW",
                 "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
             break;
         case COMPRESSION_JPEG:
             gOptions_ImageCompressionFieldId = env->GetStaticFieldID(gOptions_ImageCompressionClass,
-                "COMPRESSION_JPEG",
+                "JPEG",
                 "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
             break;
         case COMPRESSION_PACKBITS:
             gOptions_ImageCompressionFieldId = env->GetStaticFieldID(gOptions_ImageCompressionClass,
-                "COMPRESSION_PACKBITS",
+                "PACKBITS",
                 "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
             break;
         case COMPRESSION_DEFLATE:
             gOptions_ImageCompressionFieldId = env->GetStaticFieldID(gOptions_ImageCompressionClass,
-                "COMPRESSION_DEFLATE",
+                "DEFLATE",
                 "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
             break;
         case COMPRESSION_ADOBE_DEFLATE:
             gOptions_ImageCompressionFieldId = env->GetStaticFieldID(gOptions_ImageCompressionClass,
-                "COMPRESSION_ADOBE_DEFLATE",
+                "ADOBE_DEFLATE",
                 "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
             break;
         default:
@@ -1921,6 +1951,162 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         }
 
         int tagRead = 0;
+
+        int bitPerSample = 0;
+        tagRead = TIFFGetField(image, TIFFTAG_BITSPERSAMPLE, &bitPerSample);
+        if (tagRead == 1) {
+            LOGII("bit per sample", bitPerSample);
+            jfieldID gOptions_outBitPerSampleFieldID = env->GetFieldID(jBitmapOptionsClass, "outBitsPerSample", "I");
+            env->SetIntField(optionsObject, gOptions_outBitPerSampleFieldID, bitPerSample);
+        }
+
+        int samplePerPixel = 0;
+        tagRead = TIFFGetField(image, TIFFTAG_SAMPLESPERPIXEL, &samplePerPixel);
+        if (tagRead == 1) {
+            LOGII("sample per pixel", samplePerPixel);
+            jfieldID gOptions_outSamplePerPixelFieldID = env->GetFieldID(jBitmapOptionsClass, "outSamplePerPixel", "I");
+            env->SetIntField(optionsObject, gOptions_outSamplePerPixelFieldID, samplePerPixel);
+        }
+
+        //Tile size
+        int tileWidth = 0;
+        tagRead = TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileWidth);
+            if (tagRead == 1) {
+            LOGII("tile width", tileWidth);
+            jfieldID gOptions_outTileWidthFieldID = env->GetFieldID(jBitmapOptionsClass, "outTileWidth", "I");
+            env->SetIntField(optionsObject, gOptions_outTileWidthFieldID, tileWidth);
+        }
+        int tileHeight = 0;
+        tagRead = TIFFGetField(image, TIFFTAG_TILELENGTH, &tileHeight);
+        if (tagRead == 1) {
+            LOGII("tile height", tileHeight);
+            jfieldID gOptions_outTileHeightFieldID = env->GetFieldID(jBitmapOptionsClass, "outTileHeight", "I");
+            env->SetIntField(optionsObject, gOptions_outTileHeightFieldID, tileHeight);
+        }
+
+        //row per strip
+        int rowPerStrip = 0;
+        tagRead = TIFFGetField(image, TIFFTAG_ROWSPERSTRIP, &rowPerStrip);
+        if (tagRead == 1) {
+            LOGII("row per strip", rowPerStrip);
+            jfieldID gOptions_outRowPerStripFieldID = env->GetFieldID(jBitmapOptionsClass, "outRowPerStrip", "I");
+            env->SetIntField(optionsObject, gOptions_outRowPerStripFieldID, rowPerStrip);
+        }
+
+        //strip size
+        uint32 stripSize = TIFFStripSize (image);
+        LOGII("strip size", stripSize);
+        jfieldID gOptions_outStripSizeFieldID = env->GetFieldID(jBitmapOptionsClass, "outStripSize", "I");
+        env->SetIntField(optionsObject, gOptions_outStripSizeFieldID, stripSize);
+
+        //strip max
+        uint32 stripMax = TIFFNumberOfStrips (image);
+        LOGII("number of strips", stripMax);
+        jfieldID gOptions_outStripMaxFieldID = env->GetFieldID(jBitmapOptionsClass, "outNumberOfStrips", "I");
+        env->SetIntField(optionsObject, gOptions_outStripMaxFieldID, stripMax);
+
+        //photometric
+        int photometric = 0;
+        TIFFGetField(image, TIFFTAG_PHOTOMETRIC, &photometric);
+        LOGII("photometric", photometric);
+        jclass gOptions_PhotometricClass = env->FindClass("org/beyka/tiffbitmapfactory/Photometric");
+        jfieldID gOptions_PhotometricFieldId = NULL;
+                switch(photometric) {
+                    case PHOTOMETRIC_MINISWHITE:
+                        gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
+                        "MINISWHITE",
+                        "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                        break;
+                    case PHOTOMETRIC_MINISBLACK:
+                        gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
+                        "MINISBLACK",
+                        "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                    case PHOTOMETRIC_RGB:
+                         gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
+                         "RGB",
+                         "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                    case PHOTOMETRIC_PALETTE:
+                         gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
+                         "PALETTE",
+                         "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                    case PHOTOMETRIC_MASK:
+                         gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
+                         "MASK",
+                         "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                    case PHOTOMETRIC_SEPARATED:
+                         gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
+                         "SEPARATED",
+                         "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                    case PHOTOMETRIC_YCBCR:
+                         gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
+                         "YCBCR",
+                         "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                    case PHOTOMETRIC_CIELAB:
+                         gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
+                         "CIELAB",
+                         "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                    case PHOTOMETRIC_ICCLAB:
+                         gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
+                         "ICCLAB",
+                         "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                    case PHOTOMETRIC_ITULAB:
+                         gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
+                         "ITULAB",
+                         "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                    case PHOTOMETRIC_LOGL:
+                         gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
+                         "LOGL",
+                         "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                    case PHOTOMETRIC_LOGLUV:
+                         gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
+                         "LOGLUV",
+                         "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                    default:
+                        gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
+                        "OTHER",
+                        "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                }
+        if (gOptions_PhotometricFieldId != NULL) {
+                    jobject gOptions_PhotometricObj = env->GetStaticObjectField(
+                            gOptions_PhotometricClass,
+                            gOptions_PhotometricFieldId);
+
+                    jfieldID gOptions_outPhotometricField = env->GetFieldID(jBitmapOptionsClass,
+                            "outPhotometric",
+                            "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                    env->SetObjectField(optionsObject, gOptions_outPhotometricField,
+                            gOptions_PhotometricObj);
+        }
+
+        //FillOrder
+        int fillOrder = 0;
+        TIFFGetField(image, TIFFTAG_FILLORDER, &fillOrder);
+        LOGII("fill Order", fillOrder);
+        jclass gOptions_FillOrderClass = env->FindClass("org/beyka/tiffbitmapfactory/FillOrder");
+        jfieldID gOptions_FillOrderFieldId = NULL;
+        switch(fillOrder) {
+        case FILLORDER_MSB2LSB:
+            gOptions_FillOrderFieldId = env->GetStaticFieldID(gOptions_FillOrderClass,
+            "MSB2LSB",
+            "Lorg/beyka/tiffbitmapfactory/FillOrder;");
+            break;
+        case PLANARCONFIG_SEPARATE:
+            gOptions_FillOrderFieldId = env->GetStaticFieldID(gOptions_FillOrderClass,
+            "LSB2MSB",
+            "Lorg/beyka/tiffbitmapfactory/FillOrder;");
+            break;
+        }
+        if (gOptions_FillOrderFieldId != NULL) {
+            jobject gOptions_FillOrderObj = env->GetStaticObjectField(
+            gOptions_FillOrderClass,
+            gOptions_FillOrderFieldId);
+
+            jfieldID gOptions_outFillOrderField = env->GetFieldID(jBitmapOptionsClass,
+            "outFillOrder",
+            "Lorg/beyka/tiffbitmapfactory/FillOrder;");
+            env->SetObjectField(optionsObject, gOptions_outFillOrderField,
+            gOptions_FillOrderObj);
+        }
 
         //Author
         char * artist;

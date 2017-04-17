@@ -5,9 +5,9 @@ package org.beyka.tiffbitmapfactory;
  */
 
 public enum ResolutionUnit {
-    RESUNIT_NONE(1),
-    RESUNIT_INCH(2),
-    RESUNIT_CENTIMETER(3);
+    NONE(1),
+    INCH(2),
+    CENTIMETER(3);
 
     final int ordinal;
 

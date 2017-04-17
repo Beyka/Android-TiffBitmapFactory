@@ -5,14 +5,14 @@ package org.beyka.tiffbitmapfactory;
  */
 
 public enum Orientation {
-    ORIENTATION_TOPLEFT(1),
-    ORIENTATION_TOPRIGHT(2),
-    ORIENTATION_BOTRIGHT(3),
-    ORIENTATION_BOTLEFT(4),
-    ORIENTATION_LEFTTOP(5),
-    ORIENTATION_RIGHTTOP(6),
-    ORIENTATION_RIGHTBOT(7),
-    ORIENTATION_LEFTBOT(8),
+    TOP_LEFT(1),
+    TOP_RIGHT(2),
+    BOT_RIGHT(3),
+    BOT_LEFT(4),
+    LEFT_TOP(5),
+    RIGHT_TOP(6),
+    RIGHT_BOT(7),
+    LEFT_BOT(8),
     UNAVAILABLE(0);
 
     final int ordinal;

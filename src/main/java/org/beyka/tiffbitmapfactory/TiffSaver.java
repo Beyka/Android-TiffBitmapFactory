@@ -140,23 +140,23 @@ public class TiffSaver {
     public static final class SaveOptions {
 
         public SaveOptions() {
-            compressionScheme = CompressionScheme.COMPRESSION_NONE;
-            orientation = Orientation.ORIENTATION_TOPLEFT;
+            compressionScheme = CompressionScheme.NONE;
+            orientation = Orientation.TOP_LEFT;
             xResolution = 0;
             yResolution = 0;
-            resUnit = ResolutionUnit.RESUNIT_NONE;
+            resUnit = ResolutionUnit.NONE;
         }
 
         /**
          * Compression scheme used on the image data.
-         * <p>Default value is {@link CompressionScheme#COMPRESSION_NONE COMPRESSION_NONE}</p>
+         * <p>Default value is {@link CompressionScheme#NONE COMPRESSION_NONE}</p>
          * <p>This parameter is link to TIFFTAG_COMPRESSION tag</p>
          */
         public CompressionScheme compressionScheme;
 
         /**
          * {@link org.beyka.tiffbitmapfactory.Orientation Orientation} that will used for saving image
-         * <p>By default uses {@link org.beyka.tiffbitmapfactory.Orientation#ORIENTATION_TOPLEFT ORIENTATION_TOPLEFT} </p>
+         * <p>By default uses {@link org.beyka.tiffbitmapfactory.Orientation#TOP_LEFT ORIENTATION_TOPLEFT} </p>
          * <p>This parameter is link to TIFFTAG_ORIENTATION tag</p>
          */
         public Orientation orientation;
@@ -186,7 +186,7 @@ public class TiffSaver {
          *     <li>RESUNIT_INCH</li>
          *     <li>RESUNIT_CENTIMETER</li>
          * </ul>
-         * <p>Default value is {@link org.beyka.tiffbitmapfactory.ResolutionUnit#RESUNIT_NONE}</p>
+         * <p>Default value is {@link org.beyka.tiffbitmapfactory.ResolutionUnit#NONE}</p>
          */
         public ResolutionUnit resUnit;
 

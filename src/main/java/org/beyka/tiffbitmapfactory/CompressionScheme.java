@@ -8,26 +8,26 @@ public enum CompressionScheme {
     /**
      * No compression
      */
-    COMPRESSION_NONE(1),
+    NONE(1),
     /**
      * CCITT Group 3 fax encoding
      */
-    COMPRESSION_CCITTFAX3(3),
+    CCITTFAX3(3),
     /**
      * CCITT Group 4 fax encoding
      */
-    COMPRESSION_CCITTFAX4(4),
+    CCITTFAX4(4),
     /**
      * LZW
      */
-    COMPRESSION_LZW(5),
+    LZW(5),
     /**
      * JPEG ('new-style' JPEG)
      */
-    COMPRESSION_JPEG(7),
-    COMPRESSION_PACKBITS(32773),
-    COMPRESSION_DEFLATE(32946),
-    COMPRESSION_ADOBE_DEFLATE(8),
+    JPEG(7),
+    PACKBITS(32773),
+    DEFLATE(32946),
+    ADOBE_DEFLATE(8),
     /**
      * All other compression schemes
      */

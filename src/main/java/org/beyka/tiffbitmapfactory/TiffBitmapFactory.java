@@ -296,6 +296,28 @@ public class TiffBitmapFactory {
         public CompressionScheme outCompressionScheme;
 
         /**
+         * How the components of each pixel are stored.
+         * <p>The specification defines these values:</p>
+         * <ul>
+         *  <li>1 = Chunky format. The component values for each pixel are stored contiguously. For example, for RGB data, the data is stored as RGBRGBRGB</li>
+         *  <li>2 = Planar format. The components are stored in separate component planes. For example, RGB data is stored with the Red components in one component plane, the Green in another, and the Blue in another.</li>
+         * </ul>
+         * <p>This parameter is link to TIFFTAG_PLANARCONFIG tag</p>
+         */
+        public PlanarConfig outPlanarConfig;
+
+        /**
+         * The number of components per pixel.
+         * <p>SamplesPerPixel is usually 1 for bilevel, grayscale, and palette-color images. SamplesPerPixel is usually 3 for RGB images. If this value is higher, ExtraSamples should give an indication of the meaning of the additional channels.</p>
+         */
+        public int outSamplePerPixel;
+
+        /**
+         * Number of bits per component.
+         */
+        public int outBitsPerSample;
+
+        /**
          * The number of pixels per {@link org.beyka.tiffbitmapfactory.TiffBitmapFactory.Options#outResolutionUnit} in the ImageWidth direction.
          */
         public float outXResolution;
@@ -313,8 +335,52 @@ public class TiffBitmapFactory {
          *     <li>RESUNIT_INCH</li>
          *     <li>RESUNIT_CENTIMETER</li>
          * </ul>
+         * <p>This parameter is link to TIFFTAG_RESOLUTIONUNIT tag</p>
          */
         public ResolutionUnit outResolutionUnit;
+
+        /**
+         * The tile width in pixels. This is the number of columns in each tile.
+         */
+        public int outTileWidth;
+
+        /**
+         * The tile height in pixels. This is the number of rows in each tile.
+         */
+        public int outTileHeight;
+
+        /**
+         * The number of rows per strip.
+         * <p>RowsPerStrip and ImageLength together tell us the number of strips in the entire image.</p>
+         */
+        public int outRowPerStrip;
+
+        /**
+         * Size for a strip of data in bytes.
+         */
+        public int outStripSize;
+
+        /**
+         * Number of strips in the image.
+         */
+        public int outNumberOfStrips;
+
+        /**
+         * The color space of the image data.
+         * <p>This parameter is link to TIFFTAG_PHOTOMETRIC tag</p>
+         */
+        public Photometric outPhotometric;
+
+        /**
+         *  The logical order of bits within a byte.
+         * <p>The specification defines these values:</p>
+         * <ul>
+         *  <li>1 = Pixels with lower column values are stored in the higher-order bits of the byte.</li>
+         *  <li>2 = Pixels with lower column values are stored in the lower-order bits of the byte.</li>
+         * </ul>
+         * <p>This parameter is link to TIFFTAG_PLANARCONFIG tag</p>
+         */
+        public FillOrder outFillOrder;
 
         /**
          * Author of file.
