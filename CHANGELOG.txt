@@ -1,3 +1,7 @@
+0.9.7.1
+- Added reading of various tiff tags
+- Changed enums
+
 0.9.7
 - Added possibility to stop decoding that runs in separate thread
 - Fixed crashing when decoding images with bad metadata
