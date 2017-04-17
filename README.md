@@ -13,7 +13,7 @@ Supported architectures: all
 ### Installation
 Just add to your gradle dependencies :
 ```
-compile 'com.github.beyka:androidtiffbitmapfactory:0.9.6.2'
+compile 'com.github.beyka:androidtiffbitmapfactory:0.9.7'
 ```
 And do not forget to add WRITE_EXTERNAL_STORAGE permission to main project manifest
 
@@ -72,6 +72,21 @@ for (int i = 0; i < dirCount; i++) {
 While decoding images library use native memory mechanism, so it could use all memory available for operating system. This could produce crash of your app and close other applications which are running on the device. Also in some cases it could crash operating system. 
 Also in case of using more than one thread for decoding images every thread could try to use all device memory.
 For avoiding of memory errors, library now has option called inAvailableMemory. Default value for this variable is 8000*8000*4 that equal to 244Mb. -1 means that decoder could use all available memory, but also it could be root of application crashes. Each separate thread that decoding tiff image will estimate how many memory it will use in decoding process. If estimate memory is less than available memory, decoder will decode image. Otherwise decoder will throw error or just return NULL(see inThrowException option).
+
+
+#### Stop decoding that runs in separate thread
+```Java
+final TiffBitmapFactory.Options options = new TiffBitmapFactory.Options();
+//Running decoding of big image in separate thread
+    new Thread(new Runnable() {
+        @Override
+        public void run() {
+            Bitmap bitmap = TiffBitmapFactory.decodePath("/sdcard/big_tiff_image.tif", options);
+        }
+    }).start();
+//To stop thread just call stop() method in options object
+options.stop();
+```
 
 #### Saving tiff file
 ```Java
