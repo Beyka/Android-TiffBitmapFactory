@@ -817,11 +817,11 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
 
         for (row = 0; row < origheight; row += tileHeight) {
 
-            sendProgress(row * origwidth, progressTotal);
-
             short leftTileExists = 0;
             short rightTileExists = 0;
             for (column = 0; column < origwidth; column += tileWidth) {
+                sendProgress(row * origwidth + column, progressTotal);
+
                 //If not first column - we should have previous tile - copy it to left tile buffer
                 if (column != 0) {
                     _TIFFmemcpy(rasterTileLeft, rasterTile, tileWidth * tileHeight * sizeof(uint32));
