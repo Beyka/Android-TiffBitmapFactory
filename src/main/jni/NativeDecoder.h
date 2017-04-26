@@ -24,7 +24,7 @@
 class NativeDecoder
 {
     public:
-        explicit NativeDecoder(JNIEnv *, jclass, jstring, jobject);
+        explicit NativeDecoder(JNIEnv *, jclass, jstring, jobject, jobject);
         ~NativeDecoder();
         jobject getBitmap();
 
@@ -42,11 +42,14 @@ class NativeDecoder
         JNIEnv *env;
         jclass clazz;
         jobject optionsObject;
+        jobject listenerObject;
+        jclass jIProgressListenerClass;
         jclass jBitmapOptionsClass;
         jstring jPath;
         jboolean throwException;
         jboolean useOrientationTag;
         TIFF *image;
+        jint progressTotal;
         int origwidth;
         int origheight;
         short origorientation;
@@ -72,6 +75,7 @@ class NativeDecoder
         unsigned short *createBitmapRGB565(jint *, int, int);
         jstring charsToJString(char *);
         jboolean checkStop();
+        void sendProgress(jint, jint);
 };
 
 #endif //TIFFSAMPLE_NATIVEDECODER_H
