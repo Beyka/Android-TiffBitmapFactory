@@ -5,7 +5,6 @@ extern "C" {
 #endif
 
 #include "NativeTiffBitmapFactory.h"
-#include "readTiffIncremental.h"
 #include "NativeExceptions.h"
 
 JNIEXPORT jobject
