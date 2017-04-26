@@ -26,7 +26,7 @@ extern "C" {
  * Signature: (Ljava/lang/String;I)Landroid/graphics/Bitmap;
  */
 JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
-  (JNIEnv *, jclass, jstring, jobject);
+  (JNIEnv *, jclass, jstring, jobject, jobject);
 
 
 #ifdef __cplusplus

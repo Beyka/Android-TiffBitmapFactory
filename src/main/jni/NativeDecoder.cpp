@@ -5,18 +5,20 @@
 #include "NativeDecoder.h"
 #include <string>
 
-NativeDecoder::NativeDecoder(JNIEnv *e, jclass c, jstring path, jobject opts)
+NativeDecoder::NativeDecoder(JNIEnv *e, jclass c, jstring path, jobject opts, jobject listener)
 {
     availableMemory = 8000*8000*4; // use 244Mb restriction for decoding full image
     env = e;
     clazz = c;
     optionsObject = opts;
+    listenerObject = listener;
     jPath = path;
 
     origwidth = 0;
     origheight = 0;
     origorientation = 0;
     origcompressionscheme = 0;
+    progressTotal = 0;
     invertRedAndBlue = false;
 
     preferedConfig = NULL;
@@ -24,6 +26,7 @@ NativeDecoder::NativeDecoder(JNIEnv *e, jclass c, jstring path, jobject opts)
 
     jBitmapOptionsClass = env->FindClass(
                         "org/beyka/tiffbitmapfactory/TiffBitmapFactory$Options");
+    jIProgressListenerClass = env->FindClass("org/beyka/tiffbitmapfactory/IProgressListener");
 }
 
 NativeDecoder::~NativeDecoder()
@@ -43,6 +46,11 @@ NativeDecoder::~NativeDecoder()
     if (jBitmapOptionsClass) {
         env->DeleteLocalRef(jBitmapOptionsClass);
         jBitmapOptionsClass = NULL;
+    }
+
+    if (jIProgressListenerClass) {
+        env->DeleteLocalRef(jIProgressListenerClass);
+        jIProgressListenerClass = NULL;
     }
 }
 
@@ -142,6 +150,8 @@ jobject NativeDecoder::getBitmap()
             TIFFSetDirectory(image, inDirectoryNumber);
             TIFFGetField(image, TIFFTAG_IMAGEWIDTH, &origwidth);
             TIFFGetField(image, TIFFTAG_IMAGELENGTH, &origheight);
+            progressTotal = origwidth * origheight;
+            sendProgress(0, progressTotal);
             java_bitmap = createBitmap(inSampleSize, inDirectoryNumber);
         }
 
@@ -209,6 +219,8 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
             }
         }
     }
+
+    sendProgress(progressTotal, progressTotal);
 
     if(checkStop()) {
         if (raster) {
@@ -375,6 +387,9 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
     uint32 rows_to_write = 0;
 
     for (int i = 0; i < stripMax*rowPerStrip; i += rowPerStrip) {
+
+            sendProgress(i * origwidth, progressTotal);
+
             //if second raster is exist - copy it to work raster end decode next strip
             if (isSecondRasterExist) {
                 _TIFFmemcpy(raster, rasterForBottomLine, origwidth * rowPerStrip * sizeof (uint32));
@@ -464,6 +479,7 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
                 }
                 int position = i * origwidth;
                 memcpy(&pixels[position], raster, byteToCopy);
+                //sendProgress(position, progressTotal);
             } else {
                 if (isSecondRasterExist) {
                     _TIFFmemcpy(matrixBottomLine, rasterForBottomLine /*+ lineAddrToCopyBottomLine * origwidth*/, sizeof(unsigned int) * origwidth);
@@ -800,6 +816,9 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
         uint32 globalProcessedY = 0;
 
         for (row = 0; row < origheight; row += tileHeight) {
+
+            sendProgress(row * origwidth, progressTotal);
+
             short leftTileExists = 0;
             short rightTileExists = 0;
             for (column = 0; column < origwidth; column += tileWidth) {
@@ -1278,7 +1297,9 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
             return NULL;
         }
         else {
-            for (int i = 0, i1 = 0; i < *bitmapwidth; i++, i1 += inSampleSize) {
+            for (int j = 0, j1 = 0; j < *bitmapheight; j++, j1 += inSampleSize) {
+
+                sendProgress(j1 * origwidth, progressTotal);
 
                 if (checkStop()) {
                     //TODO clear memory
@@ -1294,7 +1315,7 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
                     return NULL;
                 }
 
-                for (int j = 0, j1 = 0; j < *bitmapheight; j++, j1 += inSampleSize) {
+                for (int i = 0, i1 = 0; i < *bitmapwidth; i++, i1 += inSampleSize) {
                     //Apply filter to pixel
                     jint crPix = origBuffer[j1 * origwidth + i1];
                     int sum = 1;
@@ -2201,6 +2222,14 @@ jboolean NativeDecoder::checkStop() {
     jboolean stop = env->GetBooleanField(optionsObject, stopFieldId);
 
     return stop;
+}
+
+void NativeDecoder::sendProgress(jint current, jint total) {
+    if (listenerObject != NULL) {
+        jmethodID methodid = env->GetMethodID(jIProgressListenerClass, "reportProgress", "(II)V");
+
+        env->CallVoidMethod(listenerObject, methodid, current, total);
+    }
 }
 
 
