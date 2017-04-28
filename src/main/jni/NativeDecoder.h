@@ -75,7 +75,7 @@ class NativeDecoder
         unsigned short *createBitmapRGB565(jint *, int, int);
         jstring charsToJString(char *);
         jboolean checkStop();
-        void sendProgress(jint, jint);
+        void sendProgress(jlong, jlong);
 };
 
 #endif //TIFFSAMPLE_NATIVEDECODER_H

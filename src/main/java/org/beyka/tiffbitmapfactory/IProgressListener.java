@@ -5,5 +5,5 @@ package org.beyka.tiffbitmapfactory;
  */
 
 public interface IProgressListener {
-    public void reportProgress(int processed, int total);
+    public void reportProgress(long processedPixels, long totalPixels);
 }
