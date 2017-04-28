@@ -2227,7 +2227,6 @@ jboolean NativeDecoder::checkStop() {
 void NativeDecoder::sendProgress(jlong current, jlong total) {
     if (listenerObject != NULL) {
         jmethodID methodid = env->GetMethodID(jIProgressListenerClass, "reportProgress", "(JJ)V");
-
         env->CallVoidMethod(listenerObject, methodid, current, total);
     }
 }
