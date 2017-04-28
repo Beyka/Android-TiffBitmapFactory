@@ -16,7 +16,76 @@ extern "C" {
     int const paramOrientation = 1;
 
     JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffSaver_save
-    (JNIEnv *env, jclass clazz, jstring filePath, jintArray img, jobject options, jint img_width, jint img_height, jboolean append) {
+    (JNIEnv *env, jclass clazz, jstring filePath, jobject bitmap, jobject options, jboolean append) {
+
+        //Options class
+        jclass jSaveOptionsClass = env->FindClass("org/beyka/tiffbitmapfactory/TiffSaver$SaveOptions");
+
+        //How much memory can we use?
+        jfieldID availableMemoryFieldID = env->GetFieldID(jSaveOptionsClass,
+                                                                          "inAvailableMemory",
+                                                                          "J");
+        unsigned long inAvailableMemory = env->GetLongField(options, availableMemoryFieldID);
+
+        //If we need to throw exceptions
+        jfieldID throwExceptionFieldID = env->GetFieldID(jSaveOptionsClass,
+                                                                           "inThrowException",
+                                                                           "Z");
+        jboolean throwException = env->GetBooleanField(options, throwExceptionFieldID);
+
+        // check is bitmap null
+        if (bitmap == NULL) {
+            char *message = "Bitmap is null\0";
+            LOGE(message);
+            if (throwException) {
+                jstring jmessage = env->NewStringUTF(message);
+                throw_decode_file_exception(env, filePath, jmessage);
+                env->DeleteLocalRef(jmessage);
+            }
+            return JNI_FALSE;
+        }
+
+        jclass bitmapClass = env->FindClass("android/graphics/Bitmap");
+
+        //check is bitmap recycled
+        jmethodID isRecycledMethodid = env->GetMethodID(bitmapClass, "isRecycled", "()Z");
+        jboolean isRecycled = env->CallBooleanMethod(bitmap, isRecycledMethodid);
+        if (isRecycled) {
+            char *message = "Bitmap is recycled\0";
+            LOGE(message);
+            if (throwException) {
+                jstring jmessage = env->NewStringUTF(message);
+                throw_decode_file_exception(env, filePath, jmessage);
+                env->DeleteLocalRef(jmessage);
+            }
+            return JNI_FALSE;
+        }
+
+        //Read int array of pixels from bitmap object
+        //readbitmap width and height and calculate size
+        jmethodID getWidthMethodid = env->GetMethodID(bitmapClass, "getWidth", "()I");
+        jmethodID getHeightMethodid = env->GetMethodID(bitmapClass, "getHeight", "()I");
+        jint img_width = env->CallIntMethod(bitmap, getWidthMethodid);
+        jint img_height = env->CallIntMethod(bitmap, getHeightMethodid);
+
+        jint arraySize = img_width * img_height;
+        long estimateMem = arraySize * 4;
+
+        //Estimate memmory
+        if (estimateMem > inAvailableMemory) {
+            LOGE("Not enough memory");
+            if (throwException) {
+                throw_not_enought_memory_exception(env, inAvailableMemory, estimateMem);
+            }
+            return JNI_FALSE;
+        }
+
+        jintArray img = env->NewIntArray(arraySize);
+
+        jmethodID getPixelsMethodid = env->GetMethodID(bitmapClass, "getPixels", "([IIIIIII)V");
+        env->CallVoidMethod(bitmap, getPixelsMethodid, img, 0, img_width, 0, 0, img_width, img_height);
+
+        env->DeleteLocalRef(bitmapClass);
 
         const char *strPath = NULL;
         strPath = env->GetStringUTFChars(filePath, 0);
@@ -32,8 +101,7 @@ extern "C" {
         }
 
         //Get options
-        jclass jSaveOptionsClass = env->FindClass(
-        "org/beyka/tiffbitmapfactory/TiffSaver$SaveOptions");
+
         //Get compression mode from options object
         jfieldID gOptions_CompressionModeFieldID = env->GetFieldID(jSaveOptionsClass,
         "compressionScheme",

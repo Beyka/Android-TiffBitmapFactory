@@ -25,6 +25,7 @@ public class TiffSaver {
      * @return true if bitmap was saved successful or false otherwise
      * @throws CantOpenFileException when {@code destination} not exist or can't be opened for writing
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
+     * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while saving image
      */
     public static boolean saveBitmap(File destination, Bitmap bmp) throws CantOpenFileException, NotEnoughtMemoryException {
         return saveBitmap(destination.getAbsolutePath(), bmp, new SaveOptions());
@@ -39,6 +40,7 @@ public class TiffSaver {
      * @return true if bitmap was saved successful or false otherwise
      * @throws CantOpenFileException when {@code destinationPath} not exist or can't be opened for writing
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
+     * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while saving image
      */
     public static boolean saveBitmap(File destination, Bitmap bmp, SaveOptions options) throws CantOpenFileException {
         return saveBitmap(destination.getAbsolutePath(), bmp, options);
@@ -52,6 +54,7 @@ public class TiffSaver {
      * @return true if bitmap was saved successful or false otherwise
      * @throws CantOpenFileException when {@code destinationPath} not exist or can't be opened for writing
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
+     * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while saving image
      */
     public static boolean saveBitmap(String destinationPath, Bitmap bmp) throws CantOpenFileException {
         return saveBitmap(destinationPath, bmp, new SaveOptions());
@@ -66,12 +69,13 @@ public class TiffSaver {
      * @return true if bitmap was saved successful or false otherwise
      * @throws CantOpenFileException when {@code destinationPath} not exist or can't be opened for writing
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
+     * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while saving image
      */
     public static boolean saveBitmap(String destinationPath, Bitmap bmp, SaveOptions options) throws CantOpenFileException {
-        int pixels[] = new int[bmp.getWidth() * bmp.getHeight()];
-        bmp.getPixels(pixels, 0, bmp.getWidth(), 0, 0, bmp.getWidth(), bmp.getHeight());
+//        int pixels[] = new int[bmp.getWidth() * bmp.getHeight()];
+//        bmp.getPixels(pixels, 0, bmp.getWidth(), 0, 0, bmp.getWidth(), bmp.getHeight());
 
-        return save(destinationPath, pixels, options, bmp.getWidth(), bmp.getHeight(), false);
+        return save(destinationPath, bmp, options, false);
     }
 
     /**
@@ -82,6 +86,7 @@ public class TiffSaver {
      * @return true if bitmap was saved successful or false otherwise
      * @throws CantOpenFileException when {@code destination} not exist or can't be opened for writing
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
+     * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while saving image
      */
     public static boolean appendBitmap(File destination, Bitmap bmp) throws CantOpenFileException, NotEnoughtMemoryException {
         return appendBitmap(destination.getAbsolutePath(), bmp, new SaveOptions());
@@ -96,6 +101,7 @@ public class TiffSaver {
      * @return true if bitmap was saved successful or false otherwise
      * @throws CantOpenFileException when {@code destinationPath} not exist or can't be opened for writing
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
+     * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while saving image
      */
     public static boolean appendBitmap(File destination, Bitmap bmp, SaveOptions options) throws CantOpenFileException {
         return appendBitmap(destination.getAbsolutePath(), bmp, options);
@@ -109,6 +115,7 @@ public class TiffSaver {
      * @return true if bitmap was saved successful or false otherwise
      * @throws CantOpenFileException when {@code destinationPath} not exist or can't be opened for writing
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
+     * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while saving image
      */
     public static boolean appendBitmap(String destinationPath, int page, Bitmap bmp) throws CantOpenFileException {
         return appendBitmap(destinationPath, bmp, new SaveOptions());
@@ -123,15 +130,16 @@ public class TiffSaver {
      * @return true if bitmap was saved successful or false otherwise
      * @throws CantOpenFileException when {@code destinationPath} not exist or can't be opened for writing
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
+     * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while saving image
      */
     public static boolean appendBitmap(String destinationPath, Bitmap bmp,SaveOptions options) throws CantOpenFileException {
-        int pixels[] = new int[bmp.getWidth() * bmp.getHeight()];
-        bmp.getPixels(pixels, 0, bmp.getWidth(), 0, 0, bmp.getWidth(), bmp.getHeight());
+//        int pixels[] = new int[bmp.getWidth() * bmp.getHeight()];
+//        bmp.getPixels(pixels, 0, bmp.getWidth(), 0, 0, bmp.getWidth(), bmp.getHeight());
 
-        return save(destinationPath, pixels, options, bmp.getWidth(), bmp.getHeight(), true);
+        return save(destinationPath, bmp, options, true);
     }
 
-    private static synchronized native boolean save(String filePath, int[] image, SaveOptions options, int width, int height, boolean append);
+    private static synchronized native boolean save(String filePath, Bitmap bmp, SaveOptions options, boolean append);
 
 
     /**
@@ -140,12 +148,28 @@ public class TiffSaver {
     public static final class SaveOptions {
 
         public SaveOptions() {
+            inAvailableMemory = 8000*8000*4;
+            inThrowException = false;
             compressionScheme = CompressionScheme.NONE;
             orientation = Orientation.TOP_LEFT;
             xResolution = 0;
             yResolution = 0;
             resUnit = ResolutionUnit.NONE;
         }
+
+        /**
+         * Number of bytes that may be allocated during the Tiff file operations.
+         * <p>-1 means memory is unlimited.</p>
+         * <p>Default value is 244Mb</p>
+         */
+        public long inAvailableMemory;
+
+        /**
+         * If set to true, saver will throw exceptions if some errors appeared while writing tiff.
+         * Otherwise  saver will just return false.
+         * Default value is false
+         */
+        public boolean inThrowException;
 
         /**
          * Compression scheme used on the image data.
