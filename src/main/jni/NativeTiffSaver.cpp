@@ -45,6 +45,7 @@ extern "C" {
             return JNI_FALSE;
         }
 
+
         jclass bitmapClass = env->FindClass("android/graphics/Bitmap");
 
         //check is bitmap recycled
@@ -61,36 +62,32 @@ extern "C" {
             return JNI_FALSE;
         }
 
-        //Read int array of pixels from bitmap object
-        //readbitmap width and height and calculate size
-        jmethodID getWidthMethodid = env->GetMethodID(bitmapClass, "getWidth", "()I");
-        jmethodID getHeightMethodid = env->GetMethodID(bitmapClass, "getHeight", "()I");
-        jint img_width = env->CallIntMethod(bitmap, getWidthMethodid);
-        jint img_height = env->CallIntMethod(bitmap, getHeightMethodid);
+        //Read pixels from bitmap
 
-        jint arraySize = img_width * img_height;
-        long estimateMem = arraySize * 4;
+        AndroidBitmapInfo  info;
+        void* pixels;
+        int ret;
 
-        //Estimate memmory
-        if (estimateMem > inAvailableMemory) {
-            LOGE("Not enough memory");
-            if (throwException) {
-                throw_not_enought_memory_exception(env, inAvailableMemory, estimateMem);
-            }
+
+
+        if ((ret = AndroidBitmap_getInfo(env, bitmap, &info)) < 0) {
+            LOGE("AndroidBitmap_getInfo() failed ! error=");
             return JNI_FALSE;
         }
 
-        jintArray img = env->NewIntArray(arraySize);
+        if ((ret = AndroidBitmap_lockPixels(env, bitmap, &pixels)) < 0) {
+                LOGE("AndroidBitmap_lockPixels() failed ! error=");
+                return JNI_FALSE;
+        }
 
-        jmethodID getPixelsMethodid = env->GetMethodID(bitmapClass, "getPixels", "([IIIIIII)V");
-        env->CallVoidMethod(bitmap, getPixelsMethodid, img, 0, img_width, 0, 0, img_width, img_height);
-
-        env->DeleteLocalRef(bitmapClass);
+uint32 img_width = info.width;
+        uint32 img_height= info.height;
 
         const char *strPath = NULL;
         strPath = env->GetStringUTFChars(filePath, 0);
         LOGIS("nativeTiffOpenForSave", strPath);
 
+/*
         //Get array of jint from jintArray
         jint *c_array;
         c_array = env->GetIntArrayElements(img, NULL);
@@ -99,6 +96,8 @@ extern "C" {
             LOGE("array is null");
             return JNI_FALSE;
         }
+*/
+
 
         //Get options
 
@@ -190,15 +189,99 @@ extern "C" {
         char *fullReleaseName = concat("Android ", releaseString);
         LOGIS("Full Release: ", fullReleaseName);
 
+
+        uint32 pixelsBufferSize = img_width * img_height;
+        uint32* img = NULL;
+        int tmpImgArrayCreated = 0;
+        switch (info.format) {
+            case ANDROID_BITMAP_FORMAT_RGBA_8888:
+            {
+                LOGI("ANDROID_BITMAP_FORMAT_RGBA_8888");
+                img = (uint32*)pixels;
+                break;
+            }
+            case ANDROID_BITMAP_FORMAT_RGBA_4444:
+            {
+                LOGI("ANDROID_BITMAP_FORMAT_RGBA_4444");
+                uint16_t* tmp4444 = (uint16_t*)pixels;
+                img = (uint32*) malloc(sizeof(uint32) * pixelsBufferSize);
+                for (int x = 0; x < img_width; x++) {
+                    for (int y = 0; y < img_height; y++) {
+                        uint16_t pix = tmp4444[y * img_width + x];
+                        int alpha = colorMask & pix >> 16;
+                        int red = colorMask & pix >> 8;
+                        int green = colorMask & pix >> 4;
+                        int blue = colorMask & pix;
+                        uint32 crPix = (alpha << 24) | (blue << 16) | (green << 8) | (red);
+                        img[y * img_width + x] = crPix;
+                    }
+                }
+                tmpImgArrayCreated = 1;
+                break;
+            }
+            case ANDROID_BITMAP_FORMAT_RGB_565:
+            {
+                LOGI("ANDROID_BITMAP_FORMAT_RGB_565");
+                uint16_t* tmp565 = (uint16_t*)pixels;
+                img = (uint32*) malloc(sizeof(uint32) * pixelsBufferSize);
+                for (int x = 0; x < img_width; x++) {
+                    for (int y = 0; y < img_height; y++) {
+                        uint16_t pix = tmp565[y * img_width + x];
+                        unsigned char red = 0b11111 & pix >> 11;
+                        unsigned char green = 0b111111 & pix >> 5;
+                        unsigned char blue = 0b11111 & pix;
+                        uint32 crPix = (blue << 3 << 16) | (green << 2 << 8) | (red<<3);
+                        img[y * img_width + x] = crPix;
+                    }
+                }
+                tmpImgArrayCreated = 1;
+                break;
+            }
+            case ANDROID_BITMAP_FORMAT_A_8:
+            {
+                LOGI("ANDROID_BITMAP_FORMAT_A_8");
+                uint8_t* tmp8 = (uint8_t*)pixels;
+                img = (uint32*) malloc(sizeof(uint32) * pixelsBufferSize);
+                for (int x = 0; x < img_width; x++) {
+                    for (int y = 0; y < img_height; y++) {
+                        uint8_t pix = tmp8[y * img_width + x];
+                        img[y * img_width + x] = pix << 24;
+                    }
+                }
+                tmpImgArrayCreated = 1;
+                break;
+            }
+        }
+
+/*
         int pixelsBufferSize = img_width * img_height;
         uint32 *array = (uint32 *) malloc(sizeof(uint32) * pixelsBufferSize);
         if (!array) {
             throw_not_enought_memory_exception(env, sizeof(uint32) * pixelsBufferSize, 0);//todo change for estimating memory
             return JNI_FALSE;
         }
+
+        uint32_t* img = (uint32_t*)pixels;
+        for (int y = 0; y < img_height; y++) {
+            for (int x = 0; x < img_width; x++) {
+                uint32_t pix = img[y * img_width + x];
+                int alpha = colorMask & pix >> 24;
+                int red = colorMask & pix >> 16;
+                int green = colorMask & pix >> 8;
+                int blue = colorMask & pix;
+                uint32 crPix = (alpha << 24) | (blue << 16) | (green << 8) | (red);
+                array[y * img_width + x] = crPix;
+            }
+        }
+*/
+
+/*
         for (int i = 0; i < img_width; i++) {
             for (int j = 0; j < img_height; j++) {
-                jint crPix = c_array[j * img_width + i];
+
+                uint32 crPix = getPixel(pixels,info,i,j);
+
+                //jint crPix = c_array[j * img_width + i];
                 int alpha = colorMask & crPix >> 24;
                 int red = colorMask & crPix >> 16;
                 int green = colorMask & crPix >> 8;
@@ -208,7 +291,7 @@ extern "C" {
                 array[j * img_width + i] = crPix;
             }
         }
-
+*/
         TIFF *output_image;
         int fileDescriptor = -1;
 
@@ -301,7 +384,7 @@ extern "C" {
 
         // Write the information to the file
         if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
-            unsigned char *bilevel = convertArgbToBilevel(array, img_width, img_height);
+            unsigned char *bilevel = convertArgbToBilevel(img, img_width, img_height);
             int compressedWidth = (img_width/8 + 0.5);
             for (int i = 0; i < img_height; i++) {
                 TIFFWriteEncodedStrip(output_image, i, &bilevel[i * compressedWidth], (compressedWidth));
@@ -309,10 +392,10 @@ extern "C" {
             free(bilevel);
         } else {
             for (int row = 0; row < img_height; row++) {
-                TIFFWriteScanline(output_image, &array[row * img_width], row, 0);
+                TIFFWriteScanline(output_image, &img[row * img_width], row, 0);
             }
         }
-        int ret = TIFFWriteDirectory(output_image);
+        ret = TIFFWriteDirectory(output_image);
         LOGII("ret = ", ret);
 
         // Close the file
@@ -323,9 +406,17 @@ extern "C" {
         if (fileDescriptor >= 0) {
             close(fileDescriptor);
         }
-
+/*
         //free temp array
         free (array);
+*/
+        if (tmpImgArrayCreated) {
+            free(img);
+        }
+
+        //Now we don't need android pixels, so unlock
+                 AndroidBitmap_unlockPixels(env, bitmap);
+
         //Remove variables
         if (releaseString) {
             env->ReleaseStringUTFChars(jrelease, releaseString);
@@ -344,7 +435,7 @@ extern "C" {
             env->ReleaseStringUTFChars(jCopyright, copyrightString);
         }
         env->ReleaseStringUTFChars(filePath, strPath);
-        env->ReleaseIntArrayElements(img, c_array, 0);
+//        env->ReleaseIntArrayElements(img, c_array, 0);
 
         if (ret == -1) return JNI_FALSE;
         return JNI_TRUE;
