@@ -20,7 +20,8 @@ And do not forget to add WRITE_EXTERNAL_STORAGE permission to main project manif
 ### Build from sources
 To build native part of library use [Android-NDK-bundle](https://developer.android.com/tools/sdk/ndk/index.html).
 <p>To start build go to tiffbitmapfactory folder and run</p>
-```
+
+``` Gradle
 ndk-build NDK_PROJECT_PATH=src/main
 ```
 
