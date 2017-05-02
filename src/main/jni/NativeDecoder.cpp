@@ -1853,8 +1853,7 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
                             break;
                     }
                 }
-                if (inSampleSize > 0 )
-                {
+
                     //Tile could begin from not filled pixel(pixel[x,y] == 0). This variables allow to calculate begining of filled pixels
                     int tileStartDataX = -1;
                     int tileStartDataY = -1;
@@ -2114,32 +2113,7 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
                             }
                         }
                     }
-                } else {
-                    int rowHasPixels = 0;
-                        for (int th = 0, bh = 0; th < tileHeight; th++) {
-                            for (int tw = 0, bw = 0; tw < tileWidth; tw++) {
-                                uint32 srcPosition = th * tileWidth + tw;
-                                if (rasterTile[srcPosition] != 0) {
-                                    int position = 0;
-                                    if (origorientation <= 4) {
-                                        position = (row + bh) * *bitmapwidth + column + bw;
-                                    } else {
-                                        position = (column + bw) * *bitmapheight + row + bh;
-                                    }
-                                    pixels[position] = rasterTile[srcPosition];
-                                    rowHasPixels = 1;
-                                    bw++;
-                                }
-                            }
-                            if (rowHasPixels) {
-                                bh++;
-                                rowHasPixels = 0;
-                            }
-                        }
-                }
-                LOGII("CD1", columnDest);
                 columnDest += tileWidth;
-                LOGII("CD2", columnDest);
             }
             rowDest += tileHeight;
         }
@@ -2159,6 +2133,25 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
         if (work_line_buf) {
             _TIFFfree(work_line_buf);
             work_line_buf = NULL;
+        }
+
+        //Copy necessary pixels to new array if orientation <=4
+
+        if (origorientation <= 4) {
+            uint32 tmpPixelBufferSize = (boundWidth / inSampleSize) * (boundHeight / inSampleSize);
+            jint* tmpPixels = (jint *) malloc(sizeof(jint) * tmpPixelBufferSize);
+            uint32 startPosX = boundX%tileWidth /inSampleSize;//(firstTileX * tileWidth - tileWidth + boundX) / inSampleSize;
+            uint32 startPosY = boundY%tileHeight /inSampleSize;//(firstTileY * tileHeight - tileHeight + boundY) /inSampleSize;
+            for (int ox = startPosX, nx = 0; nx < boundWidth/inSampleSize; ox++, nx++) {
+                for (int oy = startPosY, ny = 0; ny < boundHeight/inSampleSize; oy++, ny++) {
+                    tmpPixels[ny * (boundWidth/inSampleSize) + nx] = pixels[oy * *bitmapwidth + ox];
+                }
+            }
+
+            free(pixels);
+            pixels = tmpPixels;
+            *bitmapwidth = boundWidth/inSampleSize;
+            *bitmapheight = boundHeight/inSampleSize;
         }
 
         if (useOrientationTag) {
@@ -2193,22 +2186,27 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
             }
         }
 
-        //Copy necessary pixels to new array and return
-
-        uint32 tmpPixelBufferSize = (boundWidth / inSampleSize) * (boundHeight / inSampleSize);
-        jint* tmpPixels = (jint *) malloc(sizeof(jint) * tmpPixelBufferSize);
-        uint32 startPosX = boundX%tileWidth /inSampleSize;//(firstTileX * tileWidth - tileWidth + boundX) / inSampleSize;
-        uint32 startPosY = boundY%tileHeight /inSampleSize;//(firstTileY * tileHeight - tileHeight + boundY) /inSampleSize;
-        for (int ox = startPosX, nx = 0; nx < boundWidth/inSampleSize; ox++, nx++) {
-            for (int oy = startPosY, ny = 0; ny < boundHeight/inSampleSize; oy++, ny++) {
-                tmpPixels[ny * (boundWidth/inSampleSize) + nx] = pixels[oy * *bitmapwidth + ox];
+        //Copy necessary pixels to new array if orientation >4
+        if (origorientation > 4) {
+            uint32 tmpPixelBufferSize = (boundWidth / inSampleSize) * (boundHeight / inSampleSize);
+            jint* tmpPixels = (jint *) malloc(sizeof(jint) * tmpPixelBufferSize);
+            uint32 startPosX = boundX%tileWidth /inSampleSize;
+            uint32 startPosY = boundY%tileHeight /inSampleSize;
+            for (int ox = startPosX, nx = 0; nx < boundWidth/inSampleSize; ox++, nx++) {
+                for (int oy = startPosY, ny = 0; ny < boundHeight/inSampleSize; oy++, ny++) {
+                    if (useOrientationTag) {
+                        tmpPixels[nx * (boundHeight/inSampleSize) + ny] = pixels[ox * *bitmapheight + oy];
+                    } else {
+                        tmpPixels[ny * (boundWidth/inSampleSize) + nx] = pixels[oy * *bitmapwidth + ox];
+                    }
+                }
             }
-        }
 
-        free(pixels);
-        pixels = tmpPixels;
-        *bitmapwidth = boundWidth/inSampleSize;
-        *bitmapheight = boundHeight/inSampleSize;
+            free(pixels);
+            pixels = tmpPixels;
+            *bitmapwidth = boundWidth/inSampleSize;
+            *bitmapheight = boundHeight/inSampleSize;
+        }
 
         return pixels;
 }
