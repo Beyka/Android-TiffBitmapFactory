@@ -1778,13 +1778,13 @@ LOGII("bw", *bitmapwidth);
 
         uint32 tmpPixelBufferSize = (boundWidth / inSampleSize) * (boundHeight / inSampleSize);
         jint* tmpPixels = (jint *) malloc(sizeof(jint) * tmpPixelBufferSize);
-        uint32 startPosX = boundX/inSampleSize;//(firstTileX * tileWidth - tileWidth + boundX) / inSampleSize;
-        uint32 startPosY = boundY/inSampleSize;//(firstTileY * tileHeight - tileHeight + boundY) /inSampleSize;
+        uint32 startPosX = boundX%tileWidth /inSampleSize;//(firstTileX * tileWidth - tileWidth + boundX) / inSampleSize;
+        uint32 startPosY = boundY%tileHeight /inSampleSize;//(firstTileY * tileHeight - tileHeight + boundY) /inSampleSize;
         LOGII("startPosX", startPosX);
         LOGII("startPosY", startPosY);
         for (int ox = startPosX, nx = 0; nx < boundWidth/inSampleSize; ox++, nx++) {
             for (int oy = startPosY, ny = 0; ny < boundHeight/inSampleSize; oy++, ny++) {
-                tmpPixels[ny * boundWidth + nx] = pixels[oy * *bitmapwidth + ox];
+                tmpPixels[ny * (boundWidth/inSampleSize) + nx] = pixels[oy * *bitmapwidth + ox];
             }
         }
 
