@@ -291,6 +291,8 @@ public class TiffBitmapFactory {
          */
         public ImageConfig inPreferredConfig = ImageConfig.ARGB_8888;
 
+        public DecodeBounds inDecodeBounds;
+
         /**
          * The resulting width of the bitmap. If {@link #inJustDecodeBounds} is
          * set to false, this will be width of the output bitmap after any
@@ -461,5 +463,21 @@ public class TiffBitmapFactory {
          */
         public String outHostComputer = "";
 
+    }
+
+    public static final class DecodeBounds {
+        public int x;
+        public int y;
+        public int width;
+        public int height;
+
+        public DecodeBounds(){}
+
+        public DecodeBounds(int x, int y, int width, int height) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+        }
     }
 }

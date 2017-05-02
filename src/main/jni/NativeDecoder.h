@@ -56,18 +56,25 @@ class NativeDecoder
         int origcompressionscheme;
         jobject preferedConfig;
         jboolean invertRedAndBlue;
+        jint boundX;
+        jint boundY;
+        jint boundWidth;
+        jint boundHeight;
+        char hasBounds;
         unsigned long availableMemory;
         //methods
         int getDyrectoryCount();
         void writeDataToOptions(int);
         jobject createBitmap(int, int);
         jint *getSampledRasterFromImage(int, int *, int *);
+        jint *getSampledRasterFromImageWithBounds(int , int *, int *);
         jint *getSampledRasterFromStrip(int, int *, int *);
         void rotateTileLinesVertical(uint32, uint32, uint32 *, uint32 *);
         void rotateTileLinesHorizontal(uint32, uint32, uint32 *, uint32 *);
         void flipPixelsVertical(uint32, uint32, jint *);
         void flipPixelsHorizontal(uint32, uint32, jint *);
         jint *getSampledRasterFromTile(int, int *, int *);
+        jint *getSampledRasterFromTileWithBounds(int, int *, int *);
         int getDecodeMethod();
         void fixOrientation(jint *, uint32, int, int);
         void rotateRaster(jint *, int, int *, int *);
