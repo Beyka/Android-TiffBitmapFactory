@@ -69,6 +69,7 @@ class NativeDecoder
         jint *getSampledRasterFromImage(int, int *, int *);
         jint *getSampledRasterFromImageWithBounds(int , int *, int *);
         jint *getSampledRasterFromStrip(int, int *, int *);
+        jint *getSampledRasterFromStripWithBounds(int, int *, int *);
         void rotateTileLinesVertical(uint32, uint32, uint32 *, uint32 *);
         void rotateTileLinesHorizontal(uint32, uint32, uint32 *, uint32 *);
         void flipPixelsVertical(uint32, uint32, jint *);
