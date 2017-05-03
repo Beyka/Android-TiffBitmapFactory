@@ -1243,7 +1243,7 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
 
         uint32 tmpPixelBufferSize = (boundWidth / inSampleSize) * (boundHeight / inSampleSize);
 
-        estimateMem += (sizeof(jint) * pixelsBufferSize); //temp buffer for decoded pixels
+        estimateMem = (sizeof(jint) * pixelsBufferSize); //temp buffer for decoded pixels
         estimateMem += (sizeof(jint) * tmpPixelBufferSize); //final buffer that will store original image
         LOGII("estimateMem", estimateMem);
         if (estimateMem > availableMemory) {
@@ -2200,7 +2200,7 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
         //Copy necessary pixels to new array if orientation <=4
         uint32 tmpPixelBufferSize = (boundWidth / inSampleSize) * (boundHeight / inSampleSize);
 
-        estimateMem += (sizeof(jint) * pixelsBufferSize); //buffer for decoded pixels
+        estimateMem = (sizeof(jint) * pixelsBufferSize); //buffer for decoded pixels
         estimateMem += (sizeof(jint) * tmpPixelBufferSize); //finall buffer
         LOGII("estimateMem", estimateMem);
         if (estimateMem > availableMemory) {
