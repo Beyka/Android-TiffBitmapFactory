@@ -821,7 +821,8 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
     LOGII("rowsperstrip", rowPerStrip);
 
     unsigned long estimateMem = 0;
-    estimateMem += (sizeof(jint) * pixelsBufferSize); //buffer for decoded pixels
+    estimateMem += (sizeof(jint) * pixelsBufferSize); //temp buffer for decoded pixels
+    estimateMem += (sizeof(jint) * (boundWidth / inSampleSize) * (boundHeight/inSampleSize)); //final buffer that will store original image
     estimateMem += (origwidth * sizeof(uint32)); //work line for rotate strip
     estimateMem += (origwidth * rowPerStrip * sizeof (uint32) * 2); //current and next strips
     estimateMem += (sizeof(jint) * origwidth * 2); //bottom and top lines for reading pixel(matrixBottomLine, matrixTopLine)
@@ -1241,6 +1242,17 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
         }
 
         uint32 tmpPixelBufferSize = (boundWidth / inSampleSize) * (boundHeight / inSampleSize);
+
+        estimateMem += (sizeof(jint) * pixelsBufferSize); //temp buffer for decoded pixels
+        estimateMem += (sizeof(jint) * tmpPixelBufferSize); //final buffer that will store original image
+        LOGII("estimateMem", estimateMem);
+        if (estimateMem > availableMemory) {
+            if (throwException) {
+                throw_not_enought_memory_exception(env, availableMemory, estimateMem);
+            }
+            return NULL;
+        }
+
         jint* tmpPixels = (jint *) malloc(sizeof(jint) * tmpPixelBufferSize);
         uint32 startPosX = 0;
 
@@ -2186,9 +2198,20 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
         }
 
         //Copy necessary pixels to new array if orientation <=4
+        uint32 tmpPixelBufferSize = (boundWidth / inSampleSize) * (boundHeight / inSampleSize);
+
+        estimateMem += (sizeof(jint) * pixelsBufferSize); //buffer for decoded pixels
+        estimateMem += (sizeof(jint) * tmpPixelBufferSize); //finall buffer
+        LOGII("estimateMem", estimateMem);
+        if (estimateMem > availableMemory) {
+            if (throwException) {
+                throw_not_enought_memory_exception(env, availableMemory, estimateMem);
+            }
+            return NULL;
+        }
 
         if (origorientation <= 4) {
-            uint32 tmpPixelBufferSize = (boundWidth / inSampleSize) * (boundHeight / inSampleSize);
+
             jint* tmpPixels = (jint *) malloc(sizeof(jint) * tmpPixelBufferSize);
             uint32 startPosX = boundX%tileWidth /inSampleSize;//(firstTileX * tileWidth - tileWidth + boundX) / inSampleSize;
             uint32 startPosY = boundY%tileHeight /inSampleSize;//(firstTileY * tileHeight - tileHeight + boundY) /inSampleSize;
@@ -2238,7 +2261,6 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
 
         //Copy necessary pixels to new array if orientation >4
         if (origorientation > 4) {
-            uint32 tmpPixelBufferSize = (boundWidth / inSampleSize) * (boundHeight / inSampleSize);
             jint* tmpPixels = (jint *) malloc(sizeof(jint) * tmpPixelBufferSize);
             uint32 startPosX = boundX%tileWidth /inSampleSize;
             uint32 startPosY = boundY%tileHeight /inSampleSize;
