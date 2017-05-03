@@ -805,7 +805,7 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
 
     jint *pixels = NULL;
     *bitmapwidth = origwidth / inSampleSize;
-    *bitmapheight = origheight / inSampleSize;
+    *bitmapheight = boundHeight / inSampleSize;//origheight / inSampleSize;
     uint32 pixelsBufferSize = *bitmapwidth * *bitmapheight;
     int origImageBufferSize = origwidth * origheight;
 
@@ -865,7 +865,14 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
     int ok = 1;
     uint32 rows_to_write = 0;
 
-    for (int i = 0; i < stripMax*rowPerStrip; i += rowPerStrip) {
+    for (int i = 0; (i < stripMax*rowPerStrip || i > boundY + boundHeight) ; i += rowPerStrip) {
+
+            if (i + rowPerStrip <= boundY) {
+                continue;
+            }
+            if (i > boundY + boundHeight) {
+                break;
+            }
 
             sendProgress(i * origwidth, progressTotal);
 
@@ -949,7 +956,7 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
 
             }
 
-            if (inSampleSize == 1) {
+            /*if (inSampleSize == 1) {
                 int byteToCopy = 0;
                 if (i + rowPerStrip < origheight) {
                     byteToCopy = sizeof(unsigned int) * rowPerStrip * origwidth;
@@ -959,7 +966,7 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
                 int position = i * origwidth;
                 memcpy(&pixels[position], raster, byteToCopy);
                 //sendProgress(position, progressTotal);
-            } else {
+            } else {*/
                 if (isSecondRasterExist) {
                     _TIFFmemcpy(matrixBottomLine, rasterForBottomLine /*+ lineAddrToCopyBottomLine * origwidth*/, sizeof(unsigned int) * origwidth);
                 }
@@ -989,7 +996,15 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
 
                     // if total line of source image is equal to inSampleSize*N then process this line
                     if (globalLineCounter % inSampleSize == 0) {
-                        for (int resBmpX = 0, workX = 0; resBmpX < *bitmapwidth; resBmpX++, workX += inSampleSize) {
+                        for (int resBmpX = 0, workX = 0; resBmpX < *bitmapwidth; workX += inSampleSize) {
+
+                            /*if (workX <= boundX) {
+                                continue;
+                            }
+                            if (workX > boundX + boundWidth) {
+                                break;
+                            }
+                            LOGII("J", workX);*/
 
                             //Apply filter to pixel
                             jint crPix = raster[workY * origwidth + workX];
@@ -1143,6 +1158,8 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
                             crPix = (alpha << 24) | (red << 16) | (green << 8) | (blue);
 
                             pixels[resBmpY * *bitmapwidth + resBmpX] = crPix;
+
+                            resBmpX++;
                         }
                         //if line was processed - increment counter of lines that was writed to result image
                         writedLines++;
@@ -1156,7 +1173,7 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
                     globalLineCounter++;
 
                 }
-            }
+            /*}*/
         }
         LOGI("Decoding finished. Free memmory");
 
@@ -1183,7 +1200,6 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
 
         if (useOrientationTag) {
             uint32 buf;
-            //fixOrientation(pixels, pixelsBufferSize, *bitmapwidth, *bitmapheight);
             switch(origorientation) {
                  case ORIENTATION_TOPLEFT:
                  case ORIENTATION_TOPRIGHT:
@@ -1223,6 +1239,40 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
         } else if (origorientation == 2 || origorientation == 3 || origorientation == 6 || origorientation == 7) {
             flipPixelsHorizontal(*bitmapwidth, *bitmapheight, pixels);
         }
+
+        uint32 tmpPixelBufferSize = (boundWidth / inSampleSize) * (boundHeight / inSampleSize);
+        jint* tmpPixels = (jint *) malloc(sizeof(jint) * tmpPixelBufferSize);
+        uint32 startPosX = 0;
+
+        if (useOrientationTag && (origorientation == ORIENTATION_TOPRIGHT || origorientation == ORIENTATION_BOTRIGHT
+                                    || origorientation == ORIENTATION_LEFTBOT || origorientation == ORIENTATION_RIGHTBOT)) {
+            startPosX = *bitmapwidth - boundX/inSampleSize;
+            for (int ox = startPosX, nx = 0; nx < boundWidth/inSampleSize; ox--, nx++) {
+                for (int oy = 0, ny = 0; ny < boundHeight/inSampleSize; oy++, ny++) {
+                    if (useOrientationTag && (origorientation > 4)) {
+                        tmpPixels[nx * (boundHeight/inSampleSize) + ny] = pixels[ox * *bitmapheight + oy];
+                    } else {
+                        tmpPixels[ny * (boundWidth/inSampleSize) + nx] = pixels[oy * *bitmapwidth + ox];
+                    }
+                }
+            }
+        } else {
+            startPosX = boundX/inSampleSize;
+            for (int ox = startPosX, nx = 0; nx < boundWidth/inSampleSize; ox++, nx++) {
+                for (int oy = 0, ny = 0; ny < boundHeight/inSampleSize; oy++, ny++) {
+                    if (useOrientationTag && (origorientation > 4)) {
+                        tmpPixels[nx * (boundHeight/inSampleSize) + ny] = pixels[ox * *bitmapheight + oy];
+                    } else {
+                        tmpPixels[ny * (boundWidth/inSampleSize) + nx] = pixels[oy * *bitmapwidth + ox];
+                    }
+                }
+            }
+        }
+
+        free(pixels);
+        pixels = tmpPixels;
+        *bitmapwidth = boundWidth/inSampleSize;
+        *bitmapheight = boundHeight/inSampleSize;
 
         return pixels;
 }
