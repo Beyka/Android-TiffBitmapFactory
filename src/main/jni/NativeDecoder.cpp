@@ -2576,9 +2576,9 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
         LOGE("Can\'t allocate memory for temp buffer");
         return NULL;
     } else {
-        for (int j = 0, j1 = boundX; j < *bitmapheight; j++, j1 += inSampleSize) {
+        for (int y = 0, y1 = boundY; y < *bitmapheight; y++, y1 += inSampleSize) {
 
-            sendProgress(j1 * boundWidth, progressTotal);
+            sendProgress(y1 * boundWidth, progressTotal);
 
                 if (checkStop()) {
                     //TODO clear memory
@@ -2594,9 +2594,9 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
                     return NULL;
                 }
 
-                for (int i = 0, i1 = boundY; i < *bitmapwidth; i++, i1 += inSampleSize) {
+                for (int x = 0, x1 = boundX; x < *bitmapwidth; x++, x1 += inSampleSize) {
                     //Apply filter to pixel
-                    jint crPix = origBuffer[j1 * origwidth + i1];
+                    jint crPix = origBuffer[y1 * origwidth + x1];
                     int sum = 1;
 
                     int alpha = colorMask & crPix >> 24;
@@ -2607,8 +2607,8 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
                     //using kernel 3x3
 
                     //topleft
-                    if (i1 - 1 >= 0 && j1 - 1 >= 0) {
-                        crPix = origBuffer[(j1 - 1) * origwidth + i1 - 1];
+                    if (x1 - 1 >= 0 && y1 - 1 >= 0) {
+                        crPix = origBuffer[(y1 - 1) * origwidth + x1 - 1];
                         red += colorMask & crPix >> 16;
                         green += colorMask & crPix >> 8;
                         blue += colorMask & crPix;
@@ -2616,8 +2616,8 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
                         sum++;
                     }
                     //top
-                    if (j1 - 1 >= 0) {
-                        crPix = origBuffer[(j1 - 1) * origwidth + i1];
+                    if (y1 - 1 >= 0) {
+                        crPix = origBuffer[(y1 - 1) * origwidth + x1];
                         red += colorMask & crPix >> 16;
                         green += colorMask & crPix >> 8;
                         blue += colorMask & crPix;
@@ -2625,8 +2625,8 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
                         sum++;
                     }
                     // topright
-                    if (i1 + 1 < origwidth && j1 - 1 >= 0) {
-                        crPix = origBuffer[(j1 - 1) * origwidth + i1 + 1];
+                    if (x1 + 1 < origwidth && y1 - 1 >= 0) {
+                        crPix = origBuffer[(y1 - 1) * origwidth + x1 + 1];
                         red += colorMask & crPix >> 16;
                         green += colorMask & crPix >> 8;
                         blue += colorMask & crPix;
@@ -2634,8 +2634,8 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
                         sum++;
                     }
                     //right
-                    if (i1 + 1 < origwidth) {
-                        crPix = origBuffer[j1 * origwidth + i1 + 1];
+                    if (x1 + 1 < origwidth) {
+                        crPix = origBuffer[y1 * origwidth + x1 + 1];
                         red += colorMask & crPix >> 16;
                         green += colorMask & crPix >> 8;
                         blue += colorMask & crPix;
@@ -2643,8 +2643,8 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
                         sum++;
                     }
                     //bottomright
-                    if (i1 + 1 < origwidth && j1 + 1 < origheight) {
-                        crPix = origBuffer[(j1 + 1) * origwidth + i1 + 1];
+                    if (x1 + 1 < origwidth && y1 + 1 < origheight) {
+                        crPix = origBuffer[(y1 + 1) * origwidth + x1 + 1];
                         red += colorMask & crPix >> 16;
                         green += colorMask & crPix >> 8;
                         blue += colorMask & crPix;
@@ -2652,8 +2652,8 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
                         sum++;
                     }
                     //bottom
-                    if (j1 + 1 < origheight) {
-                        crPix = origBuffer[(j1 + 1) * origwidth + i1 + 1];
+                    if (y1 + 1 < origheight) {
+                        crPix = origBuffer[(y1 + 1) * origwidth + x1 + 1];
                         red += colorMask & crPix >> 16;
                         green += colorMask & crPix >> 8;
                         blue += colorMask & crPix;
@@ -2661,8 +2661,8 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
                         sum++;
                     }
                     //bottomleft
-                    if (i1 - 1 >= 0 && j1 + 1 < origheight) {
-                        crPix = origBuffer[(j1 + 1) * origwidth + i1 - 1];
+                    if (x1 - 1 >= 0 && y1 + 1 < origheight) {
+                        crPix = origBuffer[(y1 + 1) * origwidth + x1 - 1];
                         red += colorMask & crPix >> 16;
                         green += colorMask & crPix >> 8;
                         blue += colorMask & crPix;
@@ -2670,8 +2670,8 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
                         sum++;
                     }
                     //left
-                    if (i1 - 1 >= 0) {
-                        crPix = origBuffer[j1 * origwidth + i1 - 1];
+                    if (x1 - 1 >= 0) {
+                        crPix = origBuffer[y1 * origwidth + x1 - 1];
                         red += colorMask & crPix >> 16;
                         green += colorMask & crPix >> 8;
                         blue += colorMask & crPix;
@@ -2697,7 +2697,7 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
 
                     crPix = (alpha << 24) | (red << 16) | (green << 8) | (blue);
 
-                    pixels[j * *bitmapwidth + i] = crPix;
+                    pixels[y * *bitmapwidth + x] = crPix;
                 }
             }
     }
