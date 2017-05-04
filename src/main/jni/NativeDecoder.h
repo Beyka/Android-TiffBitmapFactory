@@ -49,7 +49,7 @@ class NativeDecoder
         jboolean throwException;
         jboolean useOrientationTag;
         TIFF *image;
-        jint progressTotal;
+        jlong progressTotal;
         int origwidth;
         int origheight;
         short origorientation;

@@ -834,6 +834,10 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
         return NULL;
     }
 
+    progressTotal = pixelsBufferSize + (boundWidth/inSampleSize) * (boundHeight / inSampleSize);
+    sendProgress(0, progressTotal);
+    jlong processedProgress = 0;
+
     pixels = (jint *) malloc(sizeof(jint) * pixelsBufferSize);
     if (pixels == NULL) {
         LOGE("Can\'t allocate memory for temp buffer");
@@ -875,7 +879,8 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
                 break;
             }
 
-            sendProgress(i * origwidth, progressTotal);
+            sendProgress(processedProgress * *bitmapwidth, progressTotal);
+            processedProgress += rowPerStrip/inSampleSize;
 
             //if second raster is exist - copy it to work raster end decode next strip
             if (isSecondRasterExist) {
@@ -1199,6 +1204,8 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
             matrixBottomLine = NULL;
         }
 
+        processedProgress *= *bitmapwidth;
+
         if (useOrientationTag) {
             uint32 buf;
             switch(origorientation) {
@@ -1260,6 +1267,7 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
                                     || origorientation == ORIENTATION_LEFTBOT || origorientation == ORIENTATION_RIGHTBOT)) {
             startPosX = *bitmapwidth - boundX/inSampleSize;
             for (int ox = startPosX, nx = 0; nx < boundWidth/inSampleSize; ox--, nx++) {
+                sendProgress(processedProgress + nx * boundWidth/inSampleSize, progressTotal);
                 for (int oy = 0, ny = 0; ny < boundHeight/inSampleSize; oy++, ny++) {
                     if (useOrientationTag && (origorientation > 4)) {
                         tmpPixels[nx * (boundHeight/inSampleSize) + ny] = pixels[ox * *bitmapheight + oy];
@@ -1271,6 +1279,7 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
         } else {
             startPosX = boundX/inSampleSize;
             for (int ox = startPosX, nx = 0; nx < boundWidth/inSampleSize; ox++, nx++) {
+                sendProgress(processedProgress + nx * boundWidth/inSampleSize, progressTotal);
                 for (int oy = 0, ny = 0; ny < boundHeight/inSampleSize; oy++, ny++) {
                     if (useOrientationTag && (origorientation > 4)) {
                         tmpPixels[nx * (boundHeight/inSampleSize) + ny] = pixels[ox * *bitmapheight + oy];
@@ -1815,6 +1824,10 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
             return NULL;
         }
 
+        progressTotal = pixelsBufferSize + (boundWidth/inSampleSize) * (boundHeight/inSampleSize);
+        sendProgress(0, progressTotal);
+        jlong processedProgress = 0;
+
         uint32 row, column, rowDest, columnDest;
 
         //main worker tile
@@ -1831,13 +1844,17 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
         uint32 globalProcessedX = 0;
         uint32 globalProcessedY = 0;
 
+        uint32 progressRow = 0;
+        uint32 progressColumn = 0;
+
         rowDest = columnDest = 0;
-        for (row = firstTileY * tileHeight; row < lastTileY * tileHeight; row += tileHeight) {
+        for (row = firstTileY * tileHeight; row < lastTileY * tileHeight; row += tileHeight, progressRow += tileHeight) {
             columnDest = 0;
             short leftTileExists = 0;
             short rightTileExists = 0;
-            for (column = firstTileX * tileWidth; column < lastTileX * tileWidth; column += tileWidth) {
-                sendProgress(row * origwidth + column, progressTotal);
+            for (column = firstTileX * tileWidth; column < lastTileX * tileWidth; column += tileWidth, progressColumn += tileWidth) {
+                processedProgress = progressRow * *bitmapwidth + progressColumn;
+                sendProgress(processedProgress, progressTotal);
 
                 //If not first column - we should have previous tile - copy it to left tile buffer
                 if (column != firstTileY) {
@@ -2216,6 +2233,7 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
             uint32 startPosX = boundX%tileWidth /inSampleSize;//(firstTileX * tileWidth - tileWidth + boundX) / inSampleSize;
             uint32 startPosY = boundY%tileHeight /inSampleSize;//(firstTileY * tileHeight - tileHeight + boundY) /inSampleSize;
             for (int ox = startPosX, nx = 0; nx < boundWidth/inSampleSize; ox++, nx++) {
+                sendProgress(processedProgress + nx * (boundHeight/inSampleSize), progressTotal);
                 for (int oy = startPosY, ny = 0; ny < boundHeight/inSampleSize; oy++, ny++) {
                     tmpPixels[ny * (boundWidth/inSampleSize) + nx] = pixels[oy * *bitmapwidth + ox];
                 }
@@ -2265,6 +2283,7 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
             uint32 startPosX = boundX%tileWidth /inSampleSize;
             uint32 startPosY = boundY%tileHeight /inSampleSize;
             for (int ox = startPosX, nx = 0; nx < boundWidth/inSampleSize; ox++, nx++) {
+                sendProgress(processedProgress + nx * (boundHeight/inSampleSize), progressTotal);
                 for (int oy = startPosY, ny = 0; ny < boundHeight/inSampleSize; oy++, ny++) {
                     if (useOrientationTag) {
                         tmpPixels[nx * (boundHeight/inSampleSize) + ny] = pixels[ox * *bitmapheight + oy];
@@ -2549,6 +2568,8 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
         return NULL;
     }
 
+    progressTotal = boundWidth/inSampleSize * boundHeight/inSampleSize;
+
     // Sample the buffer.
     jint * pixels = (jint *) malloc(pixelsBufferSize);
     if (pixels == NULL) {
@@ -2557,7 +2578,7 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
     } else {
         for (int j = 0, j1 = boundX; j < *bitmapheight; j++, j1 += inSampleSize) {
 
-            sendProgress(j1 * origwidth, progressTotal);
+            sendProgress(j1 * boundWidth, progressTotal);
 
                 if (checkStop()) {
                     //TODO clear memory
