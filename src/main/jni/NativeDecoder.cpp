@@ -222,7 +222,7 @@ jobject NativeDecoder::getBitmap()
             LOGII("Decode width", boundWidth);
             LOGII("Decode height", boundHeight);
 
-
+            hasBounds = 1;
             env->DeleteLocalRef(decodeAreaClass);
         }
 
