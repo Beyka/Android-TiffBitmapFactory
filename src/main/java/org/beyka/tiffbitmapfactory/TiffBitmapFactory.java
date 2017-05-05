@@ -291,7 +291,14 @@ public class TiffBitmapFactory {
          */
         public ImageConfig inPreferredConfig = ImageConfig.ARGB_8888;
 
-        public DecodeBounds inDecodeBounds;
+        /**
+         * If this field is non-null - Decodr will decode and return only area specified in {@link DecodeArea} object
+         * For decoding not full bitmap, but only part of it - create new {@link DecodeArea} object and specify:
+         * <p>{@link DecodeArea#x x}, {@link DecodeArea#y y} - left top corner of decoding area </p>
+         * <p>{@link DecodeArea#width width} - width of decoding area </p>
+         * <p>{@link DecodeArea#height height} - height of decoding area </p>
+         */
+        public DecodeArea inDecodeArea;
 
         /**
          * The resulting width of the bitmap. If {@link #inJustDecodeBounds} is
@@ -465,15 +472,18 @@ public class TiffBitmapFactory {
 
     }
 
-    public static final class DecodeBounds {
+    /**
+     * Holder for points of decode area
+     */
+    public static final class DecodeArea {
         public int x;
         public int y;
         public int width;
         public int height;
 
-        public DecodeBounds(){}
+        public DecodeArea(){}
 
-        public DecodeBounds(int x, int y, int width, int height) {
+        public DecodeArea(int x, int y, int width, int height) {
             this.x = x;
             this.y = y;
             this.width = width;

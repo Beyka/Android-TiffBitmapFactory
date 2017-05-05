@@ -123,9 +123,9 @@ jobject NativeDecoder::getBitmap()
         preferedConfig = env->NewGlobalRef(config);
         env->DeleteLocalRef(config);
 
-        jfieldID gOptions_DecodeBoundFieldId = env->GetFieldID(jBitmapOptionsClass, "inDecodeBounds",
-                                                                "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$DecodeBounds;");
-        jobject decodeBound = env->GetObjectField(optionsObject, gOptions_DecodeBoundFieldId);
+        jfieldID gOptions_DecodeAreaFieldId = env->GetFieldID(jBitmapOptionsClass, "inDecodeArea",
+                                                                "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$DecodeArea;");
+        jobject decodeArea = env->GetObjectField(optionsObject, gOptions_DecodeAreaFieldId);
 
         //if directory number < 0 set it to 0
         if (inDirectoryNumber < 0) inDirectoryNumber = 0;
@@ -154,31 +154,76 @@ jobject NativeDecoder::getBitmap()
         TIFFGetField(image, TIFFTAG_IMAGELENGTH, &origheight);
 
         //Read decode bounds if exists
-        if (decodeBound) {
+        if (decodeArea) {
             LOGI("Decode bounds present");
-            jclass decodeBoundsClass = env->FindClass("org/beyka/tiffbitmapfactory/TiffBitmapFactory$DecodeBounds");
-            jfieldID xFieldID = env->GetFieldID(decodeBoundsClass, "x", "I");
-            jfieldID yFieldID = env->GetFieldID(decodeBoundsClass, "y", "I");
-            jfieldID widthFieldID = env->GetFieldID(decodeBoundsClass, "width", "I");
-            jfieldID heightFieldID = env->GetFieldID(decodeBoundsClass, "height", "I");
+            jclass decodeAreaClass = env->FindClass("org/beyka/tiffbitmapfactory/TiffBitmapFactory$DecodeArea");
+            jfieldID xFieldID = env->GetFieldID(decodeAreaClass, "x", "I");
+            jfieldID yFieldID = env->GetFieldID(decodeAreaClass, "y", "I");
+            jfieldID widthFieldID = env->GetFieldID(decodeAreaClass, "width", "I");
+            jfieldID heightFieldID = env->GetFieldID(decodeAreaClass, "height", "I");
 
-            boundX = env->GetIntField(decodeBound, xFieldID);
-            boundY = env->GetIntField(decodeBound, yFieldID);
-            boundWidth = env->GetIntField(decodeBound, widthFieldID);
-            boundHeight = env->GetIntField(decodeBound, heightFieldID);
+            boundX = env->GetIntField(decodeArea, xFieldID);
+            boundY = env->GetIntField(decodeArea, yFieldID);
+            boundWidth = env->GetIntField(decodeArea, widthFieldID);
+            boundHeight = env->GetIntField(decodeArea, heightFieldID);
+            if (boundX >= origwidth-1) {
+                char *message = "X of left top corner of decode area should be less than image width";
+                LOGE(*message);
+                if (throwException) {
+                    jstring adinf = env->NewStringUTF(message);
+                    throw_decode_file_exception(env, jPath, adinf);
+                    env->DeleteLocalRef(adinf);
+                }
+                env->DeleteLocalRef(decodeAreaClass);
+                return NULL;
+            }
+            if (boundY >= origheight-1) {
+                char *message = "Y of left top corner of decode area should be less than image height";
+                LOGE(*message);
+                if (throwException) {
+                    jstring adinf = env->NewStringUTF(message);
+                    throw_decode_file_exception(env, jPath, adinf);
+                    env->DeleteLocalRef(adinf);
+                }
+                env->DeleteLocalRef(decodeAreaClass);
+                return NULL;
+            }
 
             if (boundX < 0) boundX = 0;
             if (boundY < 0) boundY = 0;
             if (boundX + boundWidth >= origwidth) boundWidth = origwidth - boundX -1;
             if (boundY + boundHeight >= origheight) boundHeight = origheight - boundY -1;
 
+            if (boundWidth < 1) {
+                char *message = "Width of decode area can\'t be less than 1";
+                LOGE(*message);
+                if (throwException) {
+                    jstring adinf = env->NewStringUTF(message);
+                    throw_decode_file_exception(env, jPath, adinf);
+                    env->DeleteLocalRef(adinf);
+                }
+                env->DeleteLocalRef(decodeAreaClass);
+                return NULL;
+            }
+            if (boundHeight < 1) {
+                char *message = "Height of decode area can\'t be less than 1";
+                LOGE(*message);
+                if (throwException) {
+                    jstring adinf = env->NewStringUTF(message);
+                    throw_decode_file_exception(env, jPath, adinf);
+                    env->DeleteLocalRef(adinf);
+                }
+                env->DeleteLocalRef(decodeAreaClass);
+                return NULL;
+            }
+
             LOGII("Decode X", boundX);
             LOGII("Decode Y", boundY);
             LOGII("Decode width", boundWidth);
             LOGII("Decode height", boundHeight);
 
-            hasBounds = 1;
-            env->DeleteLocalRef(decodeBoundsClass);
+
+            env->DeleteLocalRef(decodeAreaClass);
         }
 
         jobject java_bitmap = NULL;
@@ -209,7 +254,7 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
     int bitdepth = 0;
     TIFFGetField(image, TIFFTAG_BITSPERSAMPLE, &bitdepth);
     if (bitdepth != 1 && bitdepth != 4 && bitdepth != 8 && bitdepth != 16) {
-    char *message = "Only 1, 4, 8, and 16 bits per sample supported";
+        char *message = "Only 1, 4, 8, and 16 bits per sample supported";
         LOGE(*message);
         if (throwException) {
             jstring adinf = env->NewStringUTF(message);
