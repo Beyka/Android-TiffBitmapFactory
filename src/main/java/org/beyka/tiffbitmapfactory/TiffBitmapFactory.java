@@ -292,7 +292,7 @@ public class TiffBitmapFactory {
         public ImageConfig inPreferredConfig = ImageConfig.ARGB_8888;
 
         /**
-         * If this field is non-null - Decodr will decode and return only area specified in {@link DecodeArea} object
+         * If this field is non-null - Decoder will decode and return only area specified in {@link DecodeArea} object
          * For decoding not full bitmap, but only part of it - create new {@link DecodeArea} object and specify:
          * <p>{@link DecodeArea#x x}, {@link DecodeArea#y y} - left top corner of decoding area </p>
          * <p>{@link DecodeArea#width width} - width of decoding area </p>
