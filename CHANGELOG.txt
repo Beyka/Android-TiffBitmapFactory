@@ -1,3 +1,6 @@
+0.9.7.3
+- Add possibility to decode part of image by specify decode area
+
 0.9.7.2
 - Changed saving algorithm to use android native bitmap
 - Add progress listener for decoding process
