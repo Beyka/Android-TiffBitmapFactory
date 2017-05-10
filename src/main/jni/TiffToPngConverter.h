@@ -5,13 +5,12 @@
 #ifndef TIFFSAMPLE_TIFFTOPNGCONVERTER_H
 #define TIFFSAMPLE_TIFFTOPNGCONVERTER_H
 
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <tiffio.h>
 #include "fcntl.h"
 #include "unistd.h"
-#include "png.h"
+#include <png.h>
 #include <setjmp.h>
 #include "NativeExceptions.h"
 

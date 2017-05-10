@@ -215,18 +215,29 @@ jboolean TiffToPngConverter::convertFromTile() {
     TIFFGetField(tiffImage, TIFFTAG_TILEWIDTH, &tileHeight);
 
 
-    uint32 *raster = (uint32 *)_TIFFmalloc(width * tileHeight * sizeof(uint32));
+    //uint32 *raster = (uint32 *)_TIFFmalloc(width * tileHeight * sizeof(uint32));
+    uint32 workingWidth = (width/tileWidth + (width%tileWidth == 0 ? 0 : 1)) * tileWidth;
+    LOGII("workingWidth ", workingWidth );
+    uint32 rasterSize =  workingWidth  * tileHeight ;
+    LOGII("rasterSize ", rasterSize );
+    uint32 *raster = (uint32 *)_TIFFmalloc(rasterSize * sizeof(uint32));
     uint32 *rasterTile = (uint32 *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32));
     uint32 *work_line_buf = (uint32*)_TIFFmalloc(tileWidth * sizeof (uint32));
 
     uint32 row, column;
 
-    for (row = 0; row < height; row += tileHeight) {
-        LOGII("row", row);
-        for (column = 0; column < width; column += tileWidth) {
-        LOGII("column", column);
+    int startx = -1, starty = -1, endx = -1, endy = -1;
+    uint32 imageWritedLines = 0;
 
-            TIFFReadRGBATile(tiffImage, column + tileWidth, row, rasterTile);
+    for (row = 0; row < height; row += tileHeight) {
+        endy = -1;
+        starty = -1;
+        uint32 *raster = (uint32 *)_TIFFmalloc(rasterSize * sizeof(uint32));
+
+        for (column = 0; column < width; column += tileWidth) {
+            endx = -1;
+            startx = -1;
+            TIFFReadRGBATile(tiffImage, column , row, rasterTile);
             switch(origorientation) {
                 case 1:
                 case 5:
@@ -243,38 +254,50 @@ jboolean TiffToPngConverter::convertFromTile() {
                     break;
             }
 
-            LOGI("processing raster");
-            int rowHasPixels = 0;
-            for (int th = 0, bh = 0; th < tileHeight; th++) {
-                for (int tw = 0, bw = 0; tw < tileWidth; tw++) {
-                    uint32 srcPosition = th * tileWidth + tw;
-                    if (rasterTile[srcPosition] != 0) {
-                        int position = 0;
-                        if (origorientation <= 4) {
-                            position = (bh) * width + column + bw;
-                        } else {
-                            position = (column + bw) * tileHeight + bh;
+
+            //find start and end position
+            for (int ty = 0; ty < tileHeight; ty++) {
+
+                for (int tx = 0; tx < tileWidth; tx++) {
+                    if (rasterTile[ty * tileWidth + tx] != 0) {
+                        if (startx == -1) {
+                            startx = tx;
                         }
-                        //LOGII("pos", position);
-                        raster[position] = rasterTile[srcPosition];
-                        rowHasPixels = 1;
-                        bw++;
+                        if (starty == -1) {
+                            starty = ty;
+                        }
+
+                        if (tx > endx)
+                            endx = tx;
+                        if (ty > endy)
+                            endy = ty;
+
+                        uint32 rasterPos = (ty ) * workingWidth + (tx + column);
+                        //LOGII("rp", rasterPos);
+                        raster[rasterPos] = rasterTile[ty * tileWidth + tx];
                     }
+
                 }
-                if (rowHasPixels) {
-                    bh++;
-                    rowHasPixels = 0;
-                }
-                rowHasPixels = 0;
             }
         }
 
         LOGI("writing to png");
-        for (int y = 0; y < tileHeight; y++) {
-            png_bytep row = (png_bytep)malloc(4 * width * sizeof(png_bytep));
-            memcpy(row, raster + (y * width), width * 4);
-            png_write_row(png_ptr, row);
+        LOGII("endy", endy);
+        LOGII("endx", endx);
+        for (int y = starty; y < tileHeight; y++) {
+            if (imageWritedLines == height) break;
+            uint32 *rasterLine = (uint32 *)malloc(width * sizeof(uint32));
+                for (int x = startx, x2 = 0; x2 < width; x++, x2++) {
+                    rasterLine[x2] = raster[y * workingWidth + x];
+
+                }
+
+            png_bytep pngrow = (png_bytep)malloc(4 * width * sizeof(png_bytep));
+            memcpy(pngrow, /*raster + (y * width)*/rasterLine, width * 4);
+            png_write_row(png_ptr, pngrow);
+            imageWritedLines++;
         }
+        LOGII("imageWritedLines", imageWritedLines);
 
     }
 
