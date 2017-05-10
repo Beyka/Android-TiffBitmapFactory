@@ -5,9 +5,12 @@
 #include <android/log.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <tiffio.h>
-#include "fcntl.h"
-#include "unistd.h"
+
+#include "jpeglib.h"
+#include <setjmp.h>
+
+#include "TiffToPngConverter.h"
+
 
 #define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffConverter", "%s", x)
 #define LOGII(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffConverter", "%s %d", x, y)

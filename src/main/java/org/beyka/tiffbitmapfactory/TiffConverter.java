@@ -19,4 +19,12 @@ public class TiffConverter {
     public static native boolean convertPngTiff(String png, String tiff);
 
     public static native boolean convertPngTiff(String[] png, String tiffs);
+
+    public static final class ConverterOptions {
+
+        public int tiffDirectoryRead;
+        public long availableMemory;
+        public boolean throwExceptions;
+
+    }
 }
