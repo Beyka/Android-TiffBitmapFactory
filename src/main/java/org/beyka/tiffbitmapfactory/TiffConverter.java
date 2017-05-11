@@ -27,6 +27,7 @@ public class TiffConverter {
         public int tiffDirectoryRead;
         public long availableMemory;
         public boolean throwExceptions;
+        public boolean appendTiff;
 
     }
 }

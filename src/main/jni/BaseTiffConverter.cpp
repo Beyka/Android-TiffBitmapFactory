@@ -34,5 +34,8 @@ void BaseTiffConverter::readOptions()
     jfieldID throwexceptionsfield = env->GetFieldID(optionsClass, "throwExceptions", "Z");
     throwException = env->GetBooleanField(optionsObj, throwexceptionsfield);
 
+    jfieldID appentifffield = env->GetFieldID(optionsClass, "appendTiff", "Z");
+    appendTiff = env->GetBooleanField(optionsObj, appentifffield);
+
     env->DeleteLocalRef(optionsClass);
 }

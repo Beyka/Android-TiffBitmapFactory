@@ -38,6 +38,7 @@ class BaseTiffConverter {
         jint tiffDirectory;
         jlong availableMemory;
         jboolean throwException;
+        jboolean appendTiff;
 
         void readOptions();
 };
