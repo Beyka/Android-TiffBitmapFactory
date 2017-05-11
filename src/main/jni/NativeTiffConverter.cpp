@@ -172,6 +172,16 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
       return JNI_TRUE;*/
   }
 
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffJpg
+  (JNIEnv *env, jclass clazz, jstring tiffPath, jstring pngPath)
+  {
+
+    TiffToJpgConverter *converter = new TiffToJpgConverter(env, clazz, tiffPath, pngPath, NULL);
+    jboolean result = converter->convert();
+    delete(converter);
+    return result;
+  }
+
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertPngTiff
   (JNIEnv *env, jclass clazz, jstring tiffPath, jstring pngPath)
   {

@@ -1,0 +1,74 @@
+//
+// Created by beyka on 5/10/17.
+//
+
+#ifndef TIFFSAMPLE_TIFFTOJPGCONVERTER_H
+#define TIFFSAMPLE_TIFFTOJPGCONVERTER_H
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <tiffio.h>
+#include "fcntl.h"
+#include "unistd.h"
+#include "jpeglib.h"
+#include <setjmp.h>
+#include "NativeExceptions.h"
+
+//extern "C" {
+//#include "jpeglib.h"
+//}
+
+#define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "TiffToPngConverter", "%s", x)
+#define LOGII(x, y) __android_log_print(ANDROID_LOG_DEBUG, "TiffToPngConverter", "%s %d", x, y)
+#define LOGIF(x, y) __android_log_print(ANDROID_LOG_DEBUG, "TiffToPngConverter", "%s %f", x, y)
+#define LOGIS(x, y) __android_log_print(ANDROID_LOG_DEBUG, "TiffToPngConverter", "%s %s", x, y)
+
+#define LOGE(x) __android_log_print(ANDROID_LOG_ERROR, "TiffToPngConverter", "%s", x)
+#define LOGES(x, y) __android_log_print(ANDROID_LOG_ERROR, "TiffToPngConverter", "%s %s", x, y)
+
+class TiffToJpgConverter
+{
+    public:
+        explicit TiffToJpgConverter(JNIEnv *, jclass, jstring, jstring, jobject);
+        ~TiffToJpgConverter();
+        jboolean convert();
+
+    private:
+        static int const DECODE_METHOD_IMAGE = 1;
+        static int const DECODE_METHOD_TILE = 2;
+        static int const DECODE_METHOD_STRIP = 3;
+
+        static int const JPEG_QUALITY = 90;
+
+        int getDecodeMethod();
+        void readOptions();
+        void rotateTileLinesVertical(uint32, uint32, uint32 *, uint32 *);
+        void rotateTileLinesHorizontal(uint32, uint32, uint32 *, uint32 *);
+        jboolean convertFromImage();
+        jboolean convertFromTile();
+        jboolean convertFromStrip();
+
+        JNIEnv *env;
+        jstring inPath;
+        jstring outPath;
+
+        TIFF *tiffImage;
+        short origorientation;
+        FILE *jpegFile;
+        struct jpeg_compress_struct cinfo;
+        struct jpeg_error_mgr jerr;
+
+        //png_structp png_ptr;
+        //png_infop info_ptr;
+
+        jobject optionsObj;
+        jint tiffDirectory;
+        jlong availableMemory;
+        jboolean throwException;
+        uint32 width;
+        uint32 height;
+
+
+};
+
+#endif //TIFFSAMPLE_TIFFTOJPGCONVERTER_H

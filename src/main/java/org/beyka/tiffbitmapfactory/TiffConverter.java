@@ -20,6 +20,8 @@ public class TiffConverter {
 
     public static native boolean convertPngTiff(String[] png, String tiffs);
 
+    public static native boolean convertTiffJpg(String tiff, String jpg);
+
     public static final class ConverterOptions {
 
         public int tiffDirectoryRead;

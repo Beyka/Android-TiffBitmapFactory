@@ -68,6 +68,11 @@ LOCAL_SRC_FILES := libs/$(TARGET_ARCH_ABI)/libpng.a
 include $(PREBUILT_STATIC_LIBRARY)
 ###############################################################
 include $(CLEAR_VARS)
+LOCAL_MODULE := libjpeg
+LOCAL_SRC_FILES := libs/$(TARGET_ARCH_ABI)/libjpeg.a
+include $(PREBUILT_STATIC_LIBRARY)
+###############################################################
+include $(CLEAR_VARS)
 LOCAL_MODULE := tifffactory
 LOCAL_CFLAGS := -DANDROID_NDK
 LOCAL_SRC_FILES := \
@@ -98,7 +103,8 @@ LOCAL_CFLAGS := -DANDROID_NDK
 LOCAL_SRC_FILES := \
 	NativeExceptions.cpp \
 	NativeTiffConverter.cpp \
-	TiffToPngConverter.cpp
+	TiffToPngConverter.cpp \
+	TiffToJpgConverter.cpp
 
 #LOCAL_C_INCLUDES := libs/$(TARGET_ARCH_ABI)/libpng.a
 LOCAL_C_INCLUDES := \
