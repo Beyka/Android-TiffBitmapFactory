@@ -156,6 +156,8 @@ jboolean TiffToPngConverter::convert()
     png_write_info(png_ptr, info_ptr);
     LOGI("png_write_info done");
 
+    png_set_flush(png_ptr, 32);
+
     jboolean result = JNI_FALSE;
 
     switch(getDecodeMethod()) {
@@ -204,6 +206,7 @@ jboolean TiffToPngConverter::convertFromImage() {
         png_bytep row = (png_bytep)malloc(4 * width * sizeof(png_bytep));
         memcpy(row, origBuffer + (y * width), width * 4);
         png_write_row(png_ptr, row);
+        delete(row);
     }
 
     return JNI_TRUE;
@@ -214,6 +217,8 @@ jboolean TiffToPngConverter::convertFromTile() {
     TIFFGetField(tiffImage, TIFFTAG_TILEWIDTH, &tileWidth);
     TIFFGetField(tiffImage, TIFFTAG_TILEWIDTH, &tileHeight);
 
+    LOGII("Tile width", tileWidth);
+    LOGII("Tile height", tileHeight);
 
     //uint32 *raster = (uint32 *)_TIFFmalloc(width * tileHeight * sizeof(uint32));
     uint32 workingWidth = (width/tileWidth + (width%tileWidth == 0 ? 0 : 1)) * tileWidth;
@@ -286,15 +291,17 @@ jboolean TiffToPngConverter::convertFromTile() {
         LOGII("endx", endx);
         for (int y = starty; y < tileHeight; y++) {
             if (imageWritedLines == height) break;
-            uint32 *rasterLine = (uint32 *)malloc(width * sizeof(uint32));
-                for (int x = startx, x2 = 0; x2 < width; x++, x2++) {
-                    rasterLine[x2] = raster[y * workingWidth + x];
-
-                }
-
+            //create temp raster and write there pixels than not null
+            //uint32 *rasterLine = (uint32 *)malloc(width * sizeof(uint32));
+            //for (int x = startx, x2 = 0; x2 < width; x++, x2++) {
+            //    rasterLine[x2] = raster[y * workingWidth + x];
+            //}
             png_bytep pngrow = (png_bytep)malloc(4 * width * sizeof(png_bytep));
-            memcpy(pngrow, /*raster + (y * width)*/rasterLine, width * 4);
+            memcpy(pngrow, raster + y * workingWidth, width * 4);
+            //memcpy(pngrow, rasterLine, width * 4);
             png_write_row(png_ptr, pngrow);
+            delete(pngrow);
+            //delete(rasterLine);
             imageWritedLines++;
         }
         LOGII("imageWritedLines", imageWritedLines);
@@ -352,10 +359,24 @@ jboolean TiffToPngConverter::convertFromStrip() {
             }
         }
 
+        if (origorientation == ORIENTATION_TOPRIGHT || origorientation == ORIENTATION_BOTRIGHT
+                || origorientation == ORIENTATION_RIGHTTOP || origorientation == ORIENTATION_RIGHTBOT) {
+
+                for (int y = 0; y < rows_to_write; y++) {
+                    for (int x = 0; x < width/2; x++) {
+                        uint32 buf = raster[y * width + x];
+                        raster[y * width + x] = raster[y * width + width - 1 - x];
+                        raster[y * width + width - 1 - x] = buf;
+                    }
+                }
+
+        }
+
         for (int y = 0; y < rows_to_write; y++) {
             png_bytep row = (png_bytep)malloc(4 * width * sizeof(png_bytep));
             memcpy(row, raster + (y * width), width * 4);
             png_write_row(png_ptr, row);
+            delete(row);
         }
 
     }
