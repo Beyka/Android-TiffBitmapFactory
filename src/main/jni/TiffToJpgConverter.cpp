@@ -11,22 +11,28 @@ TiffToJpgConverter::TiffToJpgConverter(JNIEnv *e, jclass clazz, jstring in, jstr
     inPath = in;
     outPath = out;
     optionsObj = opts;
-    throwException = false;
+    throwException = JNI_FALSE;
     tiffDirectory = 0;
+    jpeg_struct_init = 0;
 }
 
 TiffToJpgConverter::~TiffToJpgConverter()
 {
+    LOGI("destructor");
     if (tiffImage) {
         TIFFClose(tiffImage);
         tiffImage = NULL;
     }
+        LOGI("tiff");
 
     if (jpegFile) {
         fclose(jpegFile);
     }
-
-     jpeg_destroy_compress(&cinfo);
+    LOGI("file");
+    if (jpeg_struct_init) {
+        jpeg_destroy_compress(&cinfo);
+    }
+    LOGI("destructor finish");
 
 }
 
@@ -92,6 +98,7 @@ jboolean TiffToJpgConverter::convert()
     LOGI("initialize error handling done");
     //initialize jpeg compression object
     jpeg_create_compress(&cinfo);
+    jpeg_struct_init = 1;
     LOGI("initialize compress done");
     //set phisical file for jpeg
     jpeg_stdio_dest(&cinfo, jpegFile);

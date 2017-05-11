@@ -55,11 +55,9 @@ class TiffToJpgConverter
         TIFF *tiffImage;
         short origorientation;
         FILE *jpegFile;
+        char jpeg_struct_init;
         struct jpeg_compress_struct cinfo;
         struct jpeg_error_mgr jerr;
-
-        //png_structp png_ptr;
-        //png_infop info_ptr;
 
         jobject optionsObj;
         jint tiffDirectory;
