@@ -5,51 +5,36 @@
 #include "TiffToPngConverter.h"
 
 TiffToPngConverter::TiffToPngConverter(JNIEnv *e, jclass clazz, jstring in, jstring out, jobject opts)
+    : BaseTiffConverter(e, clazz, in, out, opts)
 {
-    availableMemory = 8000 * 8000 * 4;
-    env = e;
-    inPath = in;
-    outPath = out;
-    optionsObj = opts;
-    throwException = false;
-    tiffDirectory = 0;
+    png_ptr_init = 0;
+    png_info_init = 0;
 }
 
 TiffToPngConverter::~TiffToPngConverter()
 {
+    LOGI("destructor start");
     if (tiffImage) {
         TIFFClose(tiffImage);
         tiffImage = NULL;
     }
+    LOGI("tiff free");
 
-    if (pngFile) {
-        fclose(pngFile);
-    }
-
-    if (info_ptr) {
+    if (png_info_init) {
         png_free_data(png_ptr, info_ptr, PNG_FREE_ALL, -1);
     }
+    LOGI("info_ptr free");
 
-    if (png_ptr) {
+    if (png_ptr_init) {
         png_destroy_write_struct(&png_ptr, NULL);
     }
-}
+    LOGI("png_ptr free");
 
-void TiffToPngConverter::readOptions()
-{
-    if (optionsObj == NULL) return;
-    jclass optionsClass = env->FindClass("org/beyka/tiffbitmapfactory/TiffConverter$ConverterOptions");
-
-    jfieldID tiffdirfield = env->GetFieldID(optionsClass, "tiffDirectoryRead", "I");
-    tiffDirectory = env->GetIntField(optionsObj, tiffdirfield);
-
-    jfieldID availablememfield = env->GetFieldID(optionsClass, "availableMemory", "J");
-    availableMemory = env->GetLongField(optionsObj, availablememfield);
-
-    jfieldID throwexceptionsfield = env->GetFieldID(optionsClass, "throwExceptions", "Z");
-    throwException = env->GetBooleanField(optionsObj, throwexceptionsfield);
-
-    env->DeleteLocalRef(optionsClass);
+    if (pngFile) {
+        LOGI("pngFile != NULL");
+        fclose(pngFile);
+    }
+    LOGI("png file free");
 }
 
 jboolean TiffToPngConverter::convert()
@@ -103,6 +88,7 @@ jboolean TiffToPngConverter::convert()
         }
         return JNI_FALSE;
     }
+    png_ptr_init = 1;
 
     //create png info pointer
     info_ptr = png_create_info_struct(png_ptr);
@@ -116,6 +102,7 @@ jboolean TiffToPngConverter::convert()
         }
         return JNI_FALSE;
     }
+    png_info_init = 1;
 
     //png error handler
     if (setjmp(png_jmpbuf(png_ptr))) {

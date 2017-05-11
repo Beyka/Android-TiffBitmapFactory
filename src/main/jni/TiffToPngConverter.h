@@ -12,7 +12,7 @@
 #include "unistd.h"
 #include <png.h>
 #include <setjmp.h>
-#include "NativeExceptions.h"
+#include "BaseTiffConverter.h"
 
 #define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "TiffToPngConverter", "%s", x)
 #define LOGII(x, y) __android_log_print(ANDROID_LOG_DEBUG, "TiffToPngConverter", "%s %d", x, y)
@@ -22,12 +22,12 @@
 #define LOGE(x) __android_log_print(ANDROID_LOG_ERROR, "TiffToPngConverter", "%s", x)
 #define LOGES(x, y) __android_log_print(ANDROID_LOG_ERROR, "TiffToPngConverter", "%s %s", x, y)
 
-class TiffToPngConverter
+class TiffToPngConverter : public BaseTiffConverter
 {
     public:
         explicit TiffToPngConverter(JNIEnv *, jclass, jstring, jstring, jobject);
         ~TiffToPngConverter();
-        jboolean convert();
+        virtual jboolean convert();
 
     private:
         static int const DECODE_METHOD_IMAGE = 1;
@@ -35,30 +35,19 @@ class TiffToPngConverter
         static int const DECODE_METHOD_STRIP = 3;
 
         int getDecodeMethod();
-        void readOptions();
         void rotateTileLinesVertical(uint32, uint32, uint32 *, uint32 *);
         void rotateTileLinesHorizontal(uint32, uint32, uint32 *, uint32 *);
         jboolean convertFromImage();
         jboolean convertFromTile();
         jboolean convertFromStrip();
 
-        JNIEnv *env;
-        jstring inPath;
-        jstring outPath;
-
         TIFF *tiffImage;
         short origorientation;
         FILE *pngFile;
+        char png_ptr_init;
         png_structp png_ptr;
+        char png_info_init;
         png_infop info_ptr;
-
-        jobject optionsObj;
-        jint tiffDirectory;
-        jlong availableMemory;
-        jboolean throwException;
-        uint32 width;
-        uint32 height;
-
 
 };
 

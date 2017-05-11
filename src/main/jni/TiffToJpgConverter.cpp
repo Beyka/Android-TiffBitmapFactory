@@ -5,14 +5,8 @@
 #include "TiffToJpgConverter.h"
 
 TiffToJpgConverter::TiffToJpgConverter(JNIEnv *e, jclass clazz, jstring in, jstring out, jobject opts)
+    : BaseTiffConverter(e, clazz, in, out, opts)
 {
-    availableMemory = 8000 * 8000 * 4;
-    env = e;
-    inPath = in;
-    outPath = out;
-    optionsObj = opts;
-    throwException = JNI_FALSE;
-    tiffDirectory = 0;
     jpeg_struct_init = 0;
 }
 
@@ -34,23 +28,6 @@ TiffToJpgConverter::~TiffToJpgConverter()
     }
     LOGI("destructor finish");
 
-}
-
-void TiffToJpgConverter::readOptions()
-{
-    if (optionsObj == NULL) return;
-    jclass optionsClass = env->FindClass("org/beyka/tiffbitmapfactory/TiffConverter$ConverterOptions");
-
-    jfieldID tiffdirfield = env->GetFieldID(optionsClass, "tiffDirectoryRead", "I");
-    tiffDirectory = env->GetIntField(optionsObj, tiffdirfield);
-
-    jfieldID availablememfield = env->GetFieldID(optionsClass, "availableMemory", "J");
-    availableMemory = env->GetLongField(optionsObj, availablememfield);
-
-    jfieldID throwexceptionsfield = env->GetFieldID(optionsClass, "throwExceptions", "Z");
-    throwException = env->GetBooleanField(optionsObj, throwexceptionsfield);
-
-    env->DeleteLocalRef(optionsClass);
 }
 
 jboolean TiffToJpgConverter::convert()

@@ -12,26 +12,26 @@
 #include "unistd.h"
 #include "jpeglib.h"
 #include <setjmp.h>
-#include "NativeExceptions.h"
+#include "BaseTiffConverter.h"
 
 //extern "C" {
 //#include "jpeglib.h"
 //}
 
-#define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "TiffToPngConverter", "%s", x)
-#define LOGII(x, y) __android_log_print(ANDROID_LOG_DEBUG, "TiffToPngConverter", "%s %d", x, y)
-#define LOGIF(x, y) __android_log_print(ANDROID_LOG_DEBUG, "TiffToPngConverter", "%s %f", x, y)
-#define LOGIS(x, y) __android_log_print(ANDROID_LOG_DEBUG, "TiffToPngConverter", "%s %s", x, y)
+#define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "TiffToJpgConverter", "%s", x)
+#define LOGII(x, y) __android_log_print(ANDROID_LOG_DEBUG, "TiffToJpgConverter", "%s %d", x, y)
+#define LOGIF(x, y) __android_log_print(ANDROID_LOG_DEBUG, "TiffToJpgConverter", "%s %f", x, y)
+#define LOGIS(x, y) __android_log_print(ANDROID_LOG_DEBUG, "TiffToJpgConverter", "%s %s", x, y)
 
-#define LOGE(x) __android_log_print(ANDROID_LOG_ERROR, "TiffToPngConverter", "%s", x)
-#define LOGES(x, y) __android_log_print(ANDROID_LOG_ERROR, "TiffToPngConverter", "%s %s", x, y)
+#define LOGE(x) __android_log_print(ANDROID_LOG_ERROR, "TiffToJpgConverter", "%s", x)
+#define LOGES(x, y) __android_log_print(ANDROID_LOG_ERROR, "TiffToJpgConverter", "%s %s", x, y)
 
-class TiffToJpgConverter
+class TiffToJpgConverter : public BaseTiffConverter
 {
     public:
         explicit TiffToJpgConverter(JNIEnv *, jclass, jstring, jstring, jobject);
         ~TiffToJpgConverter();
-        jboolean convert();
+        virtual jboolean convert();
 
     private:
         static int const DECODE_METHOD_IMAGE = 1;
@@ -41,16 +41,11 @@ class TiffToJpgConverter
         static int const JPEG_QUALITY = 90;
 
         int getDecodeMethod();
-        void readOptions();
         void rotateTileLinesVertical(uint32, uint32, uint32 *, uint32 *);
         void rotateTileLinesHorizontal(uint32, uint32, uint32 *, uint32 *);
         jboolean convertFromImage();
         jboolean convertFromTile();
         jboolean convertFromStrip();
-
-        JNIEnv *env;
-        jstring inPath;
-        jstring outPath;
 
         TIFF *tiffImage;
         short origorientation;
@@ -59,12 +54,6 @@ class TiffToJpgConverter
         struct jpeg_compress_struct cinfo;
         struct jpeg_error_mgr jerr;
 
-        jobject optionsObj;
-        jint tiffDirectory;
-        jlong availableMemory;
-        jboolean throwException;
-        uint32 width;
-        uint32 height;
 
 
 };
