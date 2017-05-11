@@ -14,13 +14,13 @@ public class TiffConverter {
 //
 //    }
 
-    public static native boolean convertTiffPng(String tiff, String png);
+    public static native boolean convertTiffPng(String tiff, String png, ConverterOptions options);
 
-    public static native boolean convertPngTiff(String png, String tiff);
+    public static native boolean convertPngTiff(String png, String tiff, ConverterOptions options);
 
-    public static native boolean convertPngTiff(String[] png, String tiffs);
+    public static native boolean convertPngTiff(String[] png, String tiffs, ConverterOptions options);
 
-    public static native boolean convertTiffJpg(String tiff, String jpg);
+    public static native boolean convertTiffJpg(String tiff, String jpg, ConverterOptions options);
 
     public static final class ConverterOptions {
 

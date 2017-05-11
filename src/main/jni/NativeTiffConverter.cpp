@@ -17,10 +17,10 @@ struct png_image {
 };
 
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffPng
-  (JNIEnv *env, jclass clazz, jstring tiffPath, jstring pngPath)
+  (JNIEnv *env, jclass clazz, jstring tiffPath, jstring pngPath, jobject options)
   {
 
-    TiffToPngConverter *converter = new TiffToPngConverter(env, clazz, tiffPath, pngPath, NULL);
+    TiffToPngConverter *converter = new TiffToPngConverter(env, clazz, tiffPath, pngPath, options);
     jboolean result = converter->convert();
     delete(converter);
     return result;
@@ -173,17 +173,17 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
   }
 
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffJpg
-  (JNIEnv *env, jclass clazz, jstring tiffPath, jstring pngPath)
+  (JNIEnv *env, jclass clazz, jstring tiffPath, jstring pngPath, jobject options)
   {
 
-    TiffToJpgConverter *converter = new TiffToJpgConverter(env, clazz, tiffPath, pngPath, NULL);
+    TiffToJpgConverter *converter = new TiffToJpgConverter(env, clazz, tiffPath, pngPath, options);
     jboolean result = converter->convert();
     delete(converter);
     return result;
   }
 
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertPngTiff
-  (JNIEnv *env, jclass clazz, jstring tiffPath, jstring pngPath)
+  (JNIEnv *env, jclass clazz, jstring tiffPath, jstring pngPath, jobject options)
   {
   return JNI_FALSE;
   }
