@@ -105,7 +105,8 @@ LOCAL_SRC_FILES := \
 	NativeTiffConverter.cpp \
 	TiffToPngConverter.cpp \
 	TiffToJpgConverter.cpp \
-	BaseTiffConverter.cpp
+	BaseTiffConverter.cpp \
+	PngToTiffConverter.cpp
 
 #LOCAL_C_INCLUDES := libs/$(TARGET_ARCH_ABI)/libpng.a
 LOCAL_C_INCLUDES := \

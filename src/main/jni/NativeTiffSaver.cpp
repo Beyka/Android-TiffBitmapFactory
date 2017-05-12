@@ -453,10 +453,12 @@ uint32 img_width = info.width;
             for (int j = 0; j < height; j++) {
                 crPix = source[j * width + i];
                 grayPix = (0.2125 * (colorMask & crPix >> 16) + 0.7154 * (colorMask & crPix >> 8) + 0.0721 * (colorMask & crPix));
+
                 threshold += grayPix;
             }
         }
-
+        LOGII("threshold", threshold);
+//191164722
         uint32 shift = 0;
         unsigned char charsum = 0;
         int k = 7;
@@ -476,6 +478,7 @@ uint32 img_width = info.width;
                     dest[j * bilevelWidth + shift] = charsum;
                     shift++;
                     k = 7;
+
                     charsum = 0;
                 } else {
                     k--;

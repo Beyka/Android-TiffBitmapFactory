@@ -27,6 +27,8 @@ class BaseTiffConverter {
         virtual jboolean convert() = 0;
 
     protected:
+        const int colorMask = 0xFF;
+
         JNIEnv *env;
         jstring inPath;
         jstring outPath;
@@ -35,12 +37,14 @@ class BaseTiffConverter {
         uint32 width;
         uint32 height;
 
+        jint compressionInt;
         jint tiffDirectory;
         jlong availableMemory;
         jboolean throwException;
         jboolean appendTiff;
 
         void readOptions();
+        unsigned char *convertArgbToBilevel(uint32 *, jint , jint);
 };
 
 #endif //TIFFSAMPLE_BASETOTIFFCONVERTER_H

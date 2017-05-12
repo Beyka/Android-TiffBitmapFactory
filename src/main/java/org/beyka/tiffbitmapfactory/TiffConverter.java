@@ -18,8 +18,6 @@ public class TiffConverter {
 
     public static native boolean convertPngTiff(String png, String tiff, ConverterOptions options);
 
-    public static native boolean convertPngTiff(String[] png, String tiffs, ConverterOptions options);
-
     public static native boolean convertTiffJpg(String tiff, String jpg, ConverterOptions options);
 
     public static final class ConverterOptions {
@@ -28,6 +26,7 @@ public class TiffConverter {
         public long availableMemory;
         public boolean throwExceptions;
         public boolean appendTiff;
+        public CompressionScheme compressionScheme = CompressionScheme.LZW;
 
     }
 }

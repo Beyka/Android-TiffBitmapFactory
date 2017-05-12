@@ -30,13 +30,6 @@ class PngToTiffConverter : public BaseTiffConverter
         virtual jboolean convert();
 
      private:
-         int getDecodeMethod();
-         void rotateTileLinesVertical(uint32, uint32, uint32 *, uint32 *);
-         void rotateTileLinesHorizontal(uint32, uint32, uint32 *, uint32 *);
-         jboolean convertFromImage();
-         jboolean convertFromTile();
-         jboolean convertFromStrip();
-
          TIFF *tiffImage;
          FILE *pngFile;
          char png_ptr_init;
@@ -44,6 +37,10 @@ class PngToTiffConverter : public BaseTiffConverter
          char png_info_init;
          png_infop info_ptr;
 
+         int bit_depth;
+         int color_type;
+
+         unsigned char * convertArgbToBilevel(png_bytep *, int, uint32, uint32);
 };
 
 #endif //TIFFSAMPLE_PNGTOTIFFCONVERTER_H
