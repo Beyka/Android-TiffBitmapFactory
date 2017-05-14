@@ -42,6 +42,9 @@ class BaseTiffConverter {
         jlong availableMemory;
         jboolean throwException;
         jboolean appendTiff;
+        uint16 resUnit;
+        float xRes;
+        float yRes;
 
         void readOptions();
         unsigned char *convertArgbToBilevel(uint32 *, jint , jint);

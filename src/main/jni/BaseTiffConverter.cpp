@@ -56,6 +56,21 @@ void BaseTiffConverter::readOptions()
     LOGII("compressionInt ", compressionInt );
     env->DeleteLocalRef(compressionModeClass);
 
+    // variables for resolution
+    jfieldID gOptions_xResolutionFieldID = env->GetFieldID(optionsClass, "xResolution", "F");
+    xRes = env->GetFloatField(optionsObj, gOptions_xResolutionFieldID);
+    jfieldID gOptions_yResolutionFieldID = env->GetFieldID(optionsClass, "yResolution", "F");
+    yRes = env->GetFloatField(optionsObj, gOptions_yResolutionFieldID);
+    jfieldID gOptions_resUnitFieldID = env->GetFieldID(optionsClass,
+                                                       "resUnit",
+                                                       "Lorg/beyka/tiffbitmapfactory/ResolutionUnit;");
+    jobject resUnitObject = env->GetObjectField(optionsObj, gOptions_resUnitFieldID);
+    //Get res int from resUnitObject
+    jclass resolutionUnitClass = env->FindClass("org/beyka/tiffbitmapfactory/ResolutionUnit");
+    jfieldID resUnitOrdinalFieldID = env->GetFieldID(resolutionUnitClass, "ordinal", "I");
+    resUnit = env->GetIntField(resUnitObject, resUnitOrdinalFieldID);
+    env->DeleteLocalRef(resolutionUnitClass);
+
     env->DeleteLocalRef(optionsClass);
 }
 

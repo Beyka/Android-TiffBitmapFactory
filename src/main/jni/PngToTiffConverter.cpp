@@ -204,6 +204,9 @@ jboolean PngToTiffConverter::convert()
          color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
         png_set_gray_to_rgb(png_ptr);
 
+    int number_passes = png_set_interlace_handling(png_ptr);
+    LOGII("number_passes", number_passes);
+
     png_read_update_info(png_ptr, info_ptr);
 
     //allocate memory for png image
@@ -212,7 +215,7 @@ jboolean PngToTiffConverter::convert()
         row_pointers[y] = (png_byte*)malloc(png_get_rowbytes(png_ptr,info_ptr));
     }
     //read image
-    png_read_image(png_ptr, row_pointers);
+    //png_read_image(png_ptr, row_pointers);
 
 
     LOGII("compression", compressionInt);
@@ -222,9 +225,9 @@ jboolean PngToTiffConverter::convert()
     TIFFSetField(tiffImage, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
     TIFFSetField(tiffImage, TIFFTAG_COMPRESSION, compressionInt);
     TIFFSetField(tiffImage, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
-/*    TIFFSetField(tiffImage, TIFFTAG_XRESOLUTION, xRes);
+    TIFFSetField(tiffImage, TIFFTAG_XRESOLUTION, xRes);
     TIFFSetField(tiffImage, TIFFTAG_YRESOLUTION, yRes);
-    TIFFSetField(tiffImage, TIFFTAG_RESOLUTIONUNIT, resUnit); */
+    TIFFSetField(tiffImage, TIFFTAG_RESOLUTIONUNIT, resUnit);
 
     if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
         TIFFSetField(tiffImage, TIFFTAG_BITSPERSAMPLE,	1);
@@ -238,27 +241,34 @@ jboolean PngToTiffConverter::convert()
         TIFFSetField(tiffImage, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
     }
 
-
-    //
-
     // Write the information to the file
     if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
-        unsigned char *bilevel = convertArgbToBilevel(row_pointers, 4, width, height);
+        int compressedWidth = (width/8 + 0.5);
+        for (int y = 0; y < height; y++) {
+            png_byte *pngrow = (png_byte*)malloc(png_get_rowbytes(png_ptr,info_ptr));
+            png_read_rows(png_ptr, &pngrow, NULL, 1);
+            unsigned char *bilevel = convertArgbToBilevel(pngrow, 4, width, height);
+            TIFFWriteEncodedStrip(tiffImage, y, bilevel, compressedWidth);
+            free(bilevel);
+            free(pngrow);
+        }
+        /*unsigned char *bilevel = convertArgbToBilevel(row_pointers, 4, width, height);
         int compressedWidth = (width/8 + 0.5);
         for (int i = 0; i < height; i++) {
-            //unsigned char *buf = (unsigned char *)malloc(sizeof(unsigned char) * compressedWidth);
-            //memcpy(buf, bilevel + (i * compressedWidth), sizeof(unsigned char) * compressedWidth);
             TIFFWriteEncodedStrip(tiffImage, i, &bilevel[i * compressedWidth], (compressedWidth));
-            //delete buf;
-
-            //TIFFWriteEncodedStrip(tiffImage, i, &bilevel[i * compressedWidth], (compressedWidth));
         }
-        free(bilevel);
+        free(bilevel);*/
     } else {
         LOGI("compression LZW");
 
         for (int y = 0; y < height; y++) {
-            TIFFWriteScanline(tiffImage, row_pointers[y], y, 0);
+            int rowbytes = png_get_rowbytes(png_ptr,info_ptr);
+            png_byte *pngrow = (png_byte*)malloc(rowbytes);
+            png_read_rows(png_ptr, &pngrow, NULL, 1);
+            LOGII("writing strip", y);
+            //TIFFWriteEncodedStrip(tiffImage, y, &pngrow, width);
+            TIFFWriteScanline(tiffImage, pngrow, y, 0);
+            delete pngrow;
         }
     }
     int ret = TIFFWriteDirectory(tiffImage);
@@ -270,9 +280,6 @@ jboolean PngToTiffConverter::convert()
         close(fileDescriptor);
     }
 
-
-
-
     for(int y = 0; y < height; y++) {
         delete(row_pointers[y]);
     }
@@ -281,7 +288,57 @@ jboolean PngToTiffConverter::convert()
     return JNI_TRUE;
 }
 
-unsigned char * PngToTiffConverter::convertArgbToBilevel(png_bytep *data, int samplePerPixel, uint32 width, uint32 height) {
+unsigned char * PngToTiffConverter::convertArgbToBilevel(png_byte *row, int samplePerPixel, uint32 width, uint32 height) {
+
+        unsigned char red;
+        unsigned char green;
+        unsigned char blue;
+        unsigned char alpha;
+
+
+        uint32 crPix;
+        uint32 grayPix;
+        int bilevelWidth = (width / 8 + 0.5);
+
+        unsigned char *dest = (unsigned char *) malloc(sizeof(unsigned char) * bilevelWidth);
+
+        uint32 maxGrey = (0.2125 * 255 + 0.7154 * 255 + 0.0721 * 255);
+        uint32 halfGrey = maxGrey/2;
+
+        uint32 shift = 0;
+        unsigned char charsum = 0;
+        int k = 7;
+
+        //for (int y = 0; y < height; y++) {
+            shift = 0;
+            charsum = 0;
+            k = 7;
+            //png_bytep row = data[y];
+            for (int i = 0; i < width; i++) {
+                            png_byte *px = &(row[i * 4]);
+                            red = px[0];
+                            green = px[1];
+                            blue = px[2];
+                                                        //crPix = &(row[x * 4]);
+                            grayPix = (0.2125 * red + 0.7154 * green + 0.0721 * blue);
+
+                            if (grayPix < halfGrey) charsum &= ~(1 << k);
+                            else charsum |= 1 << k;
+
+                            if (k == 0) {
+                                dest[shift] = charsum;
+                                shift++;
+                                k = 7;
+                                charsum = 0;
+                            } else {
+                                k--;
+                            }
+                        }
+        //}
+        return dest;
+}
+
+/*unsigned char * PngToTiffConverter::convertArgbToBilevel(png_bytep *data, int samplePerPixel, uint32 width, uint32 height) {
         long long threshold = 0;
 
         unsigned char red;
@@ -308,27 +365,9 @@ unsigned char * PngToTiffConverter::convertArgbToBilevel(png_bytep *data, int sa
                             //LOGII("grayPix", grayPix);
                             threshold += grayPix;
                         }
-            /*unsigned char *ar = &data[y];
-            for (int x = 0; x < width * samplePerPixel; x+= samplePerPixel) {
-                red = ar[width * samplePerPixel + x];
-                green = ar[width * samplePerPixel + x + 1];
-                blue = ar[width * samplePerPixel + x + 2];
-
-                grayPix = (0.2125 * (red) + 0.7154 * (green) + 0.0721 * (blue));
-LOGII("grayPix", grayPix);
-                threshold += grayPix;
-            }*/
         }
         LOGII("threshold", threshold);
-/*
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < height; j++) {
-                crPix = source[j * width + i];
-                grayPix = (0.2125 * (colorMask & crPix >> 16) + 0.7154 * (colorMask & crPix >> 8) + 0.0721 * (colorMask & crPix));
-                threshold += grayPix;
-            }
-        }
-*/
+
         uint32 shift = 0;
         unsigned char charsum = 0;
         int k = 7;
@@ -353,34 +392,11 @@ LOGII("grayPix", grayPix);
                                 dest[y * bilevelWidth + shift] = charsum;
                                 shift++;
                                 k = 7;
-                                //LOGII("charsum", charsum);
                                 charsum = 0;
                             } else {
                                 k--;
                             }
                         }
-
-            /*for (int x = 0; x < width * samplePerPixel; x+=samplePerPixel) {
-
-                red = ar[width * samplePerPixel + x];
-                                green = ar[width * samplePerPixel + x + 1];
-                                blue = ar[width * samplePerPixel + x + 2];
-
-                grayPix = (0.2125 * (red) + 0.7154 * (green) + 0.0721 * (blue));
-
-                if (grayPix < barier) charsum &= ~(1 << k);
-                else charsum |= 1 << k;
-
-                if (k == 0) {
-                    dest[y * bilevelWidth + shift] = charsum;
-                    shift++;
-                    k = 7;
-                    //LOGII("charsum", charsum);
-                    charsum = 0;
-                } else {
-                    k--;
-                }
-            }*/
         }
         return dest;
-}
+}*/
