@@ -118,8 +118,6 @@ jboolean PngToTiffConverter::convert()
 
     //check is file is PNG or not
     bool is_png = !png_sig_cmp(header, 0, byte_count);
-    bool is_jpg = !strncmp( (const char*)header, "\xFF\xD8\xFF", 3 );
-    LOGII("is_jpg", is_jpg);
     if (!is_png) {
         LOGE("Not png");
         return JNI_FALSE;
@@ -268,7 +266,7 @@ jboolean PngToTiffConverter::convert()
                 memcpy(pixels+k*width, row_pointers[k], width * sizeof(uint32));
             }
             TIFFWriteEncodedStrip(tiffImage, y/rowPerStrip, pixels, width * sizeof(uint32) * rowPerStrip);
-            delete (pixels);
+            delete[] pixels;
         }
     }
     //free memory allocated for png rows
@@ -338,8 +336,6 @@ jboolean PngToTiffConverter::convert()
 }*/
 
 unsigned char * PngToTiffConverter::convertArgbToBilevel(png_bytep *data, int samplePerPixel, uint32 width, uint32 height) {
-        long long threshold = 0;
-
         unsigned char red;
         unsigned char green;
         unsigned char blue;
