@@ -42,6 +42,29 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertJpgTiff
   (JNIEnv *, jclass, jstring, jstring, jobject);
 
+   // .jpg:  FF D8 FF
+   // .png:  89 50 4E 47 0D 0A 1A 0A
+   // .gif:  GIF87a
+   //        GIF89a
+   // .tiff: 49 49 2A 00
+   //        4D 4D 00 2A
+   // .bmp:  BM
+   // .webp: RIFF ???? WEBP
+   // .ico   00 00 01 00
+   //        00 00 02 00 ( cursor files )
+JNIEXPORT jint JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImageType
+  (JNIEnv *, jclass, jstring);
+
+//constants for check files
+const jint IMAGE_FILE_INVALID = 0;
+const jint IMAGE_FILE_JPG = 1;
+const jint IMAGE_FILE_PNG = 2;
+const jint IMAGE_FILE_GIF = 3;
+const jint IMAGE_FILE_TIFF = 4;
+const jint IMAGE_FILE_BMP = 5;
+const jint IMAGE_FILE_WEBP = 6;
+const jint IMAGE_FILE_ICO = 7;
+
 #ifdef __cplusplus
 }
 #endif

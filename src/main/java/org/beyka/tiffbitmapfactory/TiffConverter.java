@@ -22,6 +22,8 @@ public class TiffConverter {
 
     public static native boolean convertJpgTiff(String jpg, String tiff, ConverterOptions options);
 
+    public static native int getImageType(String path);
+
     public static final class ConverterOptions {
 
         public ConverterOptions() {
