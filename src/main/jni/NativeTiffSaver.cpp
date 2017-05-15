@@ -382,17 +382,27 @@ uint32 img_width = info.width;
             TIFFSetField(output_image, TIFFTAG_COPYRIGHT, copyrightString);
         }
 
+        unsigned long MB8 = 8 * 1024 * 1024;
+        unsigned long rowSizeBytes = img_width * 4;
+        int rowPerStrip = MB8/rowSizeBytes;
+        if (rowPerStrip >= img_height) {
+            rowPerStrip = img_height / 4;
+        }
+        LOGII("rowPerStrip", rowPerStrip);
+        TIFFSetField(output_image, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
+
         // Write the information to the file
         if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
             unsigned char *bilevel = convertArgbToBilevel(img, img_width, img_height);
             int compressedWidth = (img_width/8 + 0.5);
-            for (int i = 0; i < img_height; i++) {
-                TIFFWriteEncodedStrip(output_image, i, &bilevel[i * compressedWidth], (compressedWidth));
+            for (int i = 0; i < img_height; i+=rowPerStrip) {
+                TIFFWriteEncodedStrip(output_image, i/rowPerStrip, &bilevel[i * compressedWidth], (compressedWidth) * rowPerStrip);
             }
             free(bilevel);
         } else {
-            for (int row = 0; row < img_height; row++) {
-                TIFFWriteScanline(output_image, &img[row * img_width], row, 0);
+            for (int row = 0; row < img_height; row+=rowPerStrip) {
+                TIFFWriteEncodedStrip(output_image, row/rowPerStrip, &img[row * img_width], sizeof(uint32) * img_width * rowPerStrip);
+                //TIFFWriteScanline(output_image, &img[row * img_width], row, 0);
             }
         }
         ret = TIFFWriteDirectory(output_image);
@@ -449,20 +459,12 @@ uint32 img_width = info.width;
 
         unsigned char *dest = (unsigned char *) malloc(sizeof(unsigned char) * bilevelWidth * height);
 
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < height; j++) {
-                crPix = source[j * width + i];
-                grayPix = (0.2125 * (colorMask & crPix >> 16) + 0.7154 * (colorMask & crPix >> 8) + 0.0721 * (colorMask & crPix));
+        uint32 maxGrey = (0.2125 * 255 + 0.7154 * 255 + 0.0721 * 255);
+        uint32 halfGrey = maxGrey/2;
 
-                threshold += grayPix;
-            }
-        }
-        LOGII("threshold", threshold);
-//191164722
         uint32 shift = 0;
         unsigned char charsum = 0;
         int k = 7;
-        long long barier = threshold / (width * height);
         for (int j = 0; j < height; j++) {
             shift = 0;
             charsum = 0;
@@ -471,7 +473,7 @@ uint32 img_width = info.width;
                 crPix = source[j * width + i];
                 grayPix = (0.2125 * (colorMask & crPix >> 16) + 0.7154 * (colorMask & crPix >> 8) + 0.0721 * (colorMask & crPix));
 
-                if (grayPix < barier) charsum &= ~(1 << k);
+                if (grayPix < halfGrey) charsum &= ~(1 << k);
                 else charsum |= 1 << k;
 
                 if (k == 0) {
