@@ -24,6 +24,7 @@ public class TiffConverter {
 
         public ConverterOptions() {
             availableMemory = 8000*8000*4;
+            appendTiff = false;
             resUnit = ResolutionUnit.NONE;
             compressionScheme = CompressionScheme.LZW;
             throwExceptions = false;

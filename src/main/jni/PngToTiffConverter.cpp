@@ -27,8 +27,8 @@ PngToTiffConverter::~PngToTiffConverter() {
         png_destroy_read_struct(&png_ptr, NULL, NULL);
     }
 
-    if (pngFile) {
-        fclose(pngFile);
+    if (inFile) {
+        fclose(inFile);
     }
 }
 
@@ -99,8 +99,8 @@ jboolean PngToTiffConverter::convert()
     const char *inCPath = NULL;
     inCPath = env->GetStringUTFChars(inPath, 0);
     LOGIS("IN path", inCPath);
-    pngFile = fopen(inCPath, "rb");
-    if (!pngFile) {
+    inFile = fopen(inCPath, "rb");
+    if (!inFile) {
         if (throwException) {
             throw_cant_open_file_exception(env, inPath);
         }
@@ -114,10 +114,12 @@ jboolean PngToTiffConverter::convert()
     //read file header
     size_t byte_count = 8;
     unsigned char *header = (unsigned char *)malloc(sizeof(unsigned char) * byte_count);
-    fread(header, 1, byte_count, pngFile);
+    fread(header, 1, byte_count, inFile);
 
     //check is file is PNG or not
     bool is_png = !png_sig_cmp(header, 0, byte_count);
+    bool is_jpg = !strncmp( (const char*)header, "\xFF\xD8\xFF", 3 );
+    LOGII("is_jpg", is_jpg);
     if (!is_png) {
         LOGE("Not png");
         return JNI_FALSE;
@@ -168,7 +170,7 @@ jboolean PngToTiffConverter::convert()
     }
 
     //Init PNG IO
-    png_init_io(png_ptr, pngFile);
+    png_init_io(png_ptr, inFile);
     //seek file header
     png_set_sig_bytes(png_ptr, byte_count);
 
@@ -209,14 +211,6 @@ jboolean PngToTiffConverter::convert()
 
     png_read_update_info(png_ptr, info_ptr);
 
-    //allocate memory for png image
-    png_bytep *row_pointers = (png_bytep*)malloc(sizeof(png_bytep) * height);
-    for(int y = 0; y < height; y++) {
-        row_pointers[y] = (png_byte*)malloc(png_get_rowbytes(png_ptr,info_ptr));
-    }
-    //read image
-    //png_read_image(png_ptr, row_pointers);
-
 
     LOGII("compression", compressionInt);
     //Set tiff parameters
@@ -241,35 +235,45 @@ jboolean PngToTiffConverter::convert()
         TIFFSetField(tiffImage, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
     }
 
+    //Calculate row per strip
+    //maximum size for strip should be less than 8Mb
+    unsigned long MB8 = 8 * 1024 * 1024;
+    unsigned long rowSizeBytes = width * 4;
+    int rowPerStrip = MB8/rowSizeBytes;
+    if (rowPerStrip >= height) {
+        rowPerStrip = height / 4;
+    }
+    LOGII("rowPerStrip", rowPerStrip);
+    TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
+    int rowbytes = png_get_rowbytes(png_ptr,info_ptr);
+    png_bytep row_pointers[rowPerStrip];
+    for (int sy = 0; sy < rowPerStrip; sy++) {
+        row_pointers[sy] = (png_byte*)malloc(rowbytes);
+    }
+
     // Write the information to the file
     if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
         int compressedWidth = (width/8 + 0.5);
-        for (int y = 0; y < height; y++) {
-            png_byte *pngrow = (png_byte*)malloc(png_get_rowbytes(png_ptr,info_ptr));
-            png_read_rows(png_ptr, &pngrow, NULL, 1);
-            unsigned char *bilevel = convertArgbToBilevel(pngrow, 4, width, height);
-            TIFFWriteEncodedStrip(tiffImage, y, bilevel, compressedWidth);
+        for (int y = 0; y < height; y+=rowPerStrip) {
+            png_read_rows(png_ptr, &row_pointers[0], NULL, rowPerStrip);
+            unsigned char *bilevel = convertArgbToBilevel(&row_pointers[0], 4, width, rowPerStrip);
+            TIFFWriteEncodedStrip(tiffImage, y/rowPerStrip, bilevel, compressedWidth * sizeof(unsigned char) * rowPerStrip);
             free(bilevel);
-            free(pngrow);
         }
-        /*unsigned char *bilevel = convertArgbToBilevel(row_pointers, 4, width, height);
-        int compressedWidth = (width/8 + 0.5);
-        for (int i = 0; i < height; i++) {
-            TIFFWriteEncodedStrip(tiffImage, i, &bilevel[i * compressedWidth], (compressedWidth));
-        }
-        free(bilevel);*/
     } else {
-        LOGI("compression LZW");
-
-        for (int y = 0; y < height; y++) {
-            int rowbytes = png_get_rowbytes(png_ptr,info_ptr);
-            png_byte *pngrow = (png_byte*)malloc(rowbytes);
-            png_read_rows(png_ptr, &pngrow, NULL, 1);
-            LOGII("writing strip", y);
-            //TIFFWriteEncodedStrip(tiffImage, y, &pngrow, width);
-            TIFFWriteScanline(tiffImage, pngrow, y, 0);
-            delete pngrow;
+        for (int y = 0; y < height; y+=rowPerStrip) {
+            png_read_rows(png_ptr, &row_pointers[0], NULL, rowPerStrip);
+            uint32 *pixels = new uint32[width * rowPerStrip];
+            for (int k = 0; k < rowPerStrip; k++) {
+                memcpy(pixels+k*width, row_pointers[k], width * sizeof(uint32));
+            }
+            TIFFWriteEncodedStrip(tiffImage, y/rowPerStrip, pixels, width * sizeof(uint32) * rowPerStrip);
+            delete (pixels);
         }
+    }
+    //free memory allocated for png rows
+    for (int sy = 0; sy < rowPerStrip; sy++) {
+        free(row_pointers[sy]);
     }
     int ret = TIFFWriteDirectory(tiffImage);
     LOGII("ret = ", ret);
@@ -280,15 +284,10 @@ jboolean PngToTiffConverter::convert()
         close(fileDescriptor);
     }
 
-    for(int y = 0; y < height; y++) {
-        delete(row_pointers[y]);
-    }
-    delete(row_pointers);
-
     return JNI_TRUE;
 }
 
-unsigned char * PngToTiffConverter::convertArgbToBilevel(png_byte *row, int samplePerPixel, uint32 width, uint32 height) {
+/*unsigned char * PngToTiffConverter::convertArgbToBilevel(png_byte *row, int samplePerPixel, uint32 width, uint32 height) {
 
         unsigned char red;
         unsigned char green;
@@ -336,9 +335,9 @@ unsigned char * PngToTiffConverter::convertArgbToBilevel(png_byte *row, int samp
                         }
         //}
         return dest;
-}
+}*/
 
-/*unsigned char * PngToTiffConverter::convertArgbToBilevel(png_bytep *data, int samplePerPixel, uint32 width, uint32 height) {
+unsigned char * PngToTiffConverter::convertArgbToBilevel(png_bytep *data, int samplePerPixel, uint32 width, uint32 height) {
         long long threshold = 0;
 
         unsigned char red;
@@ -353,50 +352,36 @@ unsigned char * PngToTiffConverter::convertArgbToBilevel(png_byte *row, int samp
 
         unsigned char *dest = (unsigned char *) malloc(sizeof(unsigned char) * bilevelWidth * height);
 
-        for (int y = 0; y < height; y++) {
-            png_bytep row = data[y];
-            for (int x = 0; x < width; x++) {
-                            png_bytep px = &(row[x * 4]);
-                            red = px[0];
-                            green = px[1];
-                            blue = px[2];
-                            //crPix = &(row[x * 4]);
-                            grayPix = (0.2125 * red + 0.7154 * green + 0.0721 * blue);
-                            //LOGII("grayPix", grayPix);
-                            threshold += grayPix;
-                        }
-        }
-        LOGII("threshold", threshold);
+        uint32 maxGrey = (0.2125 * 255 + 0.7154 * 255 + 0.0721 * 255);
+        uint32 halfGrey = maxGrey/2;
 
         uint32 shift = 0;
         unsigned char charsum = 0;
         int k = 7;
-        long long barier = threshold / (width * height);
         for (int y = 0; y < height; y++) {
             shift = 0;
             charsum = 0;
             k = 7;
             png_bytep row = data[y];
             for (int i = 0; i < width; i++) {
-                            png_bytep px = &(row[i * 4]);
-                                                        red = px[0];
-                                                        green = px[1];
-                                                        blue = px[2];
-                                                        //crPix = &(row[x * 4]);
-                                                        grayPix = (0.2125 * red + 0.7154 * green + 0.0721 * blue);
+                png_bytep px = &(row[i * samplePerPixel]);
+                red = px[0];
+                green = px[1];
+                blue = px[2];
+                grayPix = (0.2125 * red + 0.7154 * green + 0.0721 * blue);
 
-                            if (grayPix < barier) charsum &= ~(1 << k);
-                            else charsum |= 1 << k;
+                if (grayPix < halfGrey) charsum &= ~(1 << k);
+                else charsum |= 1 << k;
 
-                            if (k == 0) {
-                                dest[y * bilevelWidth + shift] = charsum;
-                                shift++;
-                                k = 7;
-                                charsum = 0;
-                            } else {
-                                k--;
-                            }
-                        }
+                if (k == 0) {
+                    dest[y * bilevelWidth + shift] = charsum;
+                    shift++;
+                    k = 7;
+                    charsum = 0;
+                } else {
+                   k--;
+                }
+             }
         }
         return dest;
-}*/
+}
