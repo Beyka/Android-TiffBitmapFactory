@@ -501,11 +501,11 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
                         rows_to_write = rowPerStrip;
 
                     if (origorientation <= 4) {
-                        for (int line = 0; line < rowPerStrip / 2; line++) {
+                        for (int line = 0; line < rows_to_write / 2; line++) {
                             unsigned int  *top_line, *bottom_line;
 
                             top_line = rasterForBottomLine + origwidth * line;
-                            bottom_line = rasterForBottomLine + origwidth * (rowPerStrip - line - 1);
+                            bottom_line = rasterForBottomLine + origwidth * (rows_to_write - line - 1);
 
                             _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * origwidth);
                             _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * origwidth);
@@ -526,11 +526,11 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
                     rows_to_write = rowPerStrip;
 
                  if (origorientation <= 4) {
-                     for (int line = 0; line < rowPerStrip / 2; line++) {
+                     for (int line = 0; line < rows_to_write / 2; line++) {
                          unsigned int  *top_line, *bottom_line;
 
                          top_line = raster + origwidth * line;
-                         bottom_line = raster + origwidth * (rowPerStrip - line - 1);
+                         bottom_line = raster + origwidth * (rows_to_write - line - 1);
 
                          _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * origwidth);
                          _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * origwidth);
@@ -943,11 +943,11 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
                         rows_to_write = rowPerStrip;
 
                     if (origorientation <= 4) {
-                        for (int line = 0; line < rowPerStrip / 2; line++) {
+                        for (int line = 0; line < rows_to_write / 2; line++) {
                             unsigned int  *top_line, *bottom_line;
 
                             top_line = rasterForBottomLine + origwidth * line;
-                            bottom_line = rasterForBottomLine + origwidth * (rowPerStrip - line - 1);
+                            bottom_line = rasterForBottomLine + origwidth * (rows_to_write - line - 1);
 
                             _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * origwidth);
                             _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * origwidth);
@@ -968,11 +968,11 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
                     rows_to_write = rowPerStrip;
 
                  if (origorientation <= 4) {
-                     for (int line = 0; line < rowPerStrip / 2; line++) {
+                     for (int line = 0; line < rows_to_write / 2; line++) {
                          unsigned int  *top_line, *bottom_line;
 
                          top_line = raster + origwidth * line;
-                         bottom_line = raster + origwidth * (rowPerStrip - line - 1);
+                         bottom_line = raster + origwidth * (rows_to_write - line - 1);
 
                          _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * origwidth);
                          _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * origwidth);
