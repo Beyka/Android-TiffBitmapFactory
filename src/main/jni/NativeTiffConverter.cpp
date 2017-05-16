@@ -200,7 +200,7 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
     return result;
   }
 
-JNIEXPORT jint JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImageType
+JNIEXPORT jobjectnative JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImageType
   (JNIEnv *env, jclass clazz, jstring path)
   {
 
@@ -208,6 +208,8 @@ JNIEXPORT jint JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImageTy
     const char *strPath = NULL;
     strPath = env->GetStringUTFChars(path, 0);
     LOGIS("path", strPath);
+
+    int imageformat
 
     FILE *inFile = fopen(strPath, "rb");
     if (inFile) {
@@ -218,53 +220,99 @@ JNIEXPORT jint JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImageTy
 
         switch(data[0]) {
             case (unsigned char)'\xFF':
-                 return ( !strncmp( (const char*)data, "\xFF\xD8\xFF", 3 )) ?
+                 imageformat =  ( !strncmp( (const char*)data, "\xFF\xD8\xFF", 3 )) ?
                     IMAGE_FILE_JPG : IMAGE_FILE_INVALID;
+                 break;
 
               case (unsigned char)'\x89':
-                 return ( !strncmp( (const char*)data,
+                 imageformat = ( !strncmp( (const char*)data,
                                     "\x89\x50\x4E\x47\x0D\x0A\x1A\x0A", 8 )) ?
                     IMAGE_FILE_PNG : IMAGE_FILE_INVALID;
+                 break;
 
               case 'G':
-                 return ( !strncmp( (const char*)data, "GIF87a", 6 ) ||
+                 imageformat = ( !strncmp( (const char*)data, "GIF87a", 6 ) ||
                           !strncmp( (const char*)data, "GIF89a", 6 ) ) ?
                     IMAGE_FILE_GIF : IMAGE_FILE_INVALID;
+                 break;
 
               case 'I':
-                 return ( !strncmp( (const char*)data, "\x49\x49\x2A\x00", 4 )) ?
+                 imageformat = ( !strncmp( (const char*)data, "\x49\x49\x2A\x00", 4 )) ?
                     IMAGE_FILE_TIFF : IMAGE_FILE_INVALID;
+                 break;
 
               case 'M':
-                 return ( !strncmp( (const char*)data, "\x4D\x4D\x00\x2A", 4 )) ?
+                 imageformat = ( !strncmp( (const char*)data, "\x4D\x4D\x00\x2A", 4 )) ?
                      IMAGE_FILE_TIFF : IMAGE_FILE_INVALID;
+                     break;
 
               case 'B':
-                 return (( data[1] == 'M' )) ?
+                 imageformat = (( data[1] == 'M' )) ?
                      IMAGE_FILE_BMP : IMAGE_FILE_INVALID;
+                 break;
 
               case 'R':
-                 if ( strncmp( (const char*)data,     "RIFF", 4 ))
-                    return IMAGE_FILE_INVALID;
-                 if ( strncmp( (const char*)(data+8), "WEBP", 4 ))
-                    return IMAGE_FILE_INVALID;
-                 return IMAGE_FILE_WEBP;
+                 if ( strncmp( (const char*)data,     "RIFF", 4 )) {
+                        imageformat = IMAGE_FILE_INVALID;
+                        break;
+                    }
+                 if ( strncmp( (const char*)(data+8), "WEBP", 4 )) {
+                        imageformat = IMAGE_FILE_INVALID;
+                        break;
+                    }
+                 imageformat = IMAGE_FILE_WEBP;
+                 break;
 
               case '\0':
-                 if ( !strncmp( (const char*)data, "\x00\x00\x01\x00", 4 ))
-                    return IMAGE_FILE_ICO;
-                 if ( !strncmp( (const char*)data, "\x00\x00\x02\x00", 4 ))
-                    return IMAGE_FILE_ICO;
-                 return IMAGE_FILE_INVALID;
-
+                 if ( !strncmp( (const char*)data, "\x00\x00\x01\x00", 4 )) {
+                        imageformat = IMAGE_FILE_ICO;
+                        break;
+                    }
+                 if ( !strncmp( (const char*)data, "\x00\x00\x02\x00", 4 )) {
+                        imageformat = IMAGE_FILE_ICO;
+                        break;
+                    }
+                 imageformat =  IMAGE_FILE_INVALID;
+                    break;
               default:
-                 return IMAGE_FILE_INVALID;
+                 imageformat = IMAGE_FILE_INVALID;
         }
 
         fclose(inFile);
     } else {
-        return IMAGE_FILE_INVALID;
+        imageformat = IMAGE_FILE_INVALID;
     }
+    
+    jclass imageFormatClass = env->FindClass(
+                "org/beyka/tiffbitmapfactory/ImageFormat");
+    jfieldID imageFormatFieldId = NULL;
+    switch (imageformat) {
+        case IMAGE_FILE_JPEG:
+            imageFormatFieldId = env->GetStaticFieldID(imageFormatClass,
+                                           "JPEG",
+                                           "Lorg/beyka/tiffbitmapfactory/ImageFormat;");
+            break;
+        case IMAGE_FILE_PNG:
+            imageFormatFieldId = env->GetStaticFieldID(imageFormatClass,
+                                           "PNG",
+                                           "Lorg/beyka/tiffbitmapfactory/ImageFormat;");
+            break;
+        case IMAGE_FILE_TIFF:
+            imageFormatFieldId = env->GetStaticFieldID(imageFormatClass,
+                                           "TIFF",
+                                           "Lorg/beyka/tiffbitmapfactory/ImageFormat;");
+            break;
+        default:
+            imageFormatFieldId = env->GetStaticFieldID(imageFormatClass,
+                                           "UNKNOWN",
+                                           "Lorg/beyka/tiffbitmapfactory/ImageFormat;");
+    }
+    
+    jobject imageFormatObj = env->GetStaticObjectField(
+                    imageFormatClass,
+                    imageFormatFieldId);
+
+    return imageFormatObj;
 
   }
 

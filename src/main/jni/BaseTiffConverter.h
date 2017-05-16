@@ -11,6 +11,8 @@
 #include "NativeExceptions.h"
 #include <jni.h>
 #include <android/log.h>
+#include "unistd.h"
+#include <ctime>
 
 #define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "BaseTiffConverter", "%s", x)
 #define LOGII(x, y) __android_log_print(ANDROID_LOG_DEBUG, "BaseTiffConverter", "%s %d", x, y)
@@ -37,17 +39,24 @@ class BaseTiffConverter {
         uint32 width;
         uint32 height;
 
-        jint compressionInt;
-        jint tiffDirectory;
         jlong availableMemory;
         jboolean throwException;
+
+        jint tiffDirectory;
+
         jboolean appendTiff;
+        jint compressionInt;
+        jint orientationInt;
         uint16 resUnit;
         float xRes;
         float yRes;
+        jstring description;
+        const char *cdescription;
+        jstring software;
+        const char *csoftware;
 
         void readOptions();
-        unsigned char *convertArgbToBilevel(uint32 *, jint , jint);
+        char *getCreationDate();
 };
 
 #endif //TIFFSAMPLE_BASETOTIFFCONVERTER_H

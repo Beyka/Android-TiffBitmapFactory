@@ -52,7 +52,7 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
    // .webp: RIFF ???? WEBP
    // .ico   00 00 01 00
    //        00 00 02 00 ( cursor files )
-JNIEXPORT jint JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImageType
+JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImageType
   (JNIEnv *, jclass, jstring);
 
 //constants for check files

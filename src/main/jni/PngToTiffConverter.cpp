@@ -212,11 +212,13 @@ jboolean PngToTiffConverter::convert()
 
     LOGII("compression", compressionInt);
     //Set tiff parameters
+    //Set various text parameters
+    //Set image parameters
     TIFFSetField(tiffImage, TIFFTAG_IMAGEWIDTH, width);
     TIFFSetField(tiffImage, TIFFTAG_IMAGELENGTH, height);
     TIFFSetField(tiffImage, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
     TIFFSetField(tiffImage, TIFFTAG_COMPRESSION, compressionInt);
-    TIFFSetField(tiffImage, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
+    TIFFSetField(tiffImage, TIFFTAG_ORIENTATION, orientationInt);
     TIFFSetField(tiffImage, TIFFTAG_XRESOLUTION, xRes);
     TIFFSetField(tiffImage, TIFFTAG_YRESOLUTION, yRes);
     TIFFSetField(tiffImage, TIFFTAG_RESOLUTIONUNIT, resUnit);
@@ -231,6 +233,18 @@ jboolean PngToTiffConverter::convert()
         TIFFSetField(tiffImage, TIFFTAG_BITSPERSAMPLE, 8);
         TIFFSetField(tiffImage, TIFFTAG_SAMPLESPERPIXEL, 4);
         TIFFSetField(tiffImage, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
+    }
+    //creation date
+    char *date = getCreationDate();
+    TIFFSetField(tiffImage, TIFFTAG_DATETIME, date);
+    free(date);
+    //image description
+    if (cdescription) {
+        TIFFSetField(tiffImage, TIFFTAG_IMAGEDESCRIPTION, cdescription);
+    }
+    //software tag
+    if (csoftware) {
+        TIFFSetField(tiffImage, TIFFTAG_SOFTWARE, csoftware);
     }
 
     //Calculate row per strip

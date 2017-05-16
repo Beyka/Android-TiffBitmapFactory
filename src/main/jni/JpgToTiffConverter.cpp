@@ -191,6 +191,18 @@ jboolean JpgToTiffConverter::convert()
             TIFFSetField(tiffImage, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
         }
     }
+    //creation date
+    char *date = getCreationDate();
+    TIFFSetField(tiffImage, TIFFTAG_DATETIME, date);
+    free(date);
+    //image description
+    if (cdescription) {
+        TIFFSetField(tiffImage, TIFFTAG_IMAGEDESCRIPTION, cdescription);
+    }
+    //software tag
+    if (csoftware) {
+        TIFFSetField(tiffImage, TIFFTAG_SOFTWARE, csoftware);
+    }
 
     int rowSize = width * componentsPerPixel;
     LOGII("jpg samples", componentsPerPixel);

@@ -30,18 +30,48 @@ public class TiffConverter {
             availableMemory = 8000*8000*4;
             appendTiff = false;
             resUnit = ResolutionUnit.NONE;
-            compressionScheme = CompressionScheme.LZW;
+            compressionScheme = CompressionScheme.NONE;
+            orientation = Orientation.TOP_LEFT;
             throwExceptions = false;
         }
 
-        public int tiffDirectoryRead;
         public long availableMemory;
         public boolean throwExceptions;
+
+        /**
+         * <b>For converting from TIFF to ANY cases</b>
+         * <p>Tiff directory that should be converted</p>
+         */
+        public int readTiffDirectory;
+
+        /**
+         * <b>For converting from ANY to TIFF cases</b>
+         * <p>If this value set to true while converting any to tiff - new tiff directory will be created
+         * and added to existed tiff file.</p>
+         * Otherwise file will be overwritten.
+         * <p>Default value is false</p>
+         */
         public boolean appendTiff;
+
+        /**
+         * <b>For converting from ANY to TIFF cases</b>
+         * Compression scheme used on the image data.
+         * <p>Default value is {@link CompressionScheme#NONE COMPRESSION_NONE}</p>
+         * <p>This parameter is link to TIFFTAG_COMPRESSION tag</p>
+         */
         public CompressionScheme compressionScheme;
 
         /**
-         * The number of pixels per {@link org.beyka.tiffbitmapfactory.TiffSaver.SaveOptions#resUnit} in the ImageWidth direction.
+         * <b>For converting from ANY to TIFF cases</b>
+         * {@link org.beyka.tiffbitmapfactory.Orientation Orientation} that will used for saving image
+         * <p>By default uses {@link org.beyka.tiffbitmapfactory.Orientation#TOP_LEFT ORIENTATION_TOPLEFT} </p>
+         * <p>This parameter is link to TIFFTAG_ORIENTATION tag</p>
+         */
+        public Orientation orientation;
+
+        /**
+         * <b>For converting from ANY to TIFF cases</b>
+         * The number of pixels per {@link org.beyka.tiffbitmapfactory.TiffConverter.ConverterOptions#resUnit} in the ImageWidth direction.
          * <p> It is not mandatory that the image be actually displayed or printed at the size implied by this parameter.
          * It is up to the application to use this information as it wishes.</p>
          * <p>Defualt value is 0</p>
@@ -49,7 +79,8 @@ public class TiffConverter {
         public float xResolution;
 
         /**
-         * The number of pixels per {@link org.beyka.tiffbitmapfactory.TiffSaver.SaveOptions#resUnit} in the ImageHeight direction.
+         * <b>For converting from ANY to TIFF cases</b>
+         * The number of pixels per {@link org.beyka.tiffbitmapfactory.TiffConverter.ConverterOptions#resUnit} in the ImageHeight direction.
          * <p> It is not mandatory that the image be actually displayed or printed at the size implied by this parameter.
          * It is up to the application to use this information as it wishes.</p>
          * <p>Defualt value is 0</p>
@@ -57,6 +88,7 @@ public class TiffConverter {
         public float yResolution;
 
         /**
+         * <b>For converting from ANY to TIFF cases</b>
          * The unit of measurement for XResolution and YResolution.
          * <p>To be used with xResolution and yResolution. </p>
          * <p>The specification defines these values: </p>
@@ -68,6 +100,20 @@ public class TiffConverter {
          * <p>Default value is {@link org.beyka.tiffbitmapfactory.ResolutionUnit#NONE}</p>
          */
         public ResolutionUnit resUnit;
+
+        /**
+         * <b>For converting from ANY to TIFF cases</b>
+         * A string that describes the subject of the image.
+         * <p>This parameter is link to TIFFTAG_IMAGEDESCRIPTION tag</p>
+         */
+        public String imageDescription;
+
+        /**
+         * <b>For converting from ANY to TIFF cases</b>
+         * Software that used for creating of image.
+         * <p>This parameter is link to TIFFTAG_SOFTWARE tag</p>
+         */
+        public String software;
 
     }
 }

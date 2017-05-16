@@ -19,6 +19,14 @@ BaseTiffConverter::BaseTiffConverter(JNIEnv *e, jclass clazz, jstring in, jstrin
 BaseTiffConverter::~BaseTiffConverter()
 {
     LOGI("base destructor");
+
+    if (cdescription) {
+        env->ReleaseStringUTFChars(description, cdescription);
+    }
+
+    if (csoftware) {
+        env->ReleaseStringUTFChars(software, csoftware);
+    }
 }
 
 void BaseTiffConverter::readOptions()
@@ -26,7 +34,7 @@ void BaseTiffConverter::readOptions()
     if (optionsObj == NULL) return;
     jclass optionsClass = env->FindClass("org/beyka/tiffbitmapfactory/TiffConverter$ConverterOptions");
 
-    jfieldID tiffdirfield = env->GetFieldID(optionsClass, "tiffDirectoryRead", "I");
+    jfieldID tiffdirfield = env->GetFieldID(optionsClass, "readTiffDirectory", "I");
     tiffDirectory = env->GetIntField(optionsObj, tiffdirfield);
 
     jfieldID availablememfield = env->GetFieldID(optionsClass, "availableMemory", "J");
@@ -39,6 +47,7 @@ void BaseTiffConverter::readOptions()
     jfieldID appentifffield = env->GetFieldID(optionsClass, "appendTiff", "Z");
     appendTiff = env->GetBooleanField(optionsObj, appentifffield);
 
+    //read compression
     jfieldID gOptions_CompressionModeFieldID = env->GetFieldID(optionsClass,
             "compressionScheme",
             "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
@@ -55,6 +64,33 @@ void BaseTiffConverter::readOptions()
 
     LOGII("compressionInt ", compressionInt );
     env->DeleteLocalRef(compressionModeClass);
+
+    //Get image orientation from options object
+    jfieldID orientationFieldID = env->GetFieldID(optionsClass,
+            "orientation",
+            "Lorg/beyka/tiffbitmapfactory/Orientation;");
+    jobject orientation = env->GetObjectField(optionsObj, orientationFieldID);
+
+    jclass orientationClass = env->FindClass("org/beyka/tiffbitmapfactory/Orientation");
+    jfieldID orientationOrdinalFieldID = env->GetFieldID(orientationClass, "ordinal", "I");
+    orientationInt = env->GetIntField(orientation, orientationOrdinalFieldID);
+    env->DeleteLocalRef(orientationClass);
+
+    //Get image description field if exist
+    jfieldID imgDescrFieldID = env->GetFieldID(optionsClass, "imageDescription", "Ljava/lang/String;");
+    description = (jstring)env->GetObjectField(optionsObj, imgDescrFieldID);
+    if (description) {
+        cdescription = env->GetStringUTFChars(description, 0);
+        LOGIS("Image Description: ", cdescription);
+    }
+
+    //Get software field if exist
+    jfieldID softwareFieldID = env->GetFieldID(optionsClass, "software", "Ljava/lang/String;");
+    software = (jstring)env->GetObjectField(optionsObj, softwareFieldID);
+    if (software) {
+        csoftware = env->GetStringUTFChars(software, 0);
+        LOGIS("Software tag: ", csoftware);
+    }
 
     // variables for resolution
     jfieldID gOptions_xResolutionFieldID = env->GetFieldID(optionsClass, "xResolution", "F");
@@ -74,46 +110,14 @@ void BaseTiffConverter::readOptions()
     env->DeleteLocalRef(optionsClass);
 }
 
-unsigned char * BaseTiffConverter::convertArgbToBilevel(uint32 *source, jint width, jint height) {
-        long long threshold = 0;
-        uint32 crPix;
-        uint32 grayPix;
-        int bilevelWidth = (width / 8 + 0.5);
+char *BaseTiffConverter::getCreationDate() {
+    char * datestr = (char *) malloc(sizeof(char) * 20);
+    time_t rawtime;
+    struct tm * timeinfo;
+    time (&rawtime);
+    timeinfo = localtime (&rawtime);
+    strftime (datestr,20,/*"Now it's %I:%M%p."*/"%Y:%m:%d %H:%M:%S",timeinfo);
 
-        unsigned char *dest = (unsigned char *) malloc(sizeof(unsigned char) * bilevelWidth * height);
-
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < height; j++) {
-                crPix = source[j * width + i];
-                grayPix = (0.2125 * (colorMask & crPix >> 16) + 0.7154 * (colorMask & crPix >> 8) + 0.0721 * (colorMask & crPix));
-                threshold += grayPix;
-            }
-        }
-
-        uint32 shift = 0;
-        unsigned char charsum = 0;
-        int k = 7;
-        long long barier = threshold / (width * height);
-        for (int j = 0; j < height; j++) {
-            shift = 0;
-            charsum = 0;
-            k = 7;
-            for (int i = 0; i < width; i++) {
-                crPix = source[j * width + i];
-                grayPix = (0.2125 * (colorMask & crPix >> 16) + 0.7154 * (colorMask & crPix >> 8) + 0.0721 * (colorMask & crPix));
-
-                if (grayPix < barier) charsum &= ~(1 << k);
-                else charsum |= 1 << k;
-
-                if (k == 0) {
-                    dest[j * bilevelWidth + shift] = charsum;
-                    shift++;
-                    k = 7;
-                    charsum = 0;
-                } else {
-                    k--;
-                }
-            }
-        }
-        return dest;
+    return datestr;
 }
+
