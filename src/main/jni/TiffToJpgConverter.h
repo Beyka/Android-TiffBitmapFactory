@@ -46,6 +46,7 @@ class TiffToJpgConverter : public BaseTiffConverter
         jboolean convertFromImage();
         jboolean convertFromTile();
         jboolean convertFromStrip();
+        void normalizeTile(uint32, uint32, uint32 *);
 
         TIFF *tiffImage;
         short origorientation;

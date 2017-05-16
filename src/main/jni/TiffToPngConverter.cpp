@@ -250,9 +250,14 @@ jboolean TiffToPngConverter::convertFromTile() {
                     break;
                 case 3:
                 case 7:
+                {
                     rotateTileLinesHorizontal(tileHeight, tileWidth, rasterTile, work_line_buf);
+
                     break;
+                    }
             }
+
+            normalizeTile(tileHeight, tileWidth, rasterTile);
 
 
             //find start and end position
@@ -466,6 +471,44 @@ void TiffToPngConverter::rotateTileLinesHorizontal(uint32 tileHeight, uint32 til
             buf = whatRotate[y * tileWidth + x];
             whatRotate[y * tileWidth + x] = whatRotate[y * tileWidth + tileWidth - x - 1];
             whatRotate[y * tileWidth + tileWidth - x - 1] = buf;
+        }
+    }
+}
+
+void TiffToPngConverter::normalizeTile(uint32 tileHeight, uint32 tileWidth, uint32* rasterTile) {
+    //normalize tile
+    //find start and end pixels
+    int sx = -1, ex= -1, sy= -1, ey= -1;
+    for (int y = 0; y < tileHeight; y++) {
+        for (int x = 0; x < tileWidth; x++) {
+            if (rasterTile[y * tileWidth + x] != 0) {
+                sx = x;
+                sy = y;
+                break;
+            }
+        }
+        if (sx != -1) break;
+    }
+    for (int y = tileHeight -1; y >= 0; y--) {
+        for (int x = tileWidth -1; x >= 0; x--) {
+            if (rasterTile[y * tileWidth + x] != 0) {
+                ex = x;
+                ey = y;
+                break;
+            }
+        }
+        if (ex != -1) break;
+    }
+    if (sy != 0) {
+        for (int y = 0; y < tileHeight - sy -1; y++) {
+            memcpy(rasterTile + (y * tileWidth), rasterTile + ((y+sy)*tileWidth), tileWidth * sizeof(uint32));
+        }
+    }
+    if (sx != 0) {
+        for (int y = 0; y < tileHeight; y++) {
+           for (int x = 0; x < tileWidth - sx -1; x++) {
+               rasterTile[y * tileWidth + x] = rasterTile[y * tileWidth + x + sx];
+           }
         }
     }
 }
