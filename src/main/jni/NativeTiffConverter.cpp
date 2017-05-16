@@ -200,7 +200,7 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
     return result;
   }
 
-JNIEXPORT jobjectnative JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImageType
+JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImageType
   (JNIEnv *env, jclass clazz, jstring path)
   {
 
@@ -209,7 +209,7 @@ JNIEXPORT jobjectnative JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_g
     strPath = env->GetStringUTFChars(path, 0);
     LOGIS("path", strPath);
 
-    int imageformat
+    int imageformat;
 
     FILE *inFile = fopen(strPath, "rb");
     if (inFile) {
@@ -287,7 +287,7 @@ JNIEXPORT jobjectnative JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_g
                 "org/beyka/tiffbitmapfactory/ImageFormat");
     jfieldID imageFormatFieldId = NULL;
     switch (imageformat) {
-        case IMAGE_FILE_JPEG:
+        case IMAGE_FILE_JPG:
             imageFormatFieldId = env->GetStaticFieldID(imageFormatClass,
                                            "JPEG",
                                            "Lorg/beyka/tiffbitmapfactory/ImageFormat;");
