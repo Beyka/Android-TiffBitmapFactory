@@ -24,7 +24,7 @@
 
 class BaseTiffConverter {
     public:
-        explicit BaseTiffConverter(JNIEnv *, jclass, jstring, jstring, jobject);
+        explicit BaseTiffConverter(JNIEnv *, jclass, jstring, jstring, jobject, jobject);
         ~BaseTiffConverter();
         virtual jboolean convert() = 0;
 
@@ -34,7 +34,9 @@ class BaseTiffConverter {
         JNIEnv *env;
         jstring inPath;
         jstring outPath;
-        jobject optionsObj;
+        jobject optionsObj = NULL;
+        jobject listener = NULL;
+        jclass jIProgressListenerClass = NULL;
 
         uint32 width;
         uint32 height;
@@ -51,12 +53,13 @@ class BaseTiffConverter {
         float xRes;
         float yRes;
         jstring description;
-        const char *cdescription;
+        const char *cdescription = NULL;
         jstring software;
-        const char *csoftware;
+        const char *csoftware = NULL;
 
         void readOptions();
         char *getCreationDate();
+        void sendProgress(jlong, jlong);
 };
 
 #endif //TIFFSAMPLE_BASETOTIFFCONVERTER_H

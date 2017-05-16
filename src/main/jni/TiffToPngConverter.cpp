@@ -4,8 +4,8 @@
 
 #include "TiffToPngConverter.h"
 
-TiffToPngConverter::TiffToPngConverter(JNIEnv *e, jclass clazz, jstring in, jstring out, jobject opts)
-    : BaseTiffConverter(e, clazz, in, out, opts)
+TiffToPngConverter::TiffToPngConverter(JNIEnv *e, jclass clazz, jstring in, jstring out, jobject opts, jobject listener)
+    : BaseTiffConverter(e, clazz, in, out, opts, listener)
 {
     png_ptr_init = 0;
     png_info_init = 0;
@@ -189,13 +189,17 @@ jboolean TiffToPngConverter::convertFromImage() {
         return JNI_FALSE;
     }
 
+    jlong total = width * height;
+    sendProgress(0, total);
+
     for (int y = 0; y < height; y++) {
+        sendProgress(y * width, total);
         png_bytep row = (png_bytep)malloc(4 * width * sizeof(png_bytep));
         memcpy(row, origBuffer + (y * width), width * 4);
         png_write_row(png_ptr, row);
         delete(row);
     }
-
+    sendProgress(total, total);
     return JNI_TRUE;
 }
 
@@ -203,9 +207,12 @@ jboolean TiffToPngConverter::convertFromTile() {
     uint32 tileWidth = 0, tileHeight = 0;
     TIFFGetField(tiffImage, TIFFTAG_TILEWIDTH, &tileWidth);
     TIFFGetField(tiffImage, TIFFTAG_TILEWIDTH, &tileHeight);
-
     LOGII("Tile width", tileWidth);
     LOGII("Tile height", tileHeight);
+
+    jlong total = ((width/tileWidth + (width%tileWidth == 0 ? 0 : 1)) * tileWidth)
+            * ((height/tileHeight + (height%tileHeight == 0 ? 0 : 1)) * tileHeight);
+    sendProgress(0, total);
 
     //uint32 *raster = (uint32 *)_TIFFmalloc(width * tileHeight * sizeof(uint32));
     uint32 workingWidth = (width/tileWidth + (width%tileWidth == 0 ? 0 : 1)) * tileWidth;
@@ -222,6 +229,7 @@ jboolean TiffToPngConverter::convertFromTile() {
     uint32 imageWritedLines = 0;
 
     for (row = 0; row < height; row += tileHeight) {
+        sendProgress(row * width, total);
         endy = -1;
         starty = -1;
         uint32 *raster = (uint32 *)_TIFFmalloc(rasterSize * sizeof(uint32));
@@ -310,6 +318,8 @@ jboolean TiffToPngConverter::convertFromTile() {
         work_line_buf = NULL;
     }
 
+    sendProgress(total, total);
+
     return JNI_TRUE;
 
 }
@@ -320,12 +330,16 @@ jboolean TiffToPngConverter::convertFromStrip() {
     int rowPerStrip = -1;
     TIFFGetField(tiffImage, TIFFTAG_ROWSPERSTRIP, &rowPerStrip);
 
+    jlong total = stripMax * rowPerStrip * width;
+    sendProgress(0, total);
+
     uint32* work_line_buf = (uint32 *)_TIFFmalloc(width * sizeof(uint32));
     uint32* raster = (uint32 *)_TIFFmalloc(width * rowPerStrip * sizeof (uint32));
 
     uint32 rows_to_write = 0;
 
     for (int i = 0; i < stripMax*rowPerStrip; i += rowPerStrip) {
+        sendProgress(i * width, total);
         TIFFReadRGBAStrip(tiffImage, i, raster);
 
         rows_to_write = 0;
@@ -377,6 +391,8 @@ jboolean TiffToPngConverter::convertFromStrip() {
         _TIFFfree(work_line_buf);
         work_line_buf = NULL;
     }
+
+    sendProgress(total, total);
 
     return JNI_TRUE;
 }

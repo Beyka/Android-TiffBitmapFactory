@@ -25,7 +25,7 @@
 class TiffToPngConverter : public BaseTiffConverter
 {
     public:
-        explicit TiffToPngConverter(JNIEnv *, jclass, jstring, jstring, jobject);
+        explicit TiffToPngConverter(JNIEnv *, jclass, jstring, jstring, jobject, jobject);
         ~TiffToPngConverter();
         virtual jboolean convert();
 
@@ -43,7 +43,7 @@ class TiffToPngConverter : public BaseTiffConverter
 
         TIFF *tiffImage;
         short origorientation;
-        FILE *pngFile;
+        FILE *pngFile = NULL;;
         char png_ptr_init;
         png_structp png_ptr;
         char png_info_init;

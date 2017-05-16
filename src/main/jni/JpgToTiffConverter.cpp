@@ -4,8 +4,8 @@
 
 #include "JpgToTiffConverter.h"
 
-JpgToTiffConverter::JpgToTiffConverter(JNIEnv *e, jclass clazz, jstring in, jstring out, jobject opts)
-    : BaseTiffConverter(e, clazz, in, out, opts)
+JpgToTiffConverter::JpgToTiffConverter(JNIEnv *e, jclass clazz, jstring in, jstring out, jobject opts, jobject listener)
+    : BaseTiffConverter(e, clazz, in, out, opts, listener)
 {
     jpeg_struct_init = 0;
 
@@ -121,7 +121,11 @@ jboolean JpgToTiffConverter::convert()
     //seek file to begin
     rewind(inFile);
     if (!is_jpg) {
-        LOGE("NOT JPEG");
+        LOGE("Not jpeg file");
+        if (throwException) {
+            throw_cant_open_file_exception(env, inPath);
+        }
+        env->ReleaseStringUTFChars(inPath, inCPath);
         return JNI_FALSE;
     } else {
         LOGI("IS JPEG");
@@ -204,6 +208,10 @@ jboolean JpgToTiffConverter::convert()
         TIFFSetField(tiffImage, TIFFTAG_SOFTWARE, csoftware);
     }
 
+    //progress reporter
+    jlong total = width * height;
+    sendProgress(0, total);
+
     int rowSize = width * componentsPerPixel;
     LOGII("jpg samples", componentsPerPixel);
 
@@ -246,6 +254,7 @@ jboolean JpgToTiffConverter::convert()
             }
             rowCounter = 0;
             shouldWrite = false;
+            sendProgress(totalRowCounter * width, total);
         }
     }
     if (shouldWrite) {
@@ -269,6 +278,7 @@ jboolean JpgToTiffConverter::convert()
     free(buffer[0]);
     free(buffer);
 
+    sendProgress(total, total);
     return JNI_TRUE;
 }
 

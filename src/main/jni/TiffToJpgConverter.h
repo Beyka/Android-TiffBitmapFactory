@@ -29,7 +29,7 @@
 class TiffToJpgConverter : public BaseTiffConverter
 {
     public:
-        explicit TiffToJpgConverter(JNIEnv *, jclass, jstring, jstring, jobject);
+        explicit TiffToJpgConverter(JNIEnv *, jclass, jstring, jstring, jobject, jobject);
         ~TiffToJpgConverter();
         virtual jboolean convert();
 
@@ -49,7 +49,7 @@ class TiffToJpgConverter : public BaseTiffConverter
 
         TIFF *tiffImage;
         short origorientation;
-        FILE *jpegFile;
+        FILE *jpegFile = NULL;
         char jpeg_struct_init;
         struct jpeg_compress_struct cinfo;
         struct jpeg_error_mgr jerr;

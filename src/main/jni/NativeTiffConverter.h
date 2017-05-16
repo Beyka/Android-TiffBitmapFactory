@@ -31,16 +31,16 @@ extern "C" {
 #endif
 
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffPng
-  (JNIEnv *, jclass, jstring, jstring, jobject);
+  (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
 
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffJpg
-  (JNIEnv *, jclass, jstring, jstring, jobject);
+  (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
 
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertPngTiff
-  (JNIEnv *, jclass, jstring, jstring, jobject);
+  (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
 
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertJpgTiff
-  (JNIEnv *, jclass, jstring, jstring, jobject);
+  (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
 
    // .jpg:  FF D8 FF
    // .png:  89 50 4E 47 0D 0A 1A 0A

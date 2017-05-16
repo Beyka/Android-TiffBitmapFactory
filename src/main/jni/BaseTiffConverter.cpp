@@ -4,16 +4,18 @@
 
 #include "BaseTiffConverter.h"
 
-BaseTiffConverter::BaseTiffConverter(JNIEnv *e, jclass clazz, jstring in, jstring out, jobject opts)
+BaseTiffConverter::BaseTiffConverter(JNIEnv *e, jclass clazz, jstring in, jstring out, jobject opts, jobject listener)
 {
     availableMemory = 8000 * 8000 * 4;
     env = e;
     inPath = in;
     outPath = out;
     optionsObj = opts;
+    this->listener = listener;
     throwException = JNI_FALSE;
     appendTiff = JNI_FALSE;
     tiffDirectory = 0;
+    jIProgressListenerClass = env->FindClass("org/beyka/tiffbitmapfactory/IProgressListener");
 }
 
 BaseTiffConverter::~BaseTiffConverter()
@@ -27,6 +29,11 @@ BaseTiffConverter::~BaseTiffConverter()
     if (csoftware) {
         env->ReleaseStringUTFChars(software, csoftware);
     }
+
+    if (jIProgressListenerClass) {
+        env->DeleteLocalRef(jIProgressListenerClass);
+        jIProgressListenerClass = NULL;
+    }
 }
 
 void BaseTiffConverter::readOptions()
@@ -39,7 +46,7 @@ void BaseTiffConverter::readOptions()
 
     jfieldID availablememfield = env->GetFieldID(optionsClass, "availableMemory", "J");
     jlong am = env->GetLongField(optionsObj, availablememfield);
-    if (am > 0) availableMemory = am;
+    if (am > 0 || am == -1) availableMemory = am;
 
     jfieldID throwexceptionsfield = env->GetFieldID(optionsClass, "throwExceptions", "Z");
     throwException = env->GetBooleanField(optionsObj, throwexceptionsfield);
@@ -119,5 +126,12 @@ char *BaseTiffConverter::getCreationDate() {
     strftime (datestr,20,/*"Now it's %I:%M%p."*/"%Y:%m:%d %H:%M:%S",timeinfo);
 
     return datestr;
+}
+
+void BaseTiffConverter::sendProgress(jlong current, jlong total) {
+    if (listener != NULL) {
+        jmethodID methodid = env->GetMethodID(jIProgressListenerClass, "reportProgress", "(JJ)V");
+        env->CallVoidMethod(listener, methodid, current, total);
+    }
 }
 

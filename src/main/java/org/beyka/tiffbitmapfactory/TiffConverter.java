@@ -14,13 +14,13 @@ public class TiffConverter {
 //
 //    }
 
-    public static native boolean convertTiffPng(String tiff, String png, ConverterOptions options);
+    public static native boolean convertTiffPng(String tiff, String png, ConverterOptions options, IProgressListener listener);
 
-    public static native boolean convertPngTiff(String png, String tiff, ConverterOptions options);
+    public static native boolean convertPngTiff(String png, String tiff, ConverterOptions options, IProgressListener listener);
 
-    public static native boolean convertTiffJpg(String tiff, String jpg, ConverterOptions options);
+    public static native boolean convertTiffJpg(String tiff, String jpg, ConverterOptions options, IProgressListener listener);
 
-    public static native boolean convertJpgTiff(String jpg, String tiff, ConverterOptions options);
+    public static native boolean convertJpgTiff(String jpg, String tiff, ConverterOptions options, IProgressListener listener);
 
     public static native int getImageType(String path);
 
@@ -33,9 +33,34 @@ public class TiffConverter {
             compressionScheme = CompressionScheme.NONE;
             orientation = Orientation.TOP_LEFT;
             throwExceptions = false;
+            isStoped = false;
         }
 
+        /**
+         * Uses for stoping of native thread
+         */
+        private volatile boolean isStoped;
+
+        /**
+         * Stop native convert thread
+         * If converting is started in any thread except main, calling of this method will cause force stop of converting and returning of false.
+         */
+        public void stop() {
+            isStoped = true;
+        }
+
+        /**
+         * Number of bytes that may be allocated during the file operations.
+         * <p>-1 means memory is unlimited.</p>
+         * <p>Default value is 244Mb</p>
+         */
         public long availableMemory;
+
+        /**
+         * If set to true, converter will throw exceptions if some errors appeared while converting.
+         * Otherwise converter will just return false.
+         * Default value is false
+         */
         public boolean throwExceptions;
 
         /**
