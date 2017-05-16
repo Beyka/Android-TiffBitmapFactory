@@ -275,6 +275,11 @@ jboolean PngToTiffConverter::convert()
         return JNI_FALSE;
     }
 
+    if (checkStop()) {
+        conversion_result = JNI_FALSE;
+        return conversion_result;
+    }
+
     //progress reporter
     jlong total = width * height;
     sendProgress(0, total);
@@ -290,6 +295,16 @@ jboolean PngToTiffConverter::convert()
     if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
         int compressedWidth = (width/8 + 0.5);
         for (int y = 0; y < height; y+=rowPerStrip) {
+            if (checkStop()) {
+                for (int sy = 0; sy < rowPerStrip; sy++) {
+                    free(row_pointers[sy]);
+                }
+                if (fileDescriptor >= 0) {
+                    close(fileDescriptor);
+                }
+                conversion_result = JNI_FALSE;
+                return conversion_result;
+            }
             int rowToRead = rowPerStrip;
             if (rowToRead + y >= height) {
                 rowToRead = height - y;
@@ -302,6 +317,16 @@ jboolean PngToTiffConverter::convert()
         }
     } else {
         for (int y = 0; y < height; y+=rowPerStrip) {
+            if (checkStop()) {
+                for (int sy = 0; sy < rowPerStrip; sy++) {
+                    free(row_pointers[sy]);
+                }
+                if (fileDescriptor >= 0) {
+                    close(fileDescriptor);
+                }
+                conversion_result = JNI_FALSE;
+                return conversion_result;
+            }
             int rowToRead = rowPerStrip;
             if (rowToRead + y >= height) {
                 rowToRead = height - y;

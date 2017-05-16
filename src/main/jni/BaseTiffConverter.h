@@ -38,6 +38,7 @@ class BaseTiffConverter {
         jstring outPath;
         jobject optionsObj = NULL;
         jobject listener = NULL;
+        jclass jConvertOptionsClass = NULL;
         jclass jIProgressListenerClass = NULL;
 
         uint32 width;
@@ -62,6 +63,7 @@ class BaseTiffConverter {
         void readOptions();
         char *getCreationDate();
         void sendProgress(jlong, jlong);
+        jboolean checkStop();
 };
 
 #endif //TIFFSAMPLE_BASETOTIFFCONVERTER_H

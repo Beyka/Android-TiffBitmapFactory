@@ -238,6 +238,12 @@ jboolean JpgToTiffConverter::convert()
         return JNI_FALSE;
     }
 
+    if (checkStop()) {
+        //jpeg_finish_decompress(&cinfo);
+        conversion_result = JNI_FALSE;
+        return conversion_result;
+    }
+
     //Buffer for read jpeg image line by line
     int buffer_height = 1;
     JSAMPARRAY buffer = (JSAMPARRAY)malloc(sizeof(JSAMPROW) * buffer_height);
@@ -256,6 +262,14 @@ jboolean JpgToTiffConverter::convert()
         rowCounter++;
         totalRowCounter++;
         if (rowCounter == rowPerStrip) {
+            if (checkStop()) {
+                //jpeg_finish_decompress(&cinfo);
+                delete[] data;
+                free(buffer[0]);
+                free(buffer);
+                conversion_result = JNI_FALSE;
+                return conversion_result;
+            }
             LOGII("TRC", totalRowCounter);
             if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
                 int compressedWidth = (width/8 + 0.5);
@@ -271,7 +285,14 @@ jboolean JpgToTiffConverter::convert()
         }
     }
     if (shouldWrite) {
-        LOGI("shouldWrite");
+        if (checkStop()) {
+            //jpeg_finish_decompress(&cinfo);
+            delete[] data;
+            free(buffer[0]);
+            free(buffer);
+            conversion_result = JNI_FALSE;
+            return conversion_result;
+        }
         if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
             int compressedWidth = (width/8 + 0.5);
             unsigned char *bilevel = convertArgbToBilevel(data, componentsPerPixel, width, rowPerStrip);

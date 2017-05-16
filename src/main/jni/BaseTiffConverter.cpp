@@ -16,6 +16,7 @@ BaseTiffConverter::BaseTiffConverter(JNIEnv *e, jclass clazz, jstring in, jstrin
     appendTiff = JNI_FALSE;
     tiffDirectory = 0;
     jIProgressListenerClass = env->FindClass("org/beyka/tiffbitmapfactory/IProgressListener");
+    jConvertOptionsClass = env->FindClass("org/beyka/tiffbitmapfactory/TiffConverter$ConverterOptions");
 }
 
 BaseTiffConverter::~BaseTiffConverter()
@@ -39,23 +40,22 @@ BaseTiffConverter::~BaseTiffConverter()
 void BaseTiffConverter::readOptions()
 {
     if (optionsObj == NULL) return;
-    jclass optionsClass = env->FindClass("org/beyka/tiffbitmapfactory/TiffConverter$ConverterOptions");
 
-    jfieldID tiffdirfield = env->GetFieldID(optionsClass, "readTiffDirectory", "I");
+    jfieldID tiffdirfield = env->GetFieldID(jConvertOptionsClass, "readTiffDirectory", "I");
     tiffDirectory = env->GetIntField(optionsObj, tiffdirfield);
 
-    jfieldID availablememfield = env->GetFieldID(optionsClass, "availableMemory", "J");
+    jfieldID availablememfield = env->GetFieldID(jConvertOptionsClass, "availableMemory", "J");
     jlong am = env->GetLongField(optionsObj, availablememfield);
     if (am > 0 || am == -1) availableMemory = am;
 
-    jfieldID throwexceptionsfield = env->GetFieldID(optionsClass, "throwExceptions", "Z");
+    jfieldID throwexceptionsfield = env->GetFieldID(jConvertOptionsClass, "throwExceptions", "Z");
     throwException = env->GetBooleanField(optionsObj, throwexceptionsfield);
 
-    jfieldID appentifffield = env->GetFieldID(optionsClass, "appendTiff", "Z");
+    jfieldID appentifffield = env->GetFieldID(jConvertOptionsClass, "appendTiff", "Z");
     appendTiff = env->GetBooleanField(optionsObj, appentifffield);
 
     //read compression
-    jfieldID gOptions_CompressionModeFieldID = env->GetFieldID(optionsClass,
+    jfieldID gOptions_CompressionModeFieldID = env->GetFieldID(jConvertOptionsClass,
             "compressionScheme",
             "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
     jobject compressionMode = env->GetObjectField(optionsObj, gOptions_CompressionModeFieldID);
@@ -73,7 +73,7 @@ void BaseTiffConverter::readOptions()
     env->DeleteLocalRef(compressionModeClass);
 
     //Get image orientation from options object
-    jfieldID orientationFieldID = env->GetFieldID(optionsClass,
+    jfieldID orientationFieldID = env->GetFieldID(jConvertOptionsClass,
             "orientation",
             "Lorg/beyka/tiffbitmapfactory/Orientation;");
     jobject orientation = env->GetObjectField(optionsObj, orientationFieldID);
@@ -84,7 +84,7 @@ void BaseTiffConverter::readOptions()
     env->DeleteLocalRef(orientationClass);
 
     //Get image description field if exist
-    jfieldID imgDescrFieldID = env->GetFieldID(optionsClass, "imageDescription", "Ljava/lang/String;");
+    jfieldID imgDescrFieldID = env->GetFieldID(jConvertOptionsClass, "imageDescription", "Ljava/lang/String;");
     description = (jstring)env->GetObjectField(optionsObj, imgDescrFieldID);
     if (description) {
         cdescription = env->GetStringUTFChars(description, 0);
@@ -92,7 +92,7 @@ void BaseTiffConverter::readOptions()
     }
 
     //Get software field if exist
-    jfieldID softwareFieldID = env->GetFieldID(optionsClass, "software", "Ljava/lang/String;");
+    jfieldID softwareFieldID = env->GetFieldID(jConvertOptionsClass, "software", "Ljava/lang/String;");
     software = (jstring)env->GetObjectField(optionsObj, softwareFieldID);
     if (software) {
         csoftware = env->GetStringUTFChars(software, 0);
@@ -100,11 +100,11 @@ void BaseTiffConverter::readOptions()
     }
 
     // variables for resolution
-    jfieldID gOptions_xResolutionFieldID = env->GetFieldID(optionsClass, "xResolution", "F");
+    jfieldID gOptions_xResolutionFieldID = env->GetFieldID(jConvertOptionsClass, "xResolution", "F");
     xRes = env->GetFloatField(optionsObj, gOptions_xResolutionFieldID);
-    jfieldID gOptions_yResolutionFieldID = env->GetFieldID(optionsClass, "yResolution", "F");
+    jfieldID gOptions_yResolutionFieldID = env->GetFieldID(jConvertOptionsClass, "yResolution", "F");
     yRes = env->GetFloatField(optionsObj, gOptions_yResolutionFieldID);
-    jfieldID gOptions_resUnitFieldID = env->GetFieldID(optionsClass,
+    jfieldID gOptions_resUnitFieldID = env->GetFieldID(jConvertOptionsClass,
                                                        "resUnit",
                                                        "Lorg/beyka/tiffbitmapfactory/ResolutionUnit;");
     jobject resUnitObject = env->GetObjectField(optionsObj, gOptions_resUnitFieldID);
@@ -114,7 +114,6 @@ void BaseTiffConverter::readOptions()
     resUnit = env->GetIntField(resUnitObject, resUnitOrdinalFieldID);
     env->DeleteLocalRef(resolutionUnitClass);
 
-    env->DeleteLocalRef(optionsClass);
 }
 
 char *BaseTiffConverter::getCreationDate() {
@@ -132,6 +131,18 @@ void BaseTiffConverter::sendProgress(jlong current, jlong total) {
     if (listener != NULL) {
         jmethodID methodid = env->GetMethodID(jIProgressListenerClass, "reportProgress", "(JJ)V");
         env->CallVoidMethod(listener, methodid, current, total);
+    }
+}
+
+jboolean BaseTiffConverter::checkStop() {
+    if (optionsObj) {
+        jfieldID stopFieldId = env->GetFieldID(jConvertOptionsClass,
+                                               "isStoped",
+                                               "Z");
+        jboolean stop = env->GetBooleanField(optionsObj, stopFieldId);
+        return stop;
+    } else {
+        return JNI_FALSE;
     }
 }
 

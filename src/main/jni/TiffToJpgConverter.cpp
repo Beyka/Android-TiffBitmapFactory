@@ -179,6 +179,10 @@ jboolean TiffToJpgConverter::convertFromImage() {
 
     JSAMPROW row_pointer[1];
     for (int y = 0; y < height; y++) {
+        if (checkStop()) {
+            free(origBuffer);
+            return JNI_FALSE;
+        }
         sendProgress(y * width, total);
         unsigned char *row = (unsigned char*)malloc(width * sizeof(unsigned char) * 3);
 
@@ -193,7 +197,7 @@ jboolean TiffToJpgConverter::convertFromImage() {
         jpeg_write_scanlines(&cinfo, row_pointer, 1);
         delete(row);
     }
-
+    free(origBuffer);
     sendProgress(total, total);
     return JNI_TRUE;
 }
@@ -245,6 +249,19 @@ jboolean TiffToJpgConverter::convertFromTile() {
         uint32 *raster = (uint32 *)_TIFFmalloc(rasterSize * sizeof(uint32));
 
         for (column = 0; column < width; column += tileWidth) {
+            if (checkStop()) {
+                free(raster);
+                raster = NULL;
+                if (rasterTile) {
+                    _TIFFfree(rasterTile);
+                    rasterTile = NULL;
+                }
+                if (work_line_buf) {
+                    _TIFFfree(rasterTile);
+                    work_line_buf = NULL;
+                }
+                return JNI_FALSE;
+            }
             endx = -1;
             startx = -1;
             TIFFReadRGBATile(tiffImage, column , row, rasterTile);
@@ -369,6 +386,17 @@ jboolean TiffToJpgConverter::convertFromStrip() {
     uint32 rows_to_write = 0;
 
     for (int i = 0; i < stripMax*rowPerStrip; i += rowPerStrip) {
+        if (checkStop()) {
+            if (raster) {
+                _TIFFfree(raster);
+                raster = NULL;
+            }
+            if (work_line_buf) {
+                _TIFFfree(work_line_buf);
+                work_line_buf = NULL;
+            }
+            return JNI_FALSE;
+        }
         sendProgress(i * width, total);
         TIFFReadRGBAStrip(tiffImage, i, raster);
 
