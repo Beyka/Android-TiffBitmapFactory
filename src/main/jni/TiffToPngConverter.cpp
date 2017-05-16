@@ -32,6 +32,14 @@ TiffToPngConverter::~TiffToPngConverter()
 
     if (pngFile) {
         LOGI("pngFile != NULL");
+        /*if (!conversion_result) {
+            const char *strPngPath = NULL;
+            strPngPath = env->GetStringUTFChars(outPath, 0);
+
+            remove(strPngPath);
+
+            env->ReleaseStringUTFChars(outPath, strPngPath);
+        }*/
         fclose(pngFile);
     }
     LOGI("png file free");
@@ -159,13 +167,27 @@ jboolean TiffToPngConverter::convert()
             break;
     }
 
-    png_write_end(png_ptr, info_ptr);
-
-    return result;
+    if (result) {
+        png_write_end(png_ptr, info_ptr);
+    }
+    conversion_result = result;
+    return conversion_result;
 }
 
 jboolean TiffToPngConverter::convertFromImage() {
     int origBufferSize = width * height * sizeof(uint32);
+
+    unsigned long estimateMem = origBufferSize;
+    estimateMem += 4 * width * sizeof(png_bytep);//working buf
+    LOGII("estimateMem", estimateMem);
+    if (estimateMem > availableMemory && availableMemory != -1) {
+        LOGEI("Not enough memory", availableMemory);
+        if (throwException) {
+            throw_not_enought_memory_exception(env, availableMemory, estimateMem);
+        }
+        return JNI_FALSE;
+    }
+
     uint32 *origBuffer = NULL;
     origBuffer = (uint32 *) _TIFFmalloc(origBufferSize);
     if (origBuffer == NULL) {
@@ -210,18 +232,33 @@ jboolean TiffToPngConverter::convertFromTile() {
     LOGII("Tile width", tileWidth);
     LOGII("Tile height", tileHeight);
 
-    jlong total = ((width/tileWidth + (width%tileWidth == 0 ? 0 : 1)) * tileWidth)
-            * ((height/tileHeight + (height%tileHeight == 0 ? 0 : 1)) * tileHeight);
-    sendProgress(0, total);
-
     //uint32 *raster = (uint32 *)_TIFFmalloc(width * tileHeight * sizeof(uint32));
     uint32 workingWidth = (width/tileWidth + (width%tileWidth == 0 ? 0 : 1)) * tileWidth;
     LOGII("workingWidth ", workingWidth );
     uint32 rasterSize =  workingWidth  * tileHeight ;
     LOGII("rasterSize ", rasterSize );
-    uint32 *raster = (uint32 *)_TIFFmalloc(rasterSize * sizeof(uint32));
+    //uint32 *raster = (uint32 *)_TIFFmalloc(rasterSize * sizeof(uint32));
+
+
+    unsigned long estimateMem = rasterSize * sizeof(uint32); //raster
+    estimateMem += tileWidth * tileHeight * sizeof(uint32); //tile raster
+    estimateMem += tileWidth * sizeof (uint32); //working buf
+    estimateMem += 4 * width * sizeof(png_bytep); //bufer for writing to png
+    LOGII("estimateMem", estimateMem);
+    if (estimateMem > availableMemory && availableMemory != -1) {
+        LOGEI("Not enought memory", availableMemory);
+        if (throwException) {
+            throw_not_enought_memory_exception(env, availableMemory, estimateMem);
+        }
+        return JNI_FALSE;
+    }
+
     uint32 *rasterTile = (uint32 *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32));
     uint32 *work_line_buf = (uint32*)_TIFFmalloc(tileWidth * sizeof (uint32));
+
+    jlong total = ((width/tileWidth + (width%tileWidth == 0 ? 0 : 1)) * tileWidth)
+                * ((height/tileHeight + (height%tileHeight == 0 ? 0 : 1)) * tileHeight);
+        sendProgress(0, total);
 
     uint32 row, column;
 
@@ -300,18 +337,20 @@ jboolean TiffToPngConverter::convertFromTile() {
             memcpy(pngrow, raster + y * workingWidth, width * 4);
             //memcpy(pngrow, rasterLine, width * 4);
             png_write_row(png_ptr, pngrow);
-            delete(pngrow);
+            free(pngrow);
             //delete(rasterLine);
             imageWritedLines++;
         }
         LOGII("imageWritedLines", imageWritedLines);
 
+        free(raster);
+
     }
 
-    if (raster) {
+    /*if (raster) {
         _TIFFfree(raster);
         raster = NULL;
-    }
+    }*/
 
     if (rasterTile) {
         _TIFFfree(rasterTile);
@@ -334,6 +373,18 @@ jboolean TiffToPngConverter::convertFromStrip() {
     uint32 stripMax = TIFFNumberOfStrips (tiffImage);
     int rowPerStrip = -1;
     TIFFGetField(tiffImage, TIFFTAG_ROWSPERSTRIP, &rowPerStrip);
+
+    unsigned long estimateMem = width * sizeof(uint32);//working buf
+    estimateMem += width * rowPerStrip * sizeof (uint32);//raster
+    estimateMem += 4 * width * sizeof(png_bytep); //buf for writing to png
+    LOGII("estimateMem", estimateMem);
+    if (estimateMem > availableMemory && availableMemory != -1) {
+        LOGEI("Not enought memory", availableMemory);
+        if (throwException) {
+            throw_not_enought_memory_exception(env, availableMemory, estimateMem);
+        }
+        return JNI_FALSE;
+    }
 
     jlong total = stripMax * rowPerStrip * width;
     sendProgress(0, total);

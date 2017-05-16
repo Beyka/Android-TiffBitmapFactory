@@ -31,6 +31,8 @@ class BaseTiffConverter {
     protected:
         const int colorMask = 0xFF;
 
+        jboolean conversion_result = JNI_FALSE;
+
         JNIEnv *env;
         jstring inPath;
         jstring outPath;

@@ -216,14 +216,27 @@ jboolean JpgToTiffConverter::convert()
     LOGII("jpg samples", componentsPerPixel);
 
     //Calculate row per strip
-    //maximum size for strip should be less than 8Mb
-    unsigned long MB8 = 8 * 1024 * 1024;
-    int rowPerStrip = MB8/rowSize;
+    //maximum size for strip should be less than 2Mb if memory available
+    unsigned long MB2 = (availableMemory == -1 || availableMemory > 3 * 1024 * 1024) ? 2 * 1024 * 1024 : width * 4;
+    int rowPerStrip = MB2/rowSize;
     if (rowPerStrip >= height) {
         rowPerStrip = height / 4;
     }
+    if (rowPerStrip < 1) rowPerStrip = 1;
     LOGII("rowPerStrip", rowPerStrip);
     TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
+
+    unsigned long estimateMem = rowPerStrip * width * 4;
+    estimateMem += sizeof(JSAMPLE) * rowSize;//jpg buffer
+    estimateMem += (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) ? (width/8 + 0.5) * rowPerStrip : 0;
+    LOGII("estimateMem", estimateMem);
+    if (estimateMem > availableMemory && availableMemory != -1) {
+        LOGEI("Not enough memory", availableMemory);
+        if (throwException) {
+            throw_not_enought_memory_exception(env, availableMemory, estimateMem);
+        }
+        return JNI_FALSE;
+    }
 
     //Buffer for read jpeg image line by line
     int buffer_height = 1;
@@ -279,7 +292,8 @@ jboolean JpgToTiffConverter::convert()
     free(buffer);
 
     sendProgress(total, total);
-    return JNI_TRUE;
+    conversion_result = JNI_TRUE;
+    return conversion_result;
 }
 
 unsigned char * JpgToTiffConverter::convertArgbToBilevel(unsigned char *data, int components, uint32 width, uint32 height)

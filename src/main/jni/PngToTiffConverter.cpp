@@ -183,6 +183,8 @@ jboolean PngToTiffConverter::convert()
     LOGII("bit_depth", bit_depth);
     LOGII("color_type", color_type);
 
+
+
     // cast any pixel data to RGBA data for simplest reading
     if(bit_depth == 16)
         png_set_strip_16(png_ptr);
@@ -250,20 +252,33 @@ jboolean PngToTiffConverter::convert()
         TIFFSetField(tiffImage, TIFFTAG_SOFTWARE, csoftware);
     }
 
+    //Calculate row per strip
+    //maximum size for strip should be less than 2Mb if memory available
+    unsigned long MB2 = (availableMemory == -1 || availableMemory > 3 * 1024 * 1024) ? 2 * 1024 * 1024 : width * 4;
+    unsigned long rowSizeBytes = width * 4;
+    int rowPerStrip = MB2/rowSizeBytes;
+    if (rowPerStrip >= height) {
+        rowPerStrip = height / 4;
+    }
+    if (rowPerStrip < 1) rowPerStrip = 1;
+    LOGII("rowPerStrip", rowPerStrip);
+
+    //check available memory and estimate memory
+    unsigned long estimateMem = rowPerStrip * width * 4;
+    estimateMem += (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) ? (width/8 + 0.5) * rowPerStrip : 0;
+    LOGII("estimateMem", estimateMem);
+    if (estimateMem > availableMemory && availableMemory != -1) {
+        LOGEI("Not enough memory", availableMemory);
+        if (throwException) {
+            throw_not_enought_memory_exception(env, availableMemory, estimateMem);
+        }
+        return JNI_FALSE;
+    }
+
     //progress reporter
     jlong total = width * height;
     sendProgress(0, total);
 
-    //Calculate row per strip
-    //maximum size for strip should be less than 8Mb
-    unsigned long MB8 = 8 * 1024 * 1024;
-    unsigned long rowSizeBytes = width * 4;
-    int rowPerStrip = MB8/rowSizeBytes;
-    if (rowPerStrip >= height) {
-        rowPerStrip = height / 4;
-    }
-    rowPerStrip = 300;
-    LOGII("rowPerStrip", rowPerStrip);
     TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
     int rowbytes = png_get_rowbytes(png_ptr,info_ptr);
     png_bytep row_pointers[rowPerStrip];
@@ -316,7 +331,8 @@ jboolean PngToTiffConverter::convert()
     }
 
     sendProgress(total, total);
-    return JNI_TRUE;
+    conversion_result = JNI_TRUE;
+    return conversion_result;
 }
 
 /*unsigned char * PngToTiffConverter::convertArgbToBilevel(png_byte *row, int samplePerPixel, uint32 width, uint32 height) {

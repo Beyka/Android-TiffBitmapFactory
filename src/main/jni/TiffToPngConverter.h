@@ -21,6 +21,7 @@
 
 #define LOGE(x) __android_log_print(ANDROID_LOG_ERROR, "TiffToPngConverter", "%s", x)
 #define LOGES(x, y) __android_log_print(ANDROID_LOG_ERROR, "TiffToPngConverter", "%s %s", x, y)
+#define LOGEI(x, y) __android_log_print(ANDROID_LOG_ERROR, "TiffToPngConverter", "%s %d", x, y)
 
 class TiffToPngConverter : public BaseTiffConverter
 {
