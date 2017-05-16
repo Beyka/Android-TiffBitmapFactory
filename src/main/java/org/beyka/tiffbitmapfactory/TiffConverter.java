@@ -22,7 +22,7 @@ public class TiffConverter {
 
     public static native boolean convertJpgTiff(String jpg, String tiff, ConverterOptions options, IProgressListener listener);
 
-    public static native int getImageType(String path);
+    public static native ImageFormat getImageType(String path);
 
     public static final class ConverterOptions {
 
