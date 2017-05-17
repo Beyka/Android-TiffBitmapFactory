@@ -126,6 +126,11 @@ boolean saved = TiffSaver.appendBitmap("/sdcard/out.tif", bitmap, options);
 ```
 Every new page will be added as new directory to the end of file. If you trying to append directory to non-exisiting file - new file will be created
 
+### Proguard
+If you use proguard add this to you config file:
+```Gradle
+-keep class org.beyka.tiffbitmapfactory.**{ *; }
+```
 
 ### 
 This program is distributed in the hope that it will be useful,
