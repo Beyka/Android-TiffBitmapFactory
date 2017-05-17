@@ -226,7 +226,13 @@ jboolean JpgToTiffConverter::convert()
 
     unsigned long estimateMem = rowPerStrip * width * 4;
     estimateMem += sizeof(JSAMPLE) * rowSize;//jpg buffer
-    estimateMem += (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) ? (width/8 + 0.5) * rowPerStrip : 0;
+    if (compressionInt == COMPRESSION_JPEG) {
+        estimateMem += 0;
+    } else if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
+        estimateMem += (width/8 + 0.5) * rowPerStrip;
+    } else {
+        estimateMem += rowPerStrip * rowSize;
+    }
     LOGII("estimateMem", estimateMem);
     if (estimateMem > availableMemory && availableMemory != -1) {
         LOGEI("Not enough memory", availableMemory);
@@ -248,19 +254,61 @@ jboolean JpgToTiffConverter::convert()
     buffer[0] = (JSAMPROW)malloc(sizeof(JSAMPLE) * rowSize);
 
     //buffer for format strips for tiff
-    unsigned char *data = new unsigned char[rowSize * rowPerStrip];
+
 
     int ret;
-    int totalRowCounter = 0;
-    int rowCounter = 0;
-    bool shouldWrite = false;
-    while (cinfo.output_scanline < height) {
-        shouldWrite = true;
-        jpeg_read_scanlines(&cinfo, buffer, 1);
-        memcpy(data + rowCounter * rowSize, buffer[0], rowSize);
-        rowCounter++;
-        totalRowCounter++;
-        if (rowCounter == rowPerStrip) {
+    if (compressionInt == COMPRESSION_JPEG) {
+        int line = 0;
+        while (cinfo.output_scanline < height) {
+            if (checkStop()) {
+                free(buffer[0]);
+                free(buffer);
+                conversion_result = JNI_FALSE;
+                return conversion_result;
+            }
+            if (line % rowPerStrip == 0) {
+                sendProgress(line * width, total);
+            }
+            jpeg_read_scanlines(&cinfo, buffer, 1);
+            ret = TIFFWriteScanline(tiffImage, buffer[0], line, 0);
+            line++;
+        }
+    } else {
+        TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
+        unsigned char *data = new unsigned char[rowSize * rowPerStrip];
+        int totalRowCounter = 0;
+        int rowCounter = 0;
+        bool shouldWrite = false;
+        while (cinfo.output_scanline < height) {
+            shouldWrite = true;
+            jpeg_read_scanlines(&cinfo, buffer, 1);
+            memcpy(data + rowCounter * rowSize, buffer[0], rowSize);
+            rowCounter++;
+            totalRowCounter++;
+            if (rowCounter == rowPerStrip) {
+                if (checkStop()) {
+                    //jpeg_finish_decompress(&cinfo);
+                    delete[] data;
+                    free(buffer[0]);
+                    free(buffer);
+                    conversion_result = JNI_FALSE;
+                    return conversion_result;
+                }
+                LOGII("TRC", totalRowCounter);
+                if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
+                    int compressedWidth = (width/8 + 0.5);
+                    unsigned char *bilevel = convertArgbToBilevel(data, componentsPerPixel, width, rowPerStrip);
+                    ret = TIFFWriteEncodedStrip(tiffImage, totalRowCounter/rowPerStrip - 1, bilevel, compressedWidth * sizeof(unsigned char) * rowPerStrip);
+                    free(bilevel);
+                } else {
+                    ret = TIFFWriteEncodedStrip(tiffImage, totalRowCounter/rowPerStrip - 1, data, rowPerStrip * rowSize);
+                }
+                rowCounter = 0;
+                shouldWrite = false;
+                sendProgress(totalRowCounter * width, total);
+            }
+        }
+        if (shouldWrite) {  LOGI("last stage");
             if (checkStop()) {
                 //jpeg_finish_decompress(&cinfo);
                 delete[] data;
@@ -269,57 +317,16 @@ jboolean JpgToTiffConverter::convert()
                 conversion_result = JNI_FALSE;
                 return conversion_result;
             }
-            LOGII("TRC", totalRowCounter);
             if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
-                TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
                 int compressedWidth = (width/8 + 0.5);
                 unsigned char *bilevel = convertArgbToBilevel(data, componentsPerPixel, width, rowPerStrip);
-                TIFFWriteEncodedStrip(tiffImage, totalRowCounter/rowPerStrip - 1, bilevel, compressedWidth * sizeof(unsigned char) * rowPerStrip);
+                ret = TIFFWriteEncodedStrip(tiffImage, totalRowCounter/rowPerStrip, bilevel, compressedWidth * sizeof(unsigned char) * rowPerStrip);
                 free(bilevel);
-            } else if (compressionInt == COMPRESSION_JPEG) {
-                unsigned char *jdata = new unsigned char[rowSize];
-                for (int k = 0; k < rowPerStrip; k++) {
-                    memcpy(jdata, data + (k * rowSize), rowSize);
-                    int kkk = totalRowCounter - rowPerStrip + k;
-                    LOGII("row in image", kkk);
-                    ret = TIFFWriteScanline(tiffImage, jdata, totalRowCounter - rowPerStrip + k, 0);
-                }
-                delete[] jdata;
             } else {
-                TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
-                TIFFWriteEncodedStrip(tiffImage, totalRowCounter/rowPerStrip - 1, data, rowPerStrip * rowSize);
+                ret = TIFFWriteEncodedStrip(tiffImage, totalRowCounter/rowPerStrip, data, rowPerStrip * rowSize);
             }
-            rowCounter = 0;
-            shouldWrite = false;
-            sendProgress(totalRowCounter * width, total);
         }
-    }
-    if (shouldWrite) {  LOGI("last stage");
-        if (checkStop()) {
-            //jpeg_finish_decompress(&cinfo);
-            delete[] data;
-            free(buffer[0]);
-            free(buffer);
-            conversion_result = JNI_FALSE;
-            return conversion_result;
-        }
-        if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
-            TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
-            int compressedWidth = (width/8 + 0.5);
-            unsigned char *bilevel = convertArgbToBilevel(data, componentsPerPixel, width, rowPerStrip);
-            TIFFWriteEncodedStrip(tiffImage, totalRowCounter/rowPerStrip, bilevel, compressedWidth * sizeof(unsigned char) * rowPerStrip);
-            free(bilevel);
-        } else if (compressionInt == COMPRESSION_JPEG) {
-            unsigned char *jdata = new unsigned char[rowSize];
-            for (int k = 0; k < rowCounter; k++) {
-                memcpy(jdata, data + (k * rowSize), rowSize);
-                ret = TIFFWriteScanline(tiffImage, jdata, totalRowCounter - rowPerStrip + k, 0);
-            }
-            delete[] jdata;
-        } else {
-            TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
-            TIFFWriteEncodedStrip(tiffImage, totalRowCounter/rowPerStrip, data, rowPerStrip * rowSize);
-        }
+        delete[] data;
     }
 
     ret = TIFFWriteDirectory(tiffImage);
@@ -327,7 +334,7 @@ jboolean JpgToTiffConverter::convert()
 
     jpeg_finish_decompress(&cinfo);
 
-    delete[] data;
+
     free(buffer[0]);
     free(buffer);
 
