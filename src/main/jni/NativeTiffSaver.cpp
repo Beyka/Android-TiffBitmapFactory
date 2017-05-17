@@ -348,7 +348,6 @@ uint32 img_width = info.width;
         if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
             TIFFSetField(output_image, TIFFTAG_BITSPERSAMPLE,	1);
             TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL,	1);
-            TIFFSetField(output_image, TIFFTAG_ROWSPERSTRIP, 1);
             TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
             TIFFSetField(output_image, TIFFTAG_FILLORDER, FILLORDER_MSB2LSB);
         } else {
@@ -382,27 +381,32 @@ uint32 img_width = info.width;
             TIFFSetField(output_image, TIFFTAG_COPYRIGHT, copyrightString);
         }
 
-        unsigned long MB8 = 8 * 1024 * 1024;
+        unsigned long MB8 = 2 * 1024 * 1024;
         unsigned long rowSizeBytes = img_width * 4;
         int rowPerStrip = MB8/rowSizeBytes;
         if (rowPerStrip >= img_height) {
             rowPerStrip = img_height / 4;
         }
         LOGII("rowPerStrip", rowPerStrip);
-        TIFFSetField(output_image, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
+
 
         // Write the information to the file
         if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
+            TIFFSetField(output_image, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
             unsigned char *bilevel = convertArgbToBilevel(img, img_width, img_height);
             int compressedWidth = (img_width/8 + 0.5);
             for (int i = 0; i < img_height; i+=rowPerStrip) {
                 TIFFWriteEncodedStrip(output_image, i/rowPerStrip, &bilevel[i * compressedWidth], (compressedWidth) * rowPerStrip);
             }
             free(bilevel);
+        } else if (compressionInt == COMPRESSION_JPEG) {
+            for (int row = 0; row < img_height; row++) {
+                ret = TIFFWriteScanline(output_image, &img[row * img_width], row, 0);
+            }
         } else {
+            TIFFSetField(output_image, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
             for (int row = 0; row < img_height; row+=rowPerStrip) {
-                TIFFWriteEncodedStrip(output_image, row/rowPerStrip, &img[row * img_width], sizeof(uint32) * img_width * rowPerStrip);
-                //TIFFWriteScanline(output_image, &img[row * img_width], row, 0);
+                ret = TIFFWriteEncodedStrip(output_image, row/rowPerStrip, &img[row * img_width], sizeof(uint32) * img_width * rowPerStrip);
             }
         }
         ret = TIFFWriteDirectory(output_image);
