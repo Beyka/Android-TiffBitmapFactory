@@ -183,7 +183,6 @@ jboolean JpgToTiffConverter::convert()
     if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
         TIFFSetField(tiffImage, TIFFTAG_BITSPERSAMPLE,	1);
         TIFFSetField(tiffImage, TIFFTAG_SAMPLESPERPIXEL,	1);
-        TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, 1);
         TIFFSetField(tiffImage, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
         TIFFSetField(tiffImage, TIFFTAG_FILLORDER, FILLORDER_MSB2LSB);
     } else {
@@ -224,7 +223,6 @@ jboolean JpgToTiffConverter::convert()
     }
     if (rowPerStrip < 1) rowPerStrip = 1;
     LOGII("rowPerStrip", rowPerStrip);
-    TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
 
     unsigned long estimateMem = rowPerStrip * width * 4;
     estimateMem += sizeof(JSAMPLE) * rowSize;//jpg buffer
@@ -252,6 +250,7 @@ jboolean JpgToTiffConverter::convert()
     //buffer for format strips for tiff
     unsigned char *data = new unsigned char[rowSize * rowPerStrip];
 
+    int ret;
     int totalRowCounter = 0;
     int rowCounter = 0;
     bool shouldWrite = false;
@@ -272,11 +271,22 @@ jboolean JpgToTiffConverter::convert()
             }
             LOGII("TRC", totalRowCounter);
             if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
+                TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
                 int compressedWidth = (width/8 + 0.5);
                 unsigned char *bilevel = convertArgbToBilevel(data, componentsPerPixel, width, rowPerStrip);
                 TIFFWriteEncodedStrip(tiffImage, totalRowCounter/rowPerStrip - 1, bilevel, compressedWidth * sizeof(unsigned char) * rowPerStrip);
                 free(bilevel);
+            } else if (compressionInt == COMPRESSION_JPEG) {
+                unsigned char *jdata = new unsigned char[rowSize];
+                for (int k = 0; k < rowPerStrip; k++) {
+                    memcpy(jdata, data + (k * rowSize), rowSize);
+                    int kkk = totalRowCounter - rowPerStrip + k;
+                    LOGII("row in image", kkk);
+                    ret = TIFFWriteScanline(tiffImage, jdata, totalRowCounter - rowPerStrip + k, 0);
+                }
+                delete[] jdata;
             } else {
+                TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
                 TIFFWriteEncodedStrip(tiffImage, totalRowCounter/rowPerStrip - 1, data, rowPerStrip * rowSize);
             }
             rowCounter = 0;
@@ -284,7 +294,7 @@ jboolean JpgToTiffConverter::convert()
             sendProgress(totalRowCounter * width, total);
         }
     }
-    if (shouldWrite) {
+    if (shouldWrite) {  LOGI("last stage");
         if (checkStop()) {
             //jpeg_finish_decompress(&cinfo);
             delete[] data;
@@ -294,16 +304,25 @@ jboolean JpgToTiffConverter::convert()
             return conversion_result;
         }
         if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
+            TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
             int compressedWidth = (width/8 + 0.5);
             unsigned char *bilevel = convertArgbToBilevel(data, componentsPerPixel, width, rowPerStrip);
             TIFFWriteEncodedStrip(tiffImage, totalRowCounter/rowPerStrip, bilevel, compressedWidth * sizeof(unsigned char) * rowPerStrip);
             free(bilevel);
+        } else if (compressionInt == COMPRESSION_JPEG) {
+            unsigned char *jdata = new unsigned char[rowSize];
+            for (int k = 0; k < rowCounter; k++) {
+                memcpy(jdata, data + (k * rowSize), rowSize);
+                ret = TIFFWriteScanline(tiffImage, jdata, totalRowCounter - rowPerStrip + k, 0);
+            }
+            delete[] jdata;
         } else {
+            TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
             TIFFWriteEncodedStrip(tiffImage, totalRowCounter/rowPerStrip, data, rowPerStrip * rowSize);
         }
     }
 
-    int ret = TIFFWriteDirectory(tiffImage);
+    ret = TIFFWriteDirectory(tiffImage);
     LOGII("ret = ", ret);
 
     jpeg_finish_decompress(&cinfo);

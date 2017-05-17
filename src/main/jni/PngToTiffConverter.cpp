@@ -231,7 +231,6 @@ jboolean PngToTiffConverter::convert()
     if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
         TIFFSetField(tiffImage, TIFFTAG_BITSPERSAMPLE,	1);
         TIFFSetField(tiffImage, TIFFTAG_SAMPLESPERPIXEL,	1);
-        TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, 1);
         TIFFSetField(tiffImage, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
         TIFFSetField(tiffImage, TIFFTAG_FILLORDER, FILLORDER_MSB2LSB);
     } else {
@@ -284,15 +283,18 @@ jboolean PngToTiffConverter::convert()
     jlong total = width * height;
     sendProgress(0, total);
 
-    TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
+
     int rowbytes = png_get_rowbytes(png_ptr,info_ptr);
     png_bytep row_pointers[rowPerStrip];
     for (int sy = 0; sy < rowPerStrip; sy++) {
         row_pointers[sy] = (png_byte*)malloc(rowbytes);
     }
 
+    int ret;
+
     // Write the information to the file
     if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
+        TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
         int compressedWidth = (width/8 + 0.5);
         for (int y = 0; y < height; y+=rowPerStrip) {
             if (checkStop()) {
@@ -315,7 +317,36 @@ jboolean PngToTiffConverter::convert()
             TIFFWriteEncodedStrip(tiffImage, y/rowPerStrip, bilevel, compressedWidth * sizeof(unsigned char) * rowToRead);
             free(bilevel);
         }
+    } else if (compressionInt == COMPRESSION_JPEG) {
+        for (int ys = 0; ys < height; ys+=rowPerStrip) {
+            if (checkStop()) {
+                for (int sy = 0; sy < rowPerStrip; sy++) {
+                    free(row_pointers[sy]);
+                }
+                if (fileDescriptor >= 0) {
+                    close(fileDescriptor);
+                }
+                conversion_result = JNI_FALSE;
+                return conversion_result;
+            }
+            int rowToRead = rowPerStrip;
+            if (rowToRead + ys >= height) {
+                rowToRead = height - ys;
+            }
+            LOGII("rowToRead", rowToRead);
+            sendProgress(ys * width, total);
+            png_read_rows(png_ptr, &row_pointers[0], NULL, rowToRead);
+            uint32 *pixels = new uint32[width];
+            for (int k = 0; k < rowToRead; k++) {
+                memcpy(pixels, row_pointers[k], width * sizeof(uint32));
+                ret = TIFFWriteScanline(tiffImage, pixels, ys + k, 0);
+            }
+            //TIFFWriteEncodedStrip(tiffImage, y/rowPerStrip, pixels, width * sizeof(uint32) * rowToRead);
+            delete[] pixels;
+
+        }
     } else {
+        TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
         for (int y = 0; y < height; y+=rowPerStrip) {
             if (checkStop()) {
                 for (int sy = 0; sy < rowPerStrip; sy++) {
@@ -346,7 +377,7 @@ jboolean PngToTiffConverter::convert()
     for (int sy = 0; sy < rowPerStrip; sy++) {
         free(row_pointers[sy]);
     }
-    int ret = TIFFWriteDirectory(tiffImage);
+    ret = TIFFWriteDirectory(tiffImage);
     LOGII("ret = ", ret);
 
 
