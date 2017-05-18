@@ -9,12 +9,12 @@ extern "C" {
 #include "NativeTiffConverter.h"
 #include "png.h"
 
-struct png_image {
+/*struct png_image {
 	png_uint_32 imWidth, imHeight; //реальный размер картинки
 	png_uint_32 glWidth, glHeight; //размер который подойдет для OpenGL
 	int bit_depth, color_type;
 	char* data; //данные RGB/RGBA
-};
+};*/
 
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffPng
   (JNIEnv *env, jclass clazz, jstring tiffPath, jstring pngPath, jobject options, jobject listener)

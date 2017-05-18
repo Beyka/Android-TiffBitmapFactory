@@ -1,9 +1,9 @@
 
 /* pngpriv.h - private declarations for use inside libpng
  *
- * libpng version 1.4.1 - February 25, 2010
+ * libpng version 1.4.19 - December 17, 2015
  * For conditions of distribution and use, see copyright notice in png.h
- * Copyright (c) 1998-2010 Glenn Randers-Pehrson
+ * Copyright (c) 1998-2002,2004,2006-2014 Glenn Randers-Pehrson
  * (Version 0.96 Copyright (c) 1996, 1997 Andreas Dilger)
  * (Version 0.88 Copyright (c) 1995, 1996 Guy Eric Schalnat, Group 42, Inc.)
  *
@@ -26,16 +26,27 @@
 
 #ifndef PNG_VERSION_INFO_ONLY
 
+#if defined(_AIX) && defined(_ALL_SOURCE)
+   /* On AIX if _ALL_SOURCE is defined standard header files (including
+    * stdlib.h) define identifiers that are not permitted by the ANSI and
+    * POSIX standards.  In particular 'jmpbuf' is #defined and this will
+    * prevent compilation of libpng.  The following prevents this:
+    */
+#  undef _ALL_SOURCE
+#endif
+
 #include <stdlib.h>
 
+#ifndef PNG_EXTERN
 /* The functions exported by PNG_EXTERN are internal functions, which
  * aren't usually used outside the library (as far as I know), so it is
  * debatable if they should be exported at all.  In the future, when it
  * is possible to have run-time registry of chunk-handling functions,
  * some of these will be made available again.
-#define PNG_EXTERN extern
+#  define PNG_EXTERN extern
  */
-#define PNG_EXTERN
+#  define PNG_EXTERN
+#endif
 
 /* Other defines specific to compilers can go here.  Try to keep
  * them inside an appropriate ifdef/endif pair for portability.
@@ -75,10 +86,6 @@
 #if defined(WIN32) || defined(_Windows) || defined(_WINDOWS) || \
     defined(_WIN32) || defined(__WIN32__)
 #  include <windows.h>  /* defines _WINDOWS_ macro */
-/* I have no idea why is this necessary... */
-#  ifdef _MSC_VER
-#    include <malloc.h>
-#  endif
 #endif
 
 /* Various modes of operation.  Note that after an init, mode is set to
@@ -106,7 +113,7 @@
 #define PNG_SHIFT               0x0008
 #define PNG_SWAP_BYTES          0x0010
 #define PNG_INVERT_MONO         0x0020
-#define PNG_DITHER              0x0040
+#define PNG_QUANTIZE            0x0040 /* formerly PNG_DITHER */
 #define PNG_BACKGROUND          0x0080
 #define PNG_BACKGROUND_EXPAND   0x0100
                           /*    0x0200 unused */
@@ -291,6 +298,9 @@ PNG_EXTERN void png_reset_crc PNGARG((png_structp png_ptr));
 /* Write the "data" buffer to whatever output you are using */
 PNG_EXTERN void png_write_data PNGARG((png_structp png_ptr, png_bytep data,
    png_size_t length));
+
+/* Read and check the PNG file signature */
+PNG_EXTERN void png_read_sig PNGARG((png_structp png_ptr, png_infop info_ptr));
 
 /* Read the chunk header (length + type name) */
 PNG_EXTERN png_uint_32 png_read_chunk_header PNGARG((png_structp png_ptr));
@@ -588,9 +598,9 @@ PNG_EXTERN void png_do_invert PNGARG((png_row_infop row_info, png_bytep row));
 PNG_EXTERN void png_do_chop PNGARG((png_row_infop row_info, png_bytep row));
 #endif
 
-#ifdef PNG_READ_DITHER_SUPPORTED
-PNG_EXTERN void png_do_dither PNGARG((png_row_infop row_info,
-   png_bytep row, png_bytep palette_lookup, png_bytep dither_lookup));
+#ifdef PNG_READ_QUANTIZE_SUPPORTED
+PNG_EXTERN void png_do_quantize PNGARG((png_row_infop row_info,
+   png_bytep row, png_bytep palette_lookup, png_bytep quantize_lookup));
 
 #  ifdef PNG_CORRECT_PALETTE_SUPPORTED
 PNG_EXTERN void png_correct_palette PNGARG((png_structp png_ptr,
@@ -672,7 +682,7 @@ PNG_EXTERN void png_handle_hIST PNGARG((png_structp png_ptr, png_infop info_ptr,
 #endif
 
 #ifdef PNG_READ_iCCP_SUPPORTED
-extern void png_handle_iCCP PNGARG((png_structp png_ptr, png_infop info_ptr,
+PNG_EXTERN void png_handle_iCCP PNGARG((png_structp png_ptr, png_infop info_ptr,
    png_uint_32 length));
 #endif /* PNG_READ_iCCP_SUPPORTED */
 
@@ -707,7 +717,7 @@ PNG_EXTERN void png_handle_sCAL PNGARG((png_structp png_ptr, png_infop info_ptr,
 #endif
 
 #ifdef PNG_READ_sPLT_SUPPORTED
-extern void png_handle_sPLT PNGARG((png_structp png_ptr, png_infop info_ptr,
+PNG_EXTERN void png_handle_sPLT PNGARG((png_structp png_ptr, png_infop info_ptr,
    png_uint_32 length));
 #endif /* PNG_READ_sPLT_SUPPORTED */
 
@@ -828,14 +838,14 @@ PNG_EXTERN void png_check_IHDR PNGARG((png_structp png_ptr,
    int filter_type));
 
 /* Free all memory used by the read (old method - NOT DLL EXPORTED) */
-extern void png_read_destroy PNGARG((png_structp png_ptr, png_infop info_ptr,
+PNG_EXTERN void png_read_destroy PNGARG((png_structp png_ptr, png_infop info_ptr,
    png_infop end_info_ptr));
 
 /* Free any memory used in png_ptr struct (old method - NOT DLL EXPORTED) */
-extern void png_write_destroy PNGARG((png_structp png_ptr));
+PNG_EXTERN void png_write_destroy PNGARG((png_structp png_ptr));
 
 #ifdef USE_FAR_KEYWORD  /* memory model conversion function */
-extern void *png_far_to_near PNGARG((png_structp png_ptr,png_voidp ptr,
+PNG_EXTERN void *png_far_to_near PNGARG((png_structp png_ptr,png_voidp ptr,
    int check));
 #endif /* USE_FAR_KEYWORD */
 
@@ -876,7 +886,7 @@ extern void *png_far_to_near PNGARG((png_structp png_ptr,png_voidp ptr,
 #      define png_debug(l,m) \
        { \
        int num_tabs=l; \
-       fprintf(PNG_DEBUG_FILE,"%s"m PNG_STRING_NEWLINE,(num_tabs==1 ? "\t" : \
+       fprintf(PNG_DEBUG_FILE,"%s" m PNG_STRING_NEWLINE,(num_tabs==1 ? "\t" : \
          (num_tabs==2 ? "\t\t":(num_tabs>2 ? "\t\t\t":"")))); \
        }
 #    endif
@@ -884,7 +894,7 @@ extern void *png_far_to_near PNGARG((png_structp png_ptr,png_voidp ptr,
 #      define png_debug1(l,m,p1) \
        { \
        int num_tabs=l; \
-       fprintf(PNG_DEBUG_FILE,"%s"m PNG_STRING_NEWLINE,(num_tabs==1 ? "\t" : \
+       fprintf(PNG_DEBUG_FILE,"%s" m PNG_STRING_NEWLINE,(num_tabs==1 ? "\t" : \
          (num_tabs==2 ? "\t\t":(num_tabs>2 ? "\t\t\t":""))),p1); \
        }
 #    endif
@@ -892,7 +902,7 @@ extern void *png_far_to_near PNGARG((png_structp png_ptr,png_voidp ptr,
 #      define png_debug2(l,m,p1,p2) \
        { \
        int num_tabs=l; \
-       fprintf(PNG_DEBUG_FILE,"%s"m PNG_STRING_NEWLINE,(num_tabs==1 ? "\t" : \
+       fprintf(PNG_DEBUG_FILE,"%s" m PNG_STRING_NEWLINE,(num_tabs==1 ? "\t" : \
          (num_tabs==2 ? "\t\t":(num_tabs>2 ? "\t\t\t":""))),p1,p2); \
        }
 #    endif
