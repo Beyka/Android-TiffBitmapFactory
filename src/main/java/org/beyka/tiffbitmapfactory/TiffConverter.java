@@ -31,7 +31,7 @@ public class TiffConverter {
             appendTiff = false;
             resUnit = ResolutionUnit.NONE;
             compressionScheme = CompressionScheme.NONE;
-            orientation = Orientation.TOP_LEFT;
+            //orientation = Orientation.TOP_LEFT;
             throwExceptions = false;
             isStoped = false;
         }
@@ -92,7 +92,7 @@ public class TiffConverter {
          * <p>By default uses {@link org.beyka.tiffbitmapfactory.Orientation#TOP_LEFT ORIENTATION_TOPLEFT} </p>
          * <p>This parameter is link to TIFFTAG_ORIENTATION tag</p>
          */
-        public Orientation orientation;
+        //public Orientation orientation;
 
         /**
          * <b>For converting from ANY to TIFF cases</b>

@@ -73,7 +73,7 @@ void BaseTiffConverter::readOptions()
     env->DeleteLocalRef(compressionModeClass);
 
     //Get image orientation from options object
-    jfieldID orientationFieldID = env->GetFieldID(jConvertOptionsClass,
+    /*jfieldID orientationFieldID = env->GetFieldID(jConvertOptionsClass,
             "orientation",
             "Lorg/beyka/tiffbitmapfactory/Orientation;");
     jobject orientation = env->GetObjectField(optionsObj, orientationFieldID);
@@ -81,7 +81,8 @@ void BaseTiffConverter::readOptions()
     jclass orientationClass = env->FindClass("org/beyka/tiffbitmapfactory/Orientation");
     jfieldID orientationOrdinalFieldID = env->GetFieldID(orientationClass, "ordinal", "I");
     orientationInt = env->GetIntField(orientation, orientationOrdinalFieldID);
-    env->DeleteLocalRef(orientationClass);
+    env->DeleteLocalRef(orientationClass);*/
+    orientationInt = ORIENTATION_TOPLEFT;
 
     //Get image description field if exist
     jfieldID imgDescrFieldID = env->GetFieldID(jConvertOptionsClass, "imageDescription", "Ljava/lang/String;");
