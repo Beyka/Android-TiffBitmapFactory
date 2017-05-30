@@ -1,3 +1,10 @@
+0.9.7.5
+- Returned previous version of write bitmap to tiff algorithm with some improvements. This changes is due to an error of writing tiff data with bottom orientations
+
+0.9.7.4
+- Add converter utils
+- Improved write and read algorithms
+
 0.9.7.3
 - Add possibility to decode part of image by specify decode area
 
