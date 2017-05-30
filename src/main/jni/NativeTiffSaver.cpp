@@ -336,24 +336,28 @@ uint32 img_width = info.width;
             }
         }
 
-        TIFFSetField(output_image, TIFFTAG_IMAGEWIDTH, img_width);
-        TIFFSetField(output_image, TIFFTAG_IMAGELENGTH, img_height);
-        TIFFSetField(output_image, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-        TIFFSetField(output_image, TIFFTAG_COMPRESSION, compressionInt);
-        TIFFSetField(output_image, TIFFTAG_ORIENTATION, orientationInt);
-        TIFFSetField(output_image, TIFFTAG_XRESOLUTION, xRes);
-        TIFFSetField(output_image, TIFFTAG_YRESOLUTION, yRes);
-        TIFFSetField(output_image, TIFFTAG_RESOLUTIONUNIT, resUnit);
+         TIFFSetField(output_image, TIFFTAG_IMAGEWIDTH, img_width);
+         TIFFSetField(output_image, TIFFTAG_IMAGELENGTH, img_height);
+         TIFFSetField(output_image, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+         TIFFSetField(output_image, TIFFTAG_COMPRESSION, compressionInt);
+         TIFFSetField(output_image, TIFFTAG_ORIENTATION, orientationInt);
+         TIFFSetField(output_image, TIFFTAG_XRESOLUTION, xRes);
+         TIFFSetField(output_image, TIFFTAG_YRESOLUTION, yRes);
+         TIFFSetField(output_image, TIFFTAG_RESOLUTIONUNIT, resUnit);
 
-        if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
-            TIFFSetField(output_image, TIFFTAG_BITSPERSAMPLE,	1);
-            TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL,	1);
-            TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
-            TIFFSetField(output_image, TIFFTAG_FILLORDER, FILLORDER_MSB2LSB);
-        } else {
-            TIFFSetField(output_image, TIFFTAG_BITSPERSAMPLE, 8);
-            TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL, 4);
-            TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
+         if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
+             TIFFSetField(output_image, TIFFTAG_BITSPERSAMPLE,	1);
+             TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL,	1);
+             TIFFSetField(output_image, TIFFTAG_ROWSPERSTRIP, 1);
+             TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
+             TIFFSetField(output_image, TIFFTAG_FILLORDER, FILLORDER_MSB2LSB);
+         } else {
+             TIFFSetField(output_image, TIFFTAG_BITSPERSAMPLE, 8);
+             TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL, 4);
+             if (compressionInt != COMPRESSION_JPEG) {
+                TIFFSetField(output_image, TIFFTAG_ROWSPERSTRIP, 1);
+             }
+             TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
         }
 
         //Write additiona tags
@@ -381,35 +385,25 @@ uint32 img_width = info.width;
             TIFFSetField(output_image, TIFFTAG_COPYRIGHT, copyrightString);
         }
 
-        unsigned long MB8 = 2 * 1024 * 1024;
-        unsigned long rowSizeBytes = img_width * 4;
-        int rowPerStrip = MB8/rowSizeBytes;
-        if (rowPerStrip >= img_height) {
-            rowPerStrip = img_height / 4;
-        }
-        LOGII("rowPerStrip", rowPerStrip);
-
-
         // Write the information to the file
         if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
-            TIFFSetField(output_image, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
             unsigned char *bilevel = convertArgbToBilevel(img, img_width, img_height);
             int compressedWidth = (img_width/8 + 0.5);
-            for (int i = 0; i < img_height; i+=rowPerStrip) {
-                TIFFWriteEncodedStrip(output_image, i/rowPerStrip, &bilevel[i * compressedWidth], (compressedWidth) * rowPerStrip);
+            for (int i = 0; i < img_height; i++) {
+                TIFFWriteEncodedStrip(output_image, i, &bilevel[i * compressedWidth], (compressedWidth));
             }
             free(bilevel);
         } else if (compressionInt == COMPRESSION_JPEG) {
             for (int row = 0; row < img_height; row++) {
-                ret = TIFFWriteScanline(output_image, &img[row * img_width], row, 0);
+                TIFFWriteScanline(output_image, &img[row * img_width], row, 0);
             }
         } else {
-            TIFFSetField(output_image, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
-            for (int row = 0; row < img_height; row+=rowPerStrip) {
-                ret = TIFFWriteEncodedStrip(output_image, row/rowPerStrip, &img[row * img_width], sizeof(uint32) * img_width * rowPerStrip);
+            for (int row = 0; row < img_height; row++) {
+                TIFFWriteEncodedStrip(output_image, row, &img[row * img_width], img_width * sizeof(uint32));
+                //TIFFWriteScanline(output_image, &img[row * img_width], row, 0);
             }
         }
-        ret = TIFFWriteDirectory(output_image);
+       ret = TIFFWriteDirectory(output_image);
         LOGII("ret = ", ret);
 
         // Close the file
