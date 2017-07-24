@@ -348,6 +348,7 @@ uint32 img_width = info.width;
         if (compressionInt == COMPRESSION_CCITTRLE ||compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
             TIFFSetField(output_image, TIFFTAG_BITSPERSAMPLE,	1);
             TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL,	1);
+            TIFFSetField(output_image, TIFFTAG_ROWSPERSTRIP, 1);
             TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
             TIFFSetField(output_image, TIFFTAG_FILLORDER, FILLORDER_MSB2LSB);
         } else {
@@ -383,7 +384,6 @@ uint32 img_width = info.width;
 
         // Write the information to the file
         if (compressionInt == COMPRESSION_CCITTRLE || compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
-            TIFFSetField(output_image, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
             unsigned char *bilevel = convertArgbToBilevel(img, img_width, img_height);
             int compressedWidth = (img_width/8 + 0.5);
             for (int i = 0; i < img_height; i++) {
