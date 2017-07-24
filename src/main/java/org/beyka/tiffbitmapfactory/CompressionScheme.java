@@ -10,6 +10,10 @@ public enum CompressionScheme {
      */
     NONE(1),
     /**
+     * CCITT modified Huffman RLE
+     */
+    CCITTRLE(2),
+    /**
      * CCITT Group 3 fax encoding
      */
     CCITTFAX3(3),
