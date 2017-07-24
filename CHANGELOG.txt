@@ -1,3 +1,6 @@
+0.9.7.6
+-Added support for CCITT modified Huffman RLE (CCITTRLE) compression scheme
+
 0.9.7.5
 - Returned previous version of write bitmap to tiff algorithm with some improvements. This changes is due to an error of writing tiff data with bottom orientations
 
