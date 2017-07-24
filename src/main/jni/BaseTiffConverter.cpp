@@ -64,7 +64,7 @@ void BaseTiffConverter::readOptions()
     jint ci = env->GetIntField(compressionMode, ordinalFieldID);
     LOGII("ci", ci);
     //check is compression scheme is right. if not - set default LZW
-    if (ci == 1 || ci == 3 || ci == 4 || ci == 5 || ci == 7 || ci == 8 || ci == 32773 || ci == 32946)
+    if (ci == 1 || ci == 2 || ci == 3 || ci == 4 || ci == 5 || ci == 7 || ci == 8 || ci == 32773 || ci == 32946)
         compressionInt = ci;
     else
         compressionInt = 5;

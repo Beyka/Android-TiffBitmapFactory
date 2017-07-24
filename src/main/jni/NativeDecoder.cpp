@@ -251,13 +251,12 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
         env->DeleteLocalRef(configClass);
     }
 
-    int bitdepth = 0;
+    int bitdepth = 1;
     TIFFGetField(image, TIFFTAG_BITSPERSAMPLE, &bitdepth);
     if (bitdepth != 1 && bitdepth != 4 && bitdepth != 8 && bitdepth != 16) {
-        char *message = "Only 1, 4, 8, and 16 bits per sample supported";
-        LOGE(*message);
+        LOGE("Only 1, 4, 8 and 16 bits per sample are supported\0");
         if (throwException) {
-            jstring adinf = env->NewStringUTF(message);
+            jstring adinf = charsToJString("Only 1, 4, 8 and 16 bits per sample are supported\0");//env->NewStringUTF(errMsg);
             throw_decode_file_exception(env, jPath, adinf);
             env->DeleteLocalRef(adinf);
         }
@@ -3221,6 +3220,11 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         case COMPRESSION_NONE:
             gOptions_ImageCompressionFieldId = env->GetStaticFieldID(gOptions_ImageCompressionClass,
                 "NONE",
+                "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
+            break;
+        case COMPRESSION_CCITTRLE:
+            gOptions_ImageCompressionFieldId = env->GetStaticFieldID(gOptions_ImageCompressionClass,
+                "CCITTRLE",
                 "Lorg/beyka/tiffbitmapfactory/CompressionScheme;");
             break;
         case COMPRESSION_CCITTFAX3:

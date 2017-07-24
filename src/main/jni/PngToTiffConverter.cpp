@@ -228,7 +228,7 @@ jboolean PngToTiffConverter::convert()
     TIFFSetField(tiffImage, TIFFTAG_YRESOLUTION, yRes);
     TIFFSetField(tiffImage, TIFFTAG_RESOLUTIONUNIT, resUnit);
 
-    if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
+    if (compressionInt == COMPRESSION_CCITTRLE || compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
         TIFFSetField(tiffImage, TIFFTAG_BITSPERSAMPLE,	1);
         TIFFSetField(tiffImage, TIFFTAG_SAMPLESPERPIXEL,	1);
         TIFFSetField(tiffImage, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
@@ -264,7 +264,7 @@ jboolean PngToTiffConverter::convert()
 
     //check available memory and estimate memory
     unsigned long estimateMem = rowPerStrip * width * 4;
-    estimateMem += (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) ? (width/8 + 0.5) * rowPerStrip : 0;
+    estimateMem += (compressionInt == COMPRESSION_CCITTRLE || compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) ? (width/8 + 0.5) * rowPerStrip : 0;
     LOGII("estimateMem", estimateMem);
     if (estimateMem > availableMemory && availableMemory != -1) {
         LOGEI("Not enough memory", availableMemory);
@@ -293,7 +293,7 @@ jboolean PngToTiffConverter::convert()
     int ret;
 
     // Write the information to the file
-    if (compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
+    if (compressionInt == COMPRESSION_CCITTRLE || compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
         TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
         int compressedWidth = (width/8 + 0.5);
         for (int y = 0; y < height; y+=rowPerStrip) {
