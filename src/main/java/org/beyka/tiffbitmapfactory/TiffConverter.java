@@ -1,5 +1,7 @@
 package org.beyka.tiffbitmapfactory;
 
+import java.io.File;
+
 /**
  * Created by beyka on 5/9/17.
  */
@@ -10,18 +12,75 @@ public class TiffConverter {
         System.loadLibrary("tiffconverter");
     }
 
-//    public static boolean convertTiffPng(String in, String out) {
-//
-//    }
+    /**
+     * Convert any of supported formats from {@link ImageFormat} to tiff
+     * @param in path to income tiff file
+     * @param out path to outcome tiff file
+     * @param options converter options
+     * @param listener listener which will receive converting progress
+     *
+     * @return true if convert process have been successful
+     */
+    public static boolean convertToTiff(File in, File out, ConverterOptions options, IProgressListener listener) {
+        switch (getImageType(in.getAbsolutePath())) {
+            case JPEG:
+                return convertJpgTiff(in.getAbsolutePath(), out.getAbsolutePath(), options, listener);
+            case PNG:
+                return convertPngTiff(in.getAbsolutePath(), out.getAbsolutePath(), options, listener);
+            case TIFF:
+                // TODO: 9/19/17 make convert tiff to tiff method
+                break;
+        }
+        return false;
+    }
 
+
+
+    /**
+     * Convert tiff to png file. Uses direct data read method, that decrease memory usage
+     * @param tiff path to income tiff file
+     * @param png path to outcome png file
+     * @param options converter options
+     * @param listener listener which will receive converting progress
+     * @return true if convert process have been successful
+     */
     public static native boolean convertTiffPng(String tiff, String png, ConverterOptions options, IProgressListener listener);
 
+    /**
+     * Convert png to tiff file. Uses direct data read method, that decrease memory usage.
+     * @param png path to income png file
+     * @param tiff path to outcome tiff file
+     * @param options converter options
+     * @param listener listener which will receive converting progress
+     * @return true if convert process have been successful
+     */
     public static native boolean convertPngTiff(String png, String tiff, ConverterOptions options, IProgressListener listener);
 
+    /**
+     * Convert tiff to jpeg file. Uses direct data read method, that decrease memory usage
+     * @param tiff path to income tiff file
+     * @param jpg path to outcome jpeg file
+     * @param options converter options
+     * @param listener listener which will receive converting progress
+     * @return true if convert process have been successful
+     */
     public static native boolean convertTiffJpg(String tiff, String jpg, ConverterOptions options, IProgressListener listener);
 
+    /**
+     * Convert jpeg to tiff file. Uses direct data read method, that decrease memory usage.
+     * @param jpg path to income jpeg file
+     * @param tiff path to outcome tiff file
+     * @param options converter options
+     * @param listener listener which will receive converting progress
+     * @return true if convert process have been successful
+     */
     public static native boolean convertJpgTiff(String jpg, String tiff, ConverterOptions options, IProgressListener listener);
 
+    /**
+     * Return type of file.
+     * @param path - file path
+     * @return
+     */
     public static native ImageFormat getImageType(String path);
 
     public static final class ConverterOptions {
