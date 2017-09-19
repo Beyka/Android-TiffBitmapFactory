@@ -80,7 +80,7 @@ extern "C" {
                 return JNI_FALSE;
         }
 
-uint32 img_width = info.width;
+        uint32 img_width = info.width;
         uint32 img_height= info.height;
 
         const char *strPath = NULL;
@@ -395,6 +395,7 @@ uint32 img_width = info.width;
                 TIFFWriteScanline(output_image, &img[row * img_width], row, 0);
             }
         } else {
+            TIFFSetField(output_image, TIFFTAG_ROWSPERSTRIP, 1);
             for (int row = 0; row < img_height; row++) {
                 TIFFWriteEncodedStrip(output_image, row, &img[row * img_width], img_width * sizeof(uint32));
                 //TIFFWriteScanline(output_image, &img[row * img_width], row, 0);
