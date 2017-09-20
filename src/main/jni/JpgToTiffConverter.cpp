@@ -95,7 +95,7 @@ jboolean JpgToTiffConverter::convert()
     }
     env->ReleaseStringUTFChars(outPath, outCPath);
 
-    //open png file fow reading
+    //open jpg file fow reading
     const char *inCPath = NULL;
     inCPath = env->GetStringUTFChars(inPath, 0);
     LOGIS("IN path", inCPath);
@@ -104,7 +104,7 @@ jboolean JpgToTiffConverter::convert()
         if (throwException) {
             throw_cant_open_file_exception(env, inPath);
         }
-        LOGES("Can\'t open out file", inCPath);
+        LOGES("Can\'t open in file", inCPath);
         env->ReleaseStringUTFChars(inPath, inCPath);
         return JNI_FALSE;
     } else {
@@ -125,7 +125,6 @@ jboolean JpgToTiffConverter::convert()
         if (throwException) {
             throw_cant_open_file_exception(env, inPath);
         }
-        env->ReleaseStringUTFChars(inPath, inCPath);
         return JNI_FALSE;
     } else {
         LOGI("IS JPEG");

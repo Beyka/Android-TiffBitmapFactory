@@ -17,6 +17,8 @@ BaseTiffConverter::BaseTiffConverter(JNIEnv *e, jclass clazz, jstring in, jstrin
     tiffDirectory = 0;
     jIProgressListenerClass = env->FindClass("org/beyka/tiffbitmapfactory/IProgressListener");
     jConvertOptionsClass = env->FindClass("org/beyka/tiffbitmapfactory/TiffConverter$ConverterOptions");
+
+    compressionInt = 5;
 }
 
 BaseTiffConverter::~BaseTiffConverter()
