@@ -1,5 +1,7 @@
 package org.beyka.tiffbitmapfactory;
 
+import android.graphics.Bitmap;
+
 import java.io.File;
 
 /**
@@ -75,6 +77,10 @@ public class TiffConverter {
      * @return true if convert process have been successful
      */
     public static native boolean convertJpgTiff(String jpg, String tiff, ConverterOptions options, IProgressListener listener);
+
+    public static native boolean convertBmpTiff(String bmp, String tiff, ConverterOptions options, IProgressListener listener);
+
+    public static native Bitmap readBmp(String tiff, String bmp, ConverterOptions options, IProgressListener listener);
 
     /**
      * Return type of file.

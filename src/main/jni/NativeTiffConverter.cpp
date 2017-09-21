@@ -54,6 +54,21 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
     return result;
   }
 
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertBmpTiff
+  (JNIEnv *env, jclass clazz, jstring bmpPath, jstring tiffPath, jobject options, jobject listener)
+  {
+    BmpToTiffConverter *converter = new BmpToTiffConverter(env, clazz, bmpPath, tiffPath, options, listener);
+    jboolean result = converter->convert();
+    delete(converter);
+    return result;
+  }
+
+  JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_readBmp
+    (JNIEnv *env, jclass clazz, jstring tiffPath, jstring bmpPath, jobject options, jobject listener)
+    {
+      return readBmp(env, clazz, tiffPath, bmpPath, options, listener);
+    }
+
 JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImageType
   (JNIEnv *env, jclass clazz, jstring path)
   {

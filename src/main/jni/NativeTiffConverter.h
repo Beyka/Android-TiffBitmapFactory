@@ -13,6 +13,8 @@
 #include "TiffToJpgConverter.h"
 #include "PngToTiffConverter.h"
 #include "JpgToTiffConverter.h"
+#include "BmpToTiffConverter.h"
+#include "BitmapReader.h"
 
 
 #define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffConverter", "%s", x)
@@ -40,6 +42,12 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
   (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
 
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertJpgTiff
+  (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
+
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertBmpTiff
+  (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
+
+JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_readBmp
   (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
 
    // .jpg:  FF D8 FF
