@@ -47,6 +47,9 @@ class BmpToTiffConverter : public BaseTiffConverter
         void readHeaders();
 
         uint32 * getPixelsFromBmp(int offset, int limit);
+        uint32 * getPixelsFrom16Bmp(int offset, int limit);
+        uint32 * getPixelsFrom24Bmp(int offset, int limit);
+        uint32 * getPixelsFrom32Bmp(int offset, int limit);
 
         //METHODDEF(void) JpgToTiffConverter::my_error_exit (j_common_ptr)
         unsigned char * convertArgbToBilevel(uint32 *, uint32, uint32);

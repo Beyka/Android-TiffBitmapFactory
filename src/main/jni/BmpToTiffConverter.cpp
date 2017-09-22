@@ -125,7 +125,7 @@ jboolean BmpToTiffConverter::convert()
     }
 
     //check is bitmap has 24  bit per pixel. other format not supported
-    if (inf->biBitCount != 24 && inf->biBitCount != 0) {
+    if (inf->biBitCount != 16 && inf->biBitCount != 24 && inf->biBitCount != 32 && inf->biBitCount != 0) {
         LOGE("Support only 24bpp bitmaps");
         if (throwException) {
             throw_cant_open_file_exception(env, inPath);
@@ -302,20 +302,117 @@ void BmpToTiffConverter::readHeaders()
 
 uint32 *BmpToTiffConverter::getPixelsFromBmp(int offset, int limit)
 {
-    LOGII("offset", offset);
-    LOGII("limit", limit);
+    int componentPerPixel = inf->biBitCount/8;
+    LOGII("componentPerPixel", inf->biBitCount);
+    LOGII("componentPerPixel", componentPerPixel);
 
+    if (componentPerPixel == 2) {
+        return getPixelsFrom16Bmp(offset, limit);
+    } else if (componentPerPixel == 3) {
+        return getPixelsFrom24Bmp(offset, limit);
+    } else if (componentPerPixel == 4) {
+        return getPixelsFrom32Bmp(offset, limit);
+    }
+
+    return NULL;
+}
+
+uint32 *BmpToTiffConverter::getPixelsFrom16Bmp(int offset, int limit)
+{
     unsigned char *buf;
     int size;
     int width = inf->biWidth;
     int height = inf->biHeight;
-    LOGII("width = ", width);
-    LOGII("height = ", height);
+
+    LOGII("compr", inf->biCompression);
 
     if (offset + limit >= height) {
         limit = height - offset;
     }
-    LOGII("limit = ", limit);
+
+    //width of bitmap should be multiple 4
+    size = width * 2 + (width * 2) % 4;
+    size = size * limit;
+
+    /*if(inf->biSizeImage == 0)  {
+        size = width * 3 + width % 4;
+        size = size * limit;
+    } else {
+        size = inf->biSizeImage;
+    }*/
+
+    buf = (unsigned char *)malloc(size);
+    if (buf == NULL) {
+        LOGE("Can\'t allocate buffer");
+        return NULL;
+    }
+
+    //in bitmap picture stored fliped from up to down.
+    //when need read 0 row - should read height-1 row
+    //seek file to position from the end of file to read
+    fseek(inFile, bmp->bfOffBits + (height - offset - limit) * (width * 2 + (width * 2) % 4) , SEEK_SET);
+
+    int n = fread(buf, sizeof(unsigned char), size, inFile);
+    LOGII("Read bytes", n);
+
+    int temp, line, i, j, numImgBytes, ind = 0;
+    uint32 *pixels;
+
+    temp = width * 2;
+    line = temp + (width * 2) % 4;//width % 4;
+    numImgBytes = (4 * (width * limit));
+    pixels = (uint32*)malloc(numImgBytes);
+
+    int pixelss = 0;
+
+    numImgBytes = line * limit;
+    for (i = 0; i < numImgBytes; i+=2) {
+
+        if (i > temp && (i % line) >= temp) continue;
+
+        unsigned char r, g, b, a = 0b11111111;
+
+        uint16_t* pix = (uint16_t*) (buf + i);
+        //read colors. R5 G6 B5
+        b = 0b11111 & *pix;//0x001F & *pix;
+        g = 0b11111 & *pix >> 5;//0x03E0 & *pix;
+        r = 0b11111 & *pix >> 10;//0x7C00 & *pix;
+
+        pixels[ind] = (r<<3) | (g << 3 << 8) | (b << 3 << 16)  | a << 24 ;//(r| g << 8 | b << 16 | a << 24) ;
+
+        /*//read colors. X1 R5 G5 B5
+        b = 0b11111 & *pix;//0x001F & *pix;
+        g = 0b111111 & *pix >> 5;//0x03E0 & *pix;
+        r = 0b11111 & *pix >> 11;//0x7C00 & *pix;
+
+        pixels[ind] = (r<<3) | (g << 2 << 8) | (b << 3 << 16)  | a << 24 ;//(r| g << 8 | b << 16 | a << 24) ;*/
+
+        ind++;
+    }
+
+    uint32 *tmp = new uint32[width];
+    for (i = 0; i < limit/2 ;i++) {
+        memcpy(tmp, pixels + i * width, width * sizeof(uint32));
+        memcpy(pixels + i * width, pixels + (limit - 1- i) * width , width * sizeof(uint32));
+        memcpy(pixels + (limit - 1- i) * width , tmp, width * sizeof(uint32));
+    }
+    free (tmp);
+
+    free(buf);
+
+    return pixels;
+}
+
+uint32 *BmpToTiffConverter::getPixelsFrom24Bmp(int offset, int limit)
+{
+    unsigned char *buf;
+    int size;
+    int width = inf->biWidth;
+    int height = inf->biHeight;
+
+    if (offset + limit >= height) {
+        limit = height - offset;
+    }
 
     //width of bitmap should be multiple 4
     size = width * 3 + width % 4;
@@ -337,7 +434,7 @@ uint32 *BmpToTiffConverter::getPixelsFromBmp(int offset, int limit)
     //in bitmap picture stored fliped from up to down.
     //when need read 0 row - should read height-1 row
     //seek file to position from the end of file to read
-    fseek(inFile, bmp->bfOffBits + (height - offset - limit) * (width + width % 4)* 3, SEEK_SET);
+    fseek(inFile, bmp->bfOffBits + (height - offset - limit) * (width * 3 + width % 4) , SEEK_SET);
 
     int n = fread(buf, sizeof(unsigned char), size, inFile);
     LOGII("Read bytes", n);
@@ -346,7 +443,7 @@ uint32 *BmpToTiffConverter::getPixelsFromBmp(int offset, int limit)
     uint32 *pixels;
 
     temp = width * 3;
-    line = temp + width % 4;
+    line = temp + width % 4;//width % 4;
     numImgBytes = (4 * (width * limit));
     pixels = (uint32*)malloc(numImgBytes);
 
@@ -355,9 +452,79 @@ uint32 *BmpToTiffConverter::getPixelsFromBmp(int offset, int limit)
         unsigned char r, g, b, a = 0b11111111;
         //width of bitmap should be multiple 4
         //here skip pixels that haven't data
+        //but if bitmap is 32 bpp - it is laready multiple to 4
         if (i > temp && (i % line) >= temp) continue;
 
         //read colors. alpha always 255lf because 24bpp bitmap hasn't alpha chanel
+
+        b = buf[i];
+        i++;
+        g = buf[i];
+        i++;
+        r = buf[i];
+
+
+        pixels[ind] = (r| g << 8 | b << 16 | a << 24) ;
+        ind++;
+    }
+
+    uint32 *tmp = new uint32[width];
+    for (i = 0; i < limit/2 ;i++) {
+        memcpy(tmp, pixels + i * width, width * sizeof(uint32));
+        memcpy(pixels + i * width, pixels + (limit - 1- i) * width , width * sizeof(uint32));
+        memcpy(pixels + (limit - 1- i) * width , tmp, width * sizeof(uint32));
+    }
+    free (tmp);
+
+    free(buf);
+
+    return pixels;
+}
+
+uint32 *BmpToTiffConverter::getPixelsFrom32Bmp(int offset, int limit)
+{
+    unsigned char *buf;
+    int size;
+    int width = inf->biWidth;
+    int height = inf->biHeight;
+
+    if (offset + limit >= height) {
+        limit = height - offset;
+    }
+
+    //width of bitmap should be multiple 4
+    size = width * 4;
+    size = size * limit;
+
+    buf = (unsigned char *)malloc(size);
+    if (buf == NULL) {
+        LOGE("Can\'t allocate buffer");
+        return NULL;
+    }
+
+
+    //in bitmap picture stored fliped from up to down.
+    //when need read 0 row - should read height-1 row
+    //seek file to position from the end of file to read
+    fseek(inFile, bmp->bfOffBits + (height - offset - limit) * width * 4, SEEK_SET);
+
+    int n = fread(buf, sizeof(unsigned char), size, inFile);
+    LOGII("Read bytes", n);
+
+    int temp, line, i, j, numImgBytes, ind = 0;
+    uint32 *pixels;
+
+    line = width * 4;//width % 4;
+    numImgBytes = (4 * (width * limit));
+    pixels = (uint32*)malloc(numImgBytes);
+
+    for (i = 0; i < numImgBytes; i++) {
+        unsigned char r, g, b, a = 0b11111111;
+
+        //read colors. alpha always 255lf because 24bpp bitmap hasn't alpha chanel
+        //a = buf[i];
+        i++;
+
         b = buf[i];
         i++;
         g = buf[i];
