@@ -29,6 +29,8 @@ public class TiffConverter {
                 return convertJpgTiff(in.getAbsolutePath(), out.getAbsolutePath(), options, listener);
             case PNG:
                 return convertPngTiff(in.getAbsolutePath(), out.getAbsolutePath(), options, listener);
+            case BMP:
+                return convertBmpTiff(in.getAbsolutePath(), out.getAbsolutePath(), options, listener);
             case TIFF:
                 // TODO: 9/19/17 make convert tiff to tiff method
                 break;
