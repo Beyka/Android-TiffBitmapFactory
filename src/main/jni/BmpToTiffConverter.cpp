@@ -111,48 +111,37 @@ jboolean BmpToTiffConverter::convert()
         } else {
             env->ReleaseStringUTFChars(inPath, inCPath);
         }
-
+    //Read header of bitmap file
     readHeaders();
 
-        //read file header
-    //    size_t byte_count = 54;
-    //    unsigned char *header = (unsigned char *)malloc(sizeof(unsigned char) * byte_count);
-    //    fread(header, 1, byte_count, inFile);
-    //    rewind(inFile);
-
-        //Check is file is JPG image
-        bool is_bmp = !strncmp( (const char*)&bmp->bfType, "BM", 2 );
-        if (!is_bmp) {
-            LOGE("Not bmp file");
-            if (throwException) {
-                throw_cant_open_file_exception(env, inPath);
-            }
-            return JNI_FALSE;
-        } else {
-            LOGI("IS BMP");
+    //Check is file is JPG image
+    bool is_bmp = !strncmp( (const char*)&bmp->bfType, "BM", 2 );
+    if (!is_bmp) {
+        LOGE("Not bmp file");
+        if (throwException) {
+            throw_cant_open_file_exception(env, inPath);
         }
+        return JNI_FALSE;
+    }
 
-        if (inf->biBitCount != 24 && inf->biBitCount != 0) {
-            LOGE("Support only 24bpp bitmaps");
-            if (throwException) {
-                throw_cant_open_file_exception(env, inPath);
-            }
-            return JNI_FALSE;
+    //check is bitmap has 24  bit per pixel. other format not supported
+    if (inf->biBitCount != 24 && inf->biBitCount != 0) {
+        LOGE("Support only 24bpp bitmaps");
+        if (throwException) {
+            throw_cant_open_file_exception(env, inPath);
         }
-        LOGII("Bits per pixel", inf->biBitCount);
+        return JNI_FALSE;
+    }
+    LOGII("Bits per pixel", inf->biBitCount);
 
-
-
-    int componentsPerPixel = 4;
+    //Component per pixel will be always 4. Alpha will be always 0xff
+    int componentsPerPixel = 4;//inf->biBitCount / 8;
 
     int width = inf->biWidth;
     int height = inf->biHeight;
     LOGII("width", width);
     LOGII("height", height);
-    uint32 *pixels = getPixelsFromBmp();
-    //uint32 *pixels = getPixelsFromBmp(&width, &height);
 
-//TODO wrute tiff
     //Create tiff structure
     TIFFSetField(tiffImage, TIFFTAG_IMAGEWIDTH, width);
     TIFFSetField(tiffImage, TIFFTAG_IMAGELENGTH, height);
@@ -171,12 +160,9 @@ jboolean BmpToTiffConverter::convert()
     } else {
         TIFFSetField(tiffImage, TIFFTAG_BITSPERSAMPLE, 8);
         TIFFSetField(tiffImage, TIFFTAG_SAMPLESPERPIXEL, componentsPerPixel);
-        if (componentsPerPixel == 1) {
-            TIFFSetField(tiffImage, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
-        } else {
-            TIFFSetField(tiffImage, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
-        }
+        TIFFSetField(tiffImage, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
     }
+
     //creation date
     char *date = getCreationDate();
     TIFFSetField(tiffImage, TIFFTAG_DATETIME, date);
@@ -194,154 +180,114 @@ jboolean BmpToTiffConverter::convert()
     jlong total = width * height;
     sendProgress(0, total);
 
-    /*int biSizeImage = width * 3 + width % 4;
-    LOGII("biSizeImage", biSizeImage);
-    int rowSize = width * componentsPerPixel;
-    LOGII("bmp samples", componentsPerPixel);*/
-
     int rowSize = width * componentsPerPixel;
     //Calculate row per strip
-        //maximum size for strip should be less than 2Mb if memory available
-        unsigned long MB2 = (availableMemory == -1 || availableMemory > 3 * 1024 * 1024) ? 2 * 1024 * 1024 : width * 4;
-        int rowPerStrip = MB2/rowSize;
-        if (rowPerStrip >= height) {
-            rowPerStrip = height / 4;
-        }
-        if (rowPerStrip < 1) rowPerStrip = 1;
-        LOGII("rowPerStrip", rowPerStrip);
+    //maximum size for strip should be less than 2Mb if memory available
+    unsigned long MB2 = (availableMemory == -1 || availableMemory > 3 * 1024 * 1024) ? 2 * 1024 * 1024 : width * 4;
+    int rowPerStrip = MB2/rowSize;
+    if (rowPerStrip >= height) {
+        rowPerStrip = height / 4;
+    }
+    if (rowPerStrip < 1) rowPerStrip = 1;
+    LOGII("rowPerStrip", rowPerStrip);
 
-        unsigned long estimateMem = rowPerStrip * width * 3;
-        //estimateMem += sizeof(JSAMPLE) * rowSize;//jpg buffer
-        if (compressionInt == COMPRESSION_JPEG) {
-            estimateMem += 0;
-        } else if (compressionInt == COMPRESSION_CCITTRLE || compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
-            estimateMem += (width/8 + 0.5) * rowPerStrip;
-        } else {
-            estimateMem += rowPerStrip * rowSize;
+    unsigned long estimateMem = rowPerStrip * width * 4 * 2;//need 2 buffers for read data from bitmap. Check getPixelsFromBmp method
+
+    if (compressionInt == COMPRESSION_JPEG) {
+        estimateMem += width * sizeof(uint32);//temp array for writing JPEG lines
+        estimateMem += width * sizeof(uint32);//temp array for fliping bitmap data in getPixelsFromBmp method
+    } else if (compressionInt == COMPRESSION_CCITTRLE || compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
+        estimateMem += (width/8 + 0.5) * rowPerStrip; // bilevel array
+    } else {
+        estimateMem += 0;
+    }
+    LOGII("estimateMem", estimateMem);
+    if (estimateMem > availableMemory && availableMemory != -1) {
+        LOGEI("Not enough memory", availableMemory);
+        if (throwException) {
+            throw_not_enought_memory_exception(env, availableMemory, estimateMem);
         }
-        LOGII("estimateMem", estimateMem);
-        if (estimateMem > availableMemory && availableMemory != -1) {
-            LOGEI("Not enough memory", availableMemory);
-            if (throwException) {
-                throw_not_enought_memory_exception(env, availableMemory, estimateMem);
+        return JNI_FALSE;
+    }
+
+    if (checkStop()) {
+        conversion_result = JNI_FALSE;
+        return conversion_result;
+    }
+
+    int ret;
+
+    if (compressionInt == COMPRESSION_CCITTRLE || compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
+        TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
+        int compressedWidth = (width/8 + 0.5);
+        for (int y = 0; y < height; y+=rowPerStrip) {
+            if (checkStop()) {
+                if (fileDescriptor >= 0) {
+                    close(fileDescriptor);
+                }
+                conversion_result = JNI_FALSE;
+                return conversion_result;
+            }
+            int rowToRead = rowPerStrip;
+            if (rowToRead + y >= height) {
+                rowToRead = height - y;
+            }
+            sendProgress(y * width, total);
+            uint32 *pixels = getPixelsFromBmp(y, rowToRead);
+            unsigned char *bilevel = convertArgbToBilevel(pixels, width, rowToRead);
+            free(pixels);
+            ret = TIFFWriteEncodedStrip(tiffImage, y/rowToRead, bilevel, compressedWidth * sizeof(unsigned char) * rowToRead);
+            free(bilevel);
+        }
+    } else if (compressionInt == COMPRESSION_JPEG) {
+        for (int ys = 0; ys < height; ys+=rowPerStrip) {
+        if (checkStop()) {
+            if (fileDescriptor >= 0) {
+                close(fileDescriptor);
             }
             return JNI_FALSE;
         }
-
-        if (checkStop()) {
-            //jpeg_finish_decompress(&cinfo);
-            conversion_result = JNI_FALSE;
-            return conversion_result;
+        int rowToRead = rowPerStrip;
+        if (rowToRead + ys >= height) {
+            rowToRead = height - ys;
         }
-
-        //Buffer for read bmp image line by line
-        //unsigned char *buffer = new unsigned char[biSizeImage];
-
-        int ret;
-
-        if (compressionInt == COMPRESSION_CCITTRLE || compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
-            /*TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
-            int compressedWidth = (width/8 + 0.5);
-            for (int y = 0; y < height; y+=rowPerStrip) {
-                        if (checkStop()) {
-                            //for (int sy = 0; sy < rowPerStrip; sy++) {
-                                free(pixels);
-                            //}
-                            if (fileDescriptor >= 0) {
-                                close(fileDescriptor);
-                            }
-                            conversion_result = JNI_FALSE;
-                            return conversion_result;
-                        }
-                        int rowToRead = rowPerStrip;
-                        if (rowToRead + y >= height) {
-                            rowToRead = height - y;
-                        }
-                        sendProgress(y * width, total);
-
-                        fread(pixels, sizeof(unsigned char), rowPerStrip * rowSize, inFile);
-
-                        unsigned char *bilevel = convertArgbToBilevel(pixels, componentsPerPixel, width, rowToRead);
-                        ret = TIFFWriteEncodedStrip(tiffImage, y/rowPerStrip, bilevel, compressedWidth * sizeof(unsigned char) * rowToRead);
-                        free(bilevel);
-            }*/
-        } else if (compressionInt == COMPRESSION_JPEG) {
-            for (int ys = 0; ys < height; ys+=rowPerStrip) {
-                        if (checkStop()) {
-                            for (int sy = 0; sy < rowPerStrip; sy++) {
-                                free(pixels);
-                            }
-                            if (fileDescriptor >= 0) {
-                                close(fileDescriptor);
-                            }
-
-                            return JNI_FALSE;
-                        }
-                        int rowToRead = rowPerStrip;
-                        if (rowToRead + ys >= height) {
-                            rowToRead = height - ys;
-                        }
-                        LOGII("rowToRead", rowToRead);
-                        sendProgress(ys * width, total);
-                        //png_read_rows(png_ptr, &row_pointers[0], NULL, rowToRead);
-                        uint32 *pixelsline = new uint32[width];
-                        for (int k = 0; k < rowToRead; k++) {
-                            memcpy(pixelsline, pixels, width * sizeof(uint32));
-                            ret = TIFFWriteScanline(tiffImage, pixelsline, ys + k, 0);
-                        }
-                        //TIFFWriteEncodedStrip(tiffImage, y/rowPerStrip, pixels, width * sizeof(uint32) * rowToRead);
-                        delete[] pixelsline;
-
-                    }
-                } else {
-
-                    /*for (int y = 0; y < height; y++) {
-                        uint32 *pixelsrow = new uint32[width * rowToRead];
-                        memcpy(pixelsrow, pixels + y * width, rowToRead * width * sizeof(uint32));
-                        ret = TIFFWriteScanline(tiffImage, pixelsline, ys + k, 0);
-                    }*/
-
-                      TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
-                      for (int y = 0; y < height; y+=rowPerStrip) {
-                          if (checkStop()) {
-                              for (int sy = 0; sy < rowPerStrip; sy++) {
-                                  free(pixels);
-                              }
-                              if (fileDescriptor >= 0) {
-                                  close(fileDescriptor);
-                              }
-                              return JNI_FALSE;
-                          }
-                          int rowToRead = rowPerStrip;
-                          if (rowToRead + y >= height) {
-                              rowToRead = height - y;
-                          }
-                          LOGII("rowToRead", rowToRead);
-                          sendProgress(y * width, total);
-                          //png_read_rows(png_ptr, &row_pointers[0], NULL, rowToRead);
-                          uint32 *pixelsrow = new uint32[width * rowToRead * sizeof(uint32)];
-                          memcpy(pixelsrow, pixels + y * width, rowToRead * width * sizeof(uint32));
-                          /*for (int k = 0; k < rowToRead; k++) {
-                              memcpy(pixelsrow+k*width, pixels + (k + y) * width, width * sizeof(uint32));
-                          }*/
-                          TIFFWriteEncodedStrip(tiffImage, y/rowPerStrip, pixelsrow, width * sizeof(uint32) * rowToRead);
-                          delete[] pixelsrow;
-                      }
-                  }
-
-
-
-
-
-
-        ret = TIFFWriteDirectory(tiffImage);
-        LOGII("ret = ", ret);
-
+        sendProgress(ys * width, total);
+        uint32 *pixels = getPixelsFromBmp(ys, rowToRead);
+        uint32 *pixelsline = new uint32[width];
+        for (int k = 0; k < rowToRead; k++) {
+            memcpy(pixelsline, &pixels [k * width], width * sizeof(uint32));
+            ret = TIFFWriteScanline(tiffImage, pixelsline, ys + k, 0);
+        }
+        delete[] pixelsline;
         free(pixels);
+        }
+    } else {
+        TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
+        for (int y = 0; y < height; y+=rowPerStrip) {
+            if (checkStop()) {
+                if (fileDescriptor >= 0) {
+                    close(fileDescriptor);
+                }
+                return JNI_FALSE;
+            }
+            int rowToRead = rowPerStrip;
+            if (rowToRead + y >= height) {
+                rowToRead = height - y;
+            }
+            LOGII("rowToRead", rowToRead);
+            sendProgress(y * width, total);
+            uint32 *pixels = getPixelsFromBmp(y, rowToRead);
+            TIFFWriteEncodedStrip(tiffImage, y/rowPerStrip, pixels, width * sizeof(uint32) * rowToRead);
+            free(pixels);
+        }
+    }
 
-        sendProgress(total, total);
-        conversion_result = JNI_TRUE;
-        return conversion_result;
+    ret = TIFFWriteDirectory(tiffImage);
+    LOGII("ret = ", ret);
+
+    sendProgress(total, total);
+    conversion_result = JNI_TRUE;
+    return conversion_result;
 }
 
 void BmpToTiffConverter::readHeaders()
@@ -354,8 +300,10 @@ void BmpToTiffConverter::readHeaders()
     LOGI("inf read");
 }
 
-uint32 *BmpToTiffConverter::getPixelsFromBmp()
+uint32 *BmpToTiffConverter::getPixelsFromBmp(int offset, int limit)
 {
+    LOGII("offset", offset);
+    LOGII("limit", limit);
 
     unsigned char *buf;
     int size;
@@ -363,12 +311,22 @@ uint32 *BmpToTiffConverter::getPixelsFromBmp()
     int height = inf->biHeight;
     LOGII("width = ", width);
     LOGII("height = ", height);
-    if(inf->biSizeImage == 0)  {
+
+    if (offset + limit >= height) {
+        limit = height - offset;
+    }
+    LOGII("limit = ", limit);
+
+    //width of bitmap should be multiple 4
+    size = width * 3 + width % 4;
+    size = size * limit;
+
+    /*if(inf->biSizeImage == 0)  {
         size = width * 3 + width % 4;
-        size = size * height;
+        size = size * limit;
     } else {
         size = inf->biSizeImage;
-    }
+    }*/
 
     buf = (unsigned char *)malloc(size);
     if (buf == NULL) {
@@ -376,7 +334,10 @@ uint32 *BmpToTiffConverter::getPixelsFromBmp()
         return NULL;
     }
 
-    fseek(inFile, bmp->bfOffBits, SEEK_SET);
+    //in bitmap picture stored fliped from up to down.
+    //when need read 0 row - should read height-1 row
+    //seek file to position from the end of file to read
+    fseek(inFile, bmp->bfOffBits + (height - offset - limit) * (width + width % 4)* 3, SEEK_SET);
 
     int n = fread(buf, sizeof(unsigned char), size, inFile);
     LOGII("Read bytes", n);
@@ -386,15 +347,17 @@ uint32 *BmpToTiffConverter::getPixelsFromBmp()
 
     temp = width * 3;
     line = temp + width % 4;
-    numImgBytes = (4 * (width * height));
+    numImgBytes = (4 * (width * limit));
     pixels = (uint32*)malloc(numImgBytes);
 
-    //memcpy(pixels, buf, numImgBytes);
-    numImgBytes = line * height;
+    numImgBytes = line * limit;
     for (i = 0; i < numImgBytes; i++) {
         unsigned char r, g, b, a = 0b11111111;
+        //width of bitmap should be multiple 4
+        //here skip pixels that haven't data
         if (i > temp && (i % line) >= temp) continue;
 
+        //read colors. alpha always 255lf because 24bpp bitmap hasn't alpha chanel
         b = buf[i];
         i++;
         g = buf[i];
@@ -406,10 +369,10 @@ uint32 *BmpToTiffConverter::getPixelsFromBmp()
     }
 
     uint32 *tmp = new uint32[width];
-    for (i = 0; i < height/2 ;i++) {
+    for (i = 0; i < limit/2 ;i++) {
         memcpy(tmp, pixels + i * width, width * sizeof(uint32));
-        memcpy(pixels + i * width, pixels + (height - 1- i) * width , width * sizeof(uint32));
-        memcpy(pixels + (height - 1- i) * width , tmp, width * sizeof(uint32));
+        memcpy(pixels + i * width, pixels + (limit - 1- i) * width , width * sizeof(uint32));
+        memcpy(pixels + (limit - 1- i) * width , tmp, width * sizeof(uint32));
     }
     free (tmp);
 
@@ -418,7 +381,7 @@ uint32 *BmpToTiffConverter::getPixelsFromBmp()
     return pixels;
 }
 
-unsigned char * BmpToTiffConverter::convertArgbToBilevel(unsigned char *data, int components, uint32 width, uint32 height)
+unsigned char * BmpToTiffConverter::convertArgbToBilevel(uint32 *data, uint32 width, uint32 height)
 {
     unsigned char red;
     unsigned char green;
@@ -430,7 +393,7 @@ unsigned char * BmpToTiffConverter::convertArgbToBilevel(unsigned char *data, in
 
     unsigned char *dest = (unsigned char *) malloc(sizeof(unsigned char) * bilevelWidth * height);
 
-    uint32 maxGrey = (components > 1) ? (0.2125 * 255 + 0.7154 * 255 + 0.0721 * 255) : 255;
+    uint32 maxGrey = 0.2125 * 255 + 0.7154 * 255 + 0.0721 * 255;
     uint32 halfGrey = maxGrey/2;
 
     uint32 shift = 0;
@@ -440,16 +403,12 @@ unsigned char * BmpToTiffConverter::convertArgbToBilevel(unsigned char *data, in
         shift = 0;
         charsum = 0;
         k = 7;
-        for (int i = 0; i < width * components; i+=components) {
-            unsigned char *px = &data[y * width * components + i];
-            if (components == 1) {
-                grayPix = (*px);
-            } else {
+        for (int i = 0; i < width; i++) {
+            uint32 *px = &data[y * width + i];
                 red = px[0];
                 green = px[1];
                 blue = px[2];
                 grayPix = (0.2125 * red + 0.7154 * green + 0.0721 * blue);
-            }
 
             if (grayPix < halfGrey) charsum &= ~(1 << k);
             else charsum |= 1 << k;
