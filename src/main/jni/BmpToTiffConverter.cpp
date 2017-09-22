@@ -134,6 +134,12 @@ jboolean BmpToTiffConverter::convert()
     }
     LOGII("Bits per pixel", inf->biBitCount);
 
+         int compression = inf->biCompression;
+                  LOGII("compression", inf->biCompression);
+                  for (int i = 0; i < 3; i++) {
+                      LOGII("mask", inf->biPalete[i]);
+                  }
+
     //Component per pixel will be always 4. Alpha will be always 0xff
     int componentsPerPixel = 4;//inf->biBitCount / 8;
 
@@ -370,22 +376,26 @@ uint32 *BmpToTiffConverter::getPixelsFrom16Bmp(int offset, int limit)
 
         if (i > temp && (i % line) >= temp) continue;
 
-        unsigned char r, g, b, a = 0b11111111;
+        uint16_t r, g, b, a = 0b11111111;
 
         uint16_t* pix = (uint16_t*) (buf + i);
-        //read colors. R5 G6 B5
-        b = 0b11111 & *pix;//0x001F & *pix;
-        g = 0b11111 & *pix >> 5;//0x03E0 & *pix;
-        r = 0b11111 & *pix >> 10;//0x7C00 & *pix;
 
-        pixels[ind] = (r<<3) | (g << 3 << 8) | (b << 3 << 16)  | a << 24 ;//(r| g << 8 | b << 16 | a << 24) ;
+        r = inf->biPalete[0] & *pix;
+        g = inf->biPalete[1] & *pix;
+        b = inf->biPalete[2] & *pix;
 
-        /*//read colors. X1 R5 G5 B5
-        b = 0b11111 & *pix;//0x001F & *pix;
-        g = 0b111111 & *pix >> 5;//0x03E0 & *pix;
-        r = 0b11111 & *pix >> 11;//0x7C00 & *pix;
+        //Use one of palete mask to determine which type of 1 bpp used 555 or 565
+        char greenShiftBits;
+        g = g >> 5;
+        if (inf->biPalete[1] == 0x03E0) {
+            greenShiftBits = 3;
+            r = r >> 10;
+        } else {
+            greenShiftBits = 2;
+            r = r >> 11;
+        }
 
-        pixels[ind] = (r<<3) | (g << 2 << 8) | (b << 3 << 16)  | a << 24 ;//(r| g << 8 | b << 16 | a << 24) ;*/
+        pixels[ind] = (r<<3) | (g << greenShiftBits << 8) | (b << 3 << 16)  | a << 24 ;//(r| g << 8 | b << 16 | a << 24) ;
 
         ind++;
     }

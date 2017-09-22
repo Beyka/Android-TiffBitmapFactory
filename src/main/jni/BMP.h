@@ -19,11 +19,15 @@ typedef struct                       /**** BMP file info structure ****/
     int            biHeight;         /* Height of image */
     unsigned short biPlanes;         /* Number of color planes */
     unsigned short biBitCount;       /* Number of bits per pixel */
-    unsigned int   biCompression;    /* Type of compression to use */
+    unsigned int   biCompression;    /* Type of compression to use 0 - none, 1 - rle 8 bit, 2 - rle 4 but, 3 - bi_bitfields*/
     unsigned int   biSizeImage;      /* Size of image data */
     int            biXPelsPerMeter;  /* X pixels per meter */
     int            biYPelsPerMeter;  /* Y pixels per meter */
     unsigned int   biClrUsed;        /* Number of colors used */
     unsigned int   biClrImportant;   /* Number of important colors */
+    unsigned int biPalete[3] ; /* Palete (masks for 16 bit bmps)*/
+    /*a 5-5-5 16-bit image, where the blue mask is 0x001f, the green mask is 0x03e0, and the red mask is 0x7c00; and a 5-6-5 16-bit image, where the blue mask is 0x001f, the green mask is 0x07e0, and the red mask is 0xf800*/
 } BITMAPINFOHEADER;
+
+
 #pragma pack()
