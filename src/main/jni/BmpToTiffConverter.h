@@ -37,13 +37,6 @@ class BmpToTiffConverter : public BaseTiffConverter
         BITMAPFILEHEADER *bmp;
         BITMAPINFOHEADER *inf;
 
-        /*
-        int componentsPerPixel;
-
-        char jpeg_struct_init;
-        struct jpeg_decompress_struct cinfo;
-        struct jpeg_error_mgr jerr;
-        */
         void readHeaders();
 
         uint32 * getPixelsFromBmp(int offset, int limit);
@@ -51,7 +44,6 @@ class BmpToTiffConverter : public BaseTiffConverter
         uint32 * getPixelsFrom24Bmp(int offset, int limit);
         uint32 * getPixelsFrom32Bmp(int offset, int limit);
 
-        //METHODDEF(void) JpgToTiffConverter::my_error_exit (j_common_ptr)
         unsigned char * convertArgbToBilevel(uint32 *, uint32, uint32);
 
 };

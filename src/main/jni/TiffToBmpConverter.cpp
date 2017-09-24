@@ -124,7 +124,7 @@ jboolean TiffToBmpConverter::convertFromImage() {
     int origBufferSize = width * height * sizeof(uint32);
 
     unsigned long estimateMem = origBufferSize;
-    stimateMem += width * 3 + width % 4; //working buf to write to file
+    estimateMem += width * 3 + width % 4; //working buf to write to file
     LOGII("estimateMem", estimateMem);
     if (estimateMem > availableMemory && availableMemory != -1) {
         LOGEI("Not enough memory", availableMemory);

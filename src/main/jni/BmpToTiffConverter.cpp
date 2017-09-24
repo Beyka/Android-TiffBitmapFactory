@@ -96,21 +96,21 @@ jboolean BmpToTiffConverter::convert()
     }
     env->ReleaseStringUTFChars(outPath, outCPath);
 
-        //open bmp file fow reading
-        const char *inCPath = NULL;
-        inCPath = env->GetStringUTFChars(inPath, 0);
-        LOGIS("IN path", inCPath);
-        inFile = fopen(inCPath, "rb");
-        if (!inFile) {
-            if (throwException) {
-                throw_cant_open_file_exception(env, inPath);
-            }
-            LOGES("Can\'t open out file", inCPath);
-            env->ReleaseStringUTFChars(inPath, inCPath);
-            return JNI_FALSE;
-        } else {
-            env->ReleaseStringUTFChars(inPath, inCPath);
+    //open bmp file fow reading
+    const char *inCPath = NULL;
+    inCPath = env->GetStringUTFChars(inPath, 0);
+    LOGIS("IN path", inCPath);
+    inFile = fopen(inCPath, "rb");
+    if (!inFile) {
+        if (throwException) {
+            throw_cant_open_file_exception(env, inPath);
         }
+        LOGES("Can\'t open out file", inCPath);
+        env->ReleaseStringUTFChars(inPath, inCPath);
+        return JNI_FALSE;
+    } else {
+        env->ReleaseStringUTFChars(inPath, inCPath);
+    }
     //Read header of bitmap file
     readHeaders();
 
@@ -340,13 +340,6 @@ uint32 *BmpToTiffConverter::getPixelsFrom16Bmp(int offset, int limit)
     size = width * 2 + (width * 2) % 4;
     size = size * limit;
 
-    /*if(inf->biSizeImage == 0)  {
-        size = width * 3 + width % 4;
-        size = size * limit;
-    } else {
-        size = inf->biSizeImage;
-    }*/
-
     buf = (unsigned char *)malloc(size);
     if (buf == NULL) {
         LOGE("Can\'t allocate buffer");
@@ -427,13 +420,6 @@ uint32 *BmpToTiffConverter::getPixelsFrom24Bmp(int offset, int limit)
     //width of bitmap should be multiple 4
     size = width * 3 + width % 4;
     size = size * limit;
-
-    /*if(inf->biSizeImage == 0)  {
-        size = width * 3 + width % 4;
-        size = size * limit;
-    } else {
-        size = inf->biSizeImage;
-    }*/
 
     buf = (unsigned char *)malloc(size);
     if (buf == NULL) {
