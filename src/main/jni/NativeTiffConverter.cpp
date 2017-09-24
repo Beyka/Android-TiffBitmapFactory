@@ -36,16 +36,6 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
     return result;
   }
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffBmp
-  (JNIEnv *env, jclass clazz, jstring tiffPath, jstring outPath, jobject options, jobject listener)
-  {
-
-    TiffToBmpConverter *converter = new TiffToBmpConverter(env, clazz, tiffPath, outPath, options, listener);
-    jboolean result = converter->convert();
-    delete(converter);
-    return result;
-  }
-
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertPngTiff
   (JNIEnv *env, jclass clazz, jstring pngPath, jstring tiffPath, jobject options, jobject listener)
   {
@@ -96,6 +86,8 @@ JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImag
         size_t byte_count = 8;
         unsigned char *data = (unsigned char *)malloc(sizeof(unsigned char) * byte_count);
         fread(data, 1, byte_count, inFile);
+
+        LOGIS("header", data);
 
         switch(data[0]) {
             case (unsigned char)'\xFF':
@@ -179,6 +171,11 @@ JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImag
         case IMAGE_FILE_TIFF:
             imageFormatFieldId = env->GetStaticFieldID(imageFormatClass,
                                            "TIFF",
+                                           "Lorg/beyka/tiffbitmapfactory/ImageFormat;");
+            break;
+         case IMAGE_FILE_BMP:
+            imageFormatFieldId = env->GetStaticFieldID(imageFormatClass,
+                                           "BMP",
                                            "Lorg/beyka/tiffbitmapfactory/ImageFormat;");
             break;
         default:

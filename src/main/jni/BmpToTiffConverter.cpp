@@ -35,6 +35,7 @@ BmpToTiffConverter::~BmpToTiffConverter()
 
 jboolean BmpToTiffConverter::convert()
 {
+LOGI("CONVERT");
     readOptions();
 
     //open tiff file for writing or appending
@@ -114,7 +115,7 @@ jboolean BmpToTiffConverter::convert()
     //Read header of bitmap file
     readHeaders();
 
-    //Check is file is JPG image
+    //Check is file is BMP image
     bool is_bmp = !strncmp( (const char*)&bmp->bfType, "BM", 2 );
     if (!is_bmp) {
         LOGE("Not bmp file");

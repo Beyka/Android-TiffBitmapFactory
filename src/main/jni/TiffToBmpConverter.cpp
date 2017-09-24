@@ -75,11 +75,14 @@ jboolean TiffToBmpConverter::convert()
     unsigned long long imageDataSize = (width * 3 + width % 4) * height;
     LOGII("image data size", imageDataSize);
 
-    char *bm = "BM";
-     memcpy(&bmpHeader->bfType, bm, sizeof(short));
-    //bmpHeader->bfType = (short)"BM";
-    bmpHeader->bfSize = sizeof(BITMAPFILEHEADER) + 108 + imageDataSize;//sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + 3 * width * height;
-    bmpHeader->bfOffBits = sizeof(BITMAPFILEHEADER) + 108;
+    LOGII("size", sizeof(BITMAPINFOHEADER));
+
+    //char *bm = "BM";
+     //memcpy(&bmpHeader->bfType, bm, sizeof(short));
+    bmpHeader->bfType[0] = 0x42;
+    bmpHeader->bfType[1] = 0x4d;
+    bmpHeader->bfSize = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + imageDataSize;//sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + 3 * width * height;
+    bmpHeader->bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);//sizeof(BITMAPFILEHEADER) + 108;
 
     bmpInfo->biSize = 108;
     bmpInfo->biWidth = width;
@@ -88,7 +91,18 @@ jboolean TiffToBmpConverter::convert()
     bmpInfo->biPlanes = 1;
     bmpInfo->biCompression = 0;
 
-    bmpInfo->biSizeImage = imageDataSize;
+    bmpInfo->biSizeImage = 0;//imageDataSize;
+
+    bmpInfo->biClrUsed = 0;
+    bmpInfo->biClrImportant = 0;
+
+    bmpInfo->biPalete[0] = 0;
+    bmpInfo->biPalete[1] = 0;
+    bmpInfo->biPalete[2] = 0;
+
+    for (int i = 0; i < 55; i++) {
+        bmpInfo->reserved[i] = 0;
+    }
 
     fwrite(bmpHeader,sizeof(BITMAPFILEHEADER),1,outFIle);
     fseek(outFIle, sizeof(BITMAPFILEHEADER) , SEEK_SET);
