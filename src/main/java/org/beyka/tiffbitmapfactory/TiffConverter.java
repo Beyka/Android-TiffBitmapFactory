@@ -16,21 +16,34 @@ public class TiffConverter {
 
     /**
      * Convert any of supported formats from {@link ImageFormat} to tiff
-     * @param in path to income tiff file
-     * @param out path to outcome tiff file
+     * @param inFile path to income tiff file
+     * @param outFile path to outcome tiff file
      * @param options converter options
      * @param listener listener which will receive converting progress
      *
      * @return true if convert process have been successful
      */
-    public static boolean convertToTiff(File in, File out, ConverterOptions options, IProgressListener listener) {
-        switch (getImageType(in.getAbsolutePath())) {
+    public static boolean convertToTiff(File inFile, File outFile, ConverterOptions options, IProgressListener listener) {
+        return convertToTiff(inFile.getAbsoluteFile(), outFile.getAbsoluteFile(), options, listener);
+    }
+
+    /**
+     * Convert any of supported formats from {@link ImageFormat} to tiff
+     * @param inPath path to income tiff file
+     * @param outPath path to outcome tiff file
+     * @param options converter options
+     * @param listener listener which will receive converting progress
+     *
+     * @return true if convert process have been successful
+     */
+    public static boolean convertToTiff(String inPath, String outPath, ConverterOptions options, IProgressListener listener) {
+        switch (getImageType(inPath)) {
             case JPEG:
-                return convertJpgTiff(in.getAbsolutePath(), out.getAbsolutePath(), options, listener);
+                return convertJpgTiff(inPath, outPath, options, listener);
             case PNG:
-                return convertPngTiff(in.getAbsolutePath(), out.getAbsolutePath(), options, listener);
+                return convertPngTiff(inPath, outPath, options, listener);
             case BMP:
-                return convertBmpTiff(in.getAbsolutePath(), out.getAbsolutePath(), options, listener);
+                return convertBmpTiff(inPath, outPath, options, listener);
             case TIFF:
                 // TODO: 9/19/17 make convert tiff to tiff method
                 break;
@@ -90,9 +103,15 @@ public class TiffConverter {
      */
     public static native boolean convertTiffBmp(String tiff, String bmp, ConverterOptions options, IProgressListener listener);
 
+    /**
+     * Convert bmp to tiff file. Uses direct data read method, that decrease memory usage.
+     * @param bmp path to income bmp file
+     * @param tiff path to outcome tiff file
+     * @param options converter options
+     * @param listener listener which will receive converting progress
+     * @return true if convert process have been successful
+     */
     public static native boolean convertBmpTiff(String bmp, String tiff, ConverterOptions options, IProgressListener listener);
-
-    public static native Bitmap readBmp(String tiff, String bmp, ConverterOptions options, IProgressListener listener);
 
     /**
      * Return type of file.
