@@ -1,7 +1,7 @@
 # Android-TiffBitmapFactory
 TiffBitmapFactory is an Android library that allows opening and saving images in *.tif format (See [Wikipedia](https://en.wikipedia.org/wiki/Tagged_Image_File_Format)) on Android devices.
 
-For decoding and encoding *.tif files it uses the native library [libtiff](https://github.com/dumganhar/libtiff). Also for images that compressed with jpeg compression scheme used [libjpeg9 for android](https://github.com/Suvitruf/libjpeg-version-9-android) (the IJG code)
+For decoding and encoding *.tif files it uses the native library [libtiff](https://github.com/dumganhar/libtiff). Also for images that compressed with jpeg compression scheme used [libjpeg9 for android](https://github.com/Suvitruf/libjpeg-version-9-android) (the IJG code). For converting from PNG to TIFF and from TIFF to PNG used library [libpng-android](https://github.com/julienr/libpng-android).
 
 Just now it has possibility to open tif image as mutable bitmap, read count of directory in file, apply sample rate for bitmap decoding and choose directory to decode.
 While saving there is available few(most popular) compression mods and some additiona fields that can be writen to file, like author or copyright.
@@ -13,7 +13,7 @@ Supported architectures: all
 ### Installation
 Just add to your gradle dependencies :
 ```
-compile 'com.github.beyka:androidtiffbitmapfactory:0.9.7.6'
+compile 'com.github.beyka:androidtiffbitmapfactory:0.9.8'
 ```
 And do not forget to add WRITE_EXTERNAL_STORAGE permission to main project manifest
 
@@ -72,7 +72,7 @@ for (int i = 0; i < dirCount; i++) {
 ##### Memory processing
 While decoding images library use native memory mechanism, so it could use all memory available for operating system. This could produce crash of your app and close other applications which are running on the device. Also in some cases it could crash operating system. 
 Also in case of using more than one thread for decoding images every thread could try to use all device memory.
-For avoiding of memory errors, library now has option called inAvailableMemory. Default value for this variable is 8000*8000*4 that equal to 244Mb. -1 means that decoder could use all available memory, but also it could be root of application crashes. Each separate thread that decoding tiff image will estimate how many memory it will use in decoding process. If estimate memory is less than available memory, decoder will decode image. Otherwise decoder will throw error or just return NULL(see inThrowException option).
+For avoiding of memory errors, library now has option called inAvailableMemory. Default value for this variable is 8000x8000x4 that equal to 244Mb. -1 means that decoder could use all available memory, but also it could be root of application crashes. Each separate thread that decoding tiff image will estimate how many memory it will use in decoding process. If estimate memory is less than available memory, decoder will decode image. Otherwise decoder will throw error or just return NULL(see inThrowException option).
 
 
 #### Stop decoding that runs in separate thread
@@ -125,6 +125,46 @@ options.copyright = "Some copyright";
 boolean saved = TiffSaver.appendBitmap("/sdcard/out.tif", bitmap, options);
 ```
 Every new page will be added as new directory to the end of file. If you trying to append directory to non-exisiting file - new file will be created
+
+
+#### Converting to tiff
+There is possibility for dirrect convert from some formats to TIFF. This method uses as less memory as possible. Use this method if you want create TIFF form realy big image file.
+```Java
+TiffConverter.ConverterOptions options = new TiffConverter.ConverterOptions();
+options.throwExceptions = false; //Set to true if you want use java exception mechanism;
+options.availableMemory = 128 * 1024 * 1024; //Available 128Mb for work;
+options.compressionScheme = CompressionScheme.LZW; //compression scheme for tiff
+options.appendTiff = false;//If set to true - will be created one more tiff directory, otherwise file will be overwritten
+TiffConverter.convertToTiff("/sdcard/some_image.jpg", "/sdcard/out.tif", options, progressListener);
+```
+
+If you need convert tiff to some other format:
+```Java
+TiffConverter.ConverterOptions options = new TiffConverter.ConverterOptions();
+options.throwExceptions = false; //Set to true if you want use java exception mechanism;
+options.availableMemory = 128 * 1024 * 1024; //Available 128Mb for work;
+options.readTiffDirectory = 1; //Number of tiff directory to convert;
+        
+//Convert to JPEG
+TiffConverter.convertTiffJpg("/sdcard/in.tif", "/sdcard/out.jpg", options, progressListener);
+//Convert to PNG
+TiffConverter.convertTiffPng("/sdcard/in.tif", "/sdcard/out.png", options, progressListener);
+//Convert to BMP
+TiffConverter.convertTiffBmp("/sdcard/in.tif", "/sdcard/out.bmp", options, progressListener);
+```
+For now library support JPEG, PNG and BMP formats for converting.
+
+
+#### Progress listener
+All operations(read, create, convert) have support for progress reporting.
+```Java
+IProgressListener progressListener = new IProgressListener() {
+    @Override
+    public void reportProgress(long processedPixels, long totalPixels) {
+        Log.v("Progress reporter", String.format("Processed %d pixels from %d", processedPixels, totalPixels);
+    }
+};
+```
 
 ### Proguard
 If you use proguard add this to you config file:

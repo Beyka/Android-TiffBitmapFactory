@@ -1,3 +1,7 @@
+0.9.8
+-Added support for dirrect converting files to TIFF and from TIFF
+-Fixed bug causing crashing while saving tiff
+
 0.9.7.6
 -Added support for CCITT modified Huffman RLE (CCITTRLE) compression scheme
 
