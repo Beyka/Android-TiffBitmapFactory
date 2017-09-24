@@ -11,6 +11,7 @@
 
 #include "TiffToPngConverter.h"
 #include "TiffToJpgConverter.h"
+#include "TiffToBmpConverter.h"
 #include "PngToTiffConverter.h"
 #include "JpgToTiffConverter.h"
 #include "BmpToTiffConverter.h"
@@ -36,6 +37,9 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
   (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
 
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffJpg
+  (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
+
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffbmp
   (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
 
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertPngTiff

@@ -2,6 +2,9 @@
 // Created by beyka on 9/21/17.
 //
 
+#ifndef __BMP_H_INCLUDED__   // if x.h hasn't been included yet...
+#define __BMP_H_INCLUDED__
+
 #pragma pack(2)
 typedef struct
 {
@@ -31,3 +34,5 @@ typedef struct                       /**** BMP file info structure ****/
 
 
 #pragma pack()
+
+#endif

@@ -80,6 +80,16 @@ public class TiffConverter {
      */
     public static native boolean convertJpgTiff(String jpg, String tiff, ConverterOptions options, IProgressListener listener);
 
+    /**
+     * Convert tiff to bmp file. Uses direct data read method, that decrease memory usage
+     * @param tiff path to income tiff file
+     * @param bmp path to outcome jpeg file
+     * @param options converter options
+     * @param listener listener which will receive converting progress
+     * @return true if convert process have been successful
+     */
+    public static native boolean convertTiffBmp(String tiff, String bmp, ConverterOptions options, IProgressListener listener);
+
     public static native boolean convertBmpTiff(String bmp, String tiff, ConverterOptions options, IProgressListener listener);
 
     public static native Bitmap readBmp(String tiff, String bmp, ConverterOptions options, IProgressListener listener);

@@ -14,13 +14,13 @@
 #include "unistd.h"
 #include <ctime>
 
-#define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "BaseTiffConverter", "%s", x)
-#define LOGII(x, y) __android_log_print(ANDROID_LOG_DEBUG, "BaseTiffConverter", "%s %d", x, y)
-#define LOGIF(x, y) __android_log_print(ANDROID_LOG_DEBUG, "BaseTiffConverter", "%s %f", x, y)
-#define LOGIS(x, y) __android_log_print(ANDROID_LOG_DEBUG, "BaseTiffConverter", "%s %s", x, y)
+#define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "BMPReader", "%s", x)
+#define LOGII(x, y) __android_log_print(ANDROID_LOG_DEBUG, "BMPReader", "%s %d", x, y)
+#define LOGIF(x, y) __android_log_print(ANDROID_LOG_DEBUG, "BMPReader", "%s %f", x, y)
+#define LOGIS(x, y) __android_log_print(ANDROID_LOG_DEBUG, "BMPReader", "%s %s", x, y)
 
-#define LOGE(x) __android_log_print(ANDROID_LOG_ERROR, "BaseTiffConverter", "%s", x)
-#define LOGES(x, y) __android_log_print(ANDROID_LOG_ERROR, "BaseTiffConverter", "%s %s", x, y)
+#define LOGE(x) __android_log_print(ANDROID_LOG_ERROR, "BMPReader", "%s", x)
+#define LOGES(x, y) __android_log_print(ANDROID_LOG_ERROR, "BMPReader", "%s %s", x, y)
 
 #ifdef __cplusplus
 extern "C" {

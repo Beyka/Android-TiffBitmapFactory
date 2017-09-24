@@ -109,6 +109,7 @@ LOCAL_SRC_FILES := \
 	PngToTiffConverter.cpp \
 	JpgToTiffConverter.cpp \
 	BmpToTiffConverter.cpp \
+	TiffToBmpConverter.cpp \
 	BitmapReader.cpp
 
 #LOCAL_C_INCLUDES := libs/$(TARGET_ARCH_ABI)/libpng.a

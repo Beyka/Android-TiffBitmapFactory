@@ -68,8 +68,18 @@ jobject readBmp
             LOGII("width = ", inf.biWidth);
             LOGII("height = ", inf.biHeight);
 
+            LOGII("bfType",bmp.bfType);
+            LOGII("bfSize",bmp.bfSize);
+            LOGII("bfOffBits",bmp.bfOffBits);
+
+            LOGII("biSize",inf.biSize);
+            LOGII("biPlanes",inf.biPlanes);
+            LOGII("biBitCount",inf.biBitCount);
+            LOGII("biCompression",inf.biCompression);
+            LOGII("biSizeImage",inf.biSizeImage);
+
             //check if bitnap not 24 bits - throw exception
-            LOGII("biBitsCount = ", inf.biBitCount);
+
             /*if (inf.biBitCount != 24) {
                 LOGE("Not 24 bits file");
                 if (throwException) {
@@ -78,6 +88,7 @@ jobject readBmp
                 return NULL;
             }*/
 
+            LOGII("biSizeImage", inf.biSizeImage);
             if(inf.biSizeImage == 0)  {
                 size = width * 3 + width % 4;
                 size = size * height;
