@@ -335,7 +335,7 @@ jboolean TiffToJpgConverter::convertFromTile() {
 
             imageWritedLines++;
         }
-        LOGII("imageWritedLines", imageWritedLines);
+        //LOGII("imageWritedLines", imageWritedLines);
         free(raster);
     }
 

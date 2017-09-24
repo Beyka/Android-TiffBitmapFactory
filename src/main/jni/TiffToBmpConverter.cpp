@@ -338,7 +338,7 @@ jboolean TiffToBmpConverter::convertFromTile() {
             tileShift++;
             imageWritedLines++;
         }
-        LOGII("imageWritedLines", imageWritedLines);
+        //LOGII("imageWritedLines", imageWritedLines);
         free(raster);
     }
     free(scanline);

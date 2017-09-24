@@ -281,7 +281,7 @@ LOGI("CONVERT");
             if (rowToRead + y >= height) {
                 rowToRead = height - y;
             }
-            LOGII("rowToRead", rowToRead);
+            //LOGII("rowToRead", rowToRead);
             sendProgress(y * width, total);
             uint32 *pixels = getPixelsFromBmp(y, rowToRead);
             TIFFWriteEncodedStrip(tiffImage, y/rowPerStrip, pixels, width * sizeof(uint32) * rowToRead);

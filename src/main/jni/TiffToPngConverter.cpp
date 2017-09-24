@@ -341,9 +341,9 @@ jboolean TiffToPngConverter::convertFromTile() {
             }
         }
 
-        LOGI("writing to png");
-        LOGII("endy", endy);
-        LOGII("endx", endx);
+        //LOGI("writing to png");
+        //LOGII("endy", endy);
+        //LOGII("endx", endx);
         for (int y = starty; y < tileHeight; y++) {
             if (imageWritedLines == height) break;
             //create temp raster and write there pixels than not null
@@ -359,7 +359,7 @@ jboolean TiffToPngConverter::convertFromTile() {
             //delete(rasterLine);
             imageWritedLines++;
         }
-        LOGII("imageWritedLines", imageWritedLines);
+        //LOGII("imageWritedLines", imageWritedLines);
 
         free(raster);
 
