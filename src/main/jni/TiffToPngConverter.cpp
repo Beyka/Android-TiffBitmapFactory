@@ -434,10 +434,10 @@ jboolean TiffToPngConverter::convertFromStrip() {
             rows_to_write = rowPerStrip;
 
         if (origorientation <= 4) {
-            for (int line = 0; line < rowPerStrip / 2; line++) {
+            for (int line = 0; line < rows_to_write / 2; line++) {
                 unsigned int  *top_line, *bottom_line;
                 top_line = raster + width * line;
-                bottom_line = raster + width * (rowPerStrip - line - 1);
+                bottom_line = raster + width * (rows_to_write - line - 1);
 
                 _TIFFmemcpy(work_line_buf, top_line, sizeof(unsigned int) * width);
                 _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * width);
