@@ -64,6 +64,9 @@ class BaseTiffConverter {
         char *getCreationDate();
         void sendProgress(jlong, jlong);
         jboolean checkStop();
+        void rotateTileLinesVertical(uint32, uint32, uint32*, uint32*);
+        void rotateTileLinesHorizontal(uint32, uint32, uint32*, uint32*);
+        void normalizeTile(uint32, uint32, uint32*);
 };
 
 #endif //TIFFSAMPLE_BASETOTIFFCONVERTER_H

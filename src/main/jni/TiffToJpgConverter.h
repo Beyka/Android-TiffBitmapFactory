@@ -42,12 +42,9 @@ class TiffToJpgConverter : public BaseTiffConverter
         static int const JPEG_QUALITY = 90;
 
         int getDecodeMethod();
-        void rotateTileLinesVertical(uint32, uint32, uint32 *, uint32 *);
-        void rotateTileLinesHorizontal(uint32, uint32, uint32 *, uint32 *);
         jboolean convertFromImage();
         jboolean convertFromTile();
         jboolean convertFromStrip();
-        void normalizeTile(uint32, uint32, uint32 *);
 
         TIFF *tiffImage;
         short origorientation;

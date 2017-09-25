@@ -149,3 +149,62 @@ jboolean BaseTiffConverter::checkStop() {
     }
 }
 
+void BaseTiffConverter::rotateTileLinesVertical(uint32 tileHeight, uint32 tileWidth, uint32* whatRotate, uint32 *bufferLine) {
+    for (int line = 0; line < tileHeight / 2; line++) {
+        unsigned int  *top_line, *bottom_line;
+        top_line = whatRotate + tileWidth * line;
+        bottom_line = whatRotate + tileWidth * (tileHeight - line -1);
+        _TIFFmemcpy(bufferLine, top_line, sizeof(unsigned int) * tileWidth);
+        _TIFFmemcpy(top_line, bottom_line, sizeof(unsigned int) * tileWidth);
+        _TIFFmemcpy(bottom_line, bufferLine, sizeof(unsigned int) * tileWidth);
+    }
+}
+
+void BaseTiffConverter::rotateTileLinesHorizontal(uint32 tileHeight, uint32 tileWidth, uint32* whatRotate, uint32 *bufferLine) {
+    uint32 buf;
+    for (int y = 0; y < tileHeight; y++) {
+        for (int x = 0; x < tileWidth / 2; x++) {
+            buf = whatRotate[y * tileWidth + x];
+            whatRotate[y * tileWidth + x] = whatRotate[y * tileWidth + tileWidth - x - 1];
+            whatRotate[y * tileWidth + tileWidth - x - 1] = buf;
+        }
+    }
+}
+
+void BaseTiffConverter::normalizeTile(uint32 tileHeight, uint32 tileWidth, uint32* rasterTile) {
+    //normalize tile
+    //find start and end pixels
+    int sx = -1, ex= -1, sy= -1, ey= -1;
+    for (int y = 0; y < tileHeight; y++) {
+        for (int x = 0; x < tileWidth; x++) {
+            if (rasterTile[y * tileWidth + x] != 0) {
+                sx = x;
+                sy = y;
+                break;
+            }
+        }
+        if (sx != -1) break;
+    }
+    for (int y = tileHeight -1; y >= 0; y--) {
+        for (int x = tileWidth -1; x >= 0; x--) {
+            if (rasterTile[y * tileWidth + x] != 0) {
+                ex = x;
+                ey = y;
+                break;
+            }
+        }
+        if (ex != -1) break;
+    }
+    if (sy != 0) {
+        for (int y = 0; y < tileHeight - sy -1; y++) {
+            memcpy(rasterTile + (y * tileWidth), rasterTile + ((y+sy)*tileWidth), tileWidth * sizeof(uint32));
+        }
+    }
+    if (sx != 0) {
+        for (int y = 0; y < tileHeight; y++) {
+           for (int x = 0; x < tileWidth - sx -1; x++) {
+               rasterTile[y * tileWidth + x] = rasterTile[y * tileWidth + x + sx];
+           }
+        }
+    }
+}

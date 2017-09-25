@@ -36,9 +36,6 @@ class TiffToPngConverter : public BaseTiffConverter
         static int const DECODE_METHOD_STRIP = 3;
 
         int getDecodeMethod();
-        void rotateTileLinesVertical(uint32, uint32, uint32 *, uint32 *);
-        void rotateTileLinesHorizontal(uint32, uint32, uint32 *, uint32 *);
-        void normalizeTile(uint32, uint32, uint32 *);
         jboolean convertFromImage();
         jboolean convertFromTile();
         jboolean convertFromStrip();
