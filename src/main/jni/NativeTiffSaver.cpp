@@ -8,7 +8,6 @@ extern "C" {
     #endif
 
     #include "NativeTiffSaver.h"
-    #include "NativeExceptions.h"
 
     int const colorMask = 0xFF;
 
@@ -35,7 +34,7 @@ extern "C" {
 
         // check is bitmap null
         if (bitmap == NULL) {
-            char *message = "Bitmap is null\0";
+            const char *message = "Bitmap is null\0";
             LOGE(message);
             if (throwException) {
                 jstring jmessage = env->NewStringUTF(message);
@@ -52,7 +51,7 @@ extern "C" {
         jmethodID isRecycledMethodid = env->GetMethodID(bitmapClass, "isRecycled", "()Z");
         jboolean isRecycled = env->CallBooleanMethod(bitmap, isRecycledMethodid);
         if (isRecycled) {
-            char *message = "Bitmap is recycled\0";
+            const char *message = "Bitmap is recycled\0";
             LOGE(message);
             if (throwException) {
                 jstring jmessage = env->NewStringUTF(message);

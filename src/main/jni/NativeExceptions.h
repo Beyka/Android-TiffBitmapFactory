@@ -9,7 +9,7 @@ extern "C" {
 #ifndef TIFFEXAMPLE_NATIVEEXCEPTIONS_H
 #define TIFFEXAMPLE_NATIVEEXCEPTIONS_H
 
-#endif //TIFFEXAMPLE_NATIVEEXCEPTIONS_H
+
 
 #include <jni.h>
 #include <android/log.h>
@@ -28,7 +28,11 @@ void throw_not_enought_memory_exception(JNIEnv *, int, int);
 void throw_decode_file_exception(JNIEnv *, jstring, jstring);
 void throw_cant_open_file_exception(JNIEnv *, jstring);
 
+#endif //TIFFEXAMPLE_NATIVEEXCEPTIONS_H
+
 #ifdef __cplusplus
 }
 #endif
+
+
 

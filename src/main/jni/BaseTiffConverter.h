@@ -38,7 +38,7 @@ class BaseTiffConverter {
         virtual jboolean convert() = 0;
 
     protected:
-        const int colorMask = 0xFF;
+        static const int colorMask = 0xFF;
 
         jboolean conversion_result = JNI_FALSE;
 

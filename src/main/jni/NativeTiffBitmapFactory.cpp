@@ -5,7 +5,6 @@ extern "C" {
 #endif
 
 #include "NativeTiffBitmapFactory.h"
-#include "NativeExceptions.h"
 
 JNIEXPORT jobject
 JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath

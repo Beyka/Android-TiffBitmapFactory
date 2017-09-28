@@ -154,7 +154,7 @@ jboolean TiffToJpgConverter::convertFromImage() {
     uint32 *origBuffer = NULL;
     origBuffer = (uint32 *) _TIFFmalloc(origBufferSize);
     if (origBuffer == NULL) {
-        char *message = "Can\'t allocate buffer";
+        const char *message = "Can\'t allocate buffer";
         LOGE(*message);
         if (throwException) {
             throw_not_enought_memory_exception(env, availableMemory, origBufferSize);
@@ -164,7 +164,7 @@ jboolean TiffToJpgConverter::convertFromImage() {
 
     if (0 == TIFFReadRGBAImageOriented(tiffImage, width, height, origBuffer, ORIENTATION_TOPLEFT, 0)) {
         free(origBuffer);
-        char *message = "Can\'t read tiff";
+        const char *message = "Can\'t read tiff";
         if (throwException) {
             jstring er = env->NewStringUTF(message);
             throw_decode_file_exception(env, outPath, er);

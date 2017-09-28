@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <tiffio.h>
+#include "NativeExceptions.h"
 #include "NativeDecoder.h"
 /* Header for class NativeTiffBitmapFactory */
 

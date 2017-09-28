@@ -8,6 +8,7 @@
 #include "fcntl.h"
 #include "unistd.h"
 #include <ctime>
+#include "NativeExceptions.h"
 /* Header for class org_beyka_tiffbitmapfactory_TiffSaver */
 
 #ifdef NDEBUG

@@ -73,7 +73,7 @@ jobject NativeDecoder::getBitmap()
         jfieldID gOptions_sampleSizeFieldID = env->GetFieldID(jBitmapOptionsClass, "inSampleSize", "I");
         jint inSampleSize = env->GetIntField(optionsObject, gOptions_sampleSizeFieldID);
         if (inSampleSize != 1 && inSampleSize % 2 != 0) {
-            char *message = "inSampleSize should be power of 2\0";
+            const char *message = "inSampleSize should be power of 2\0";
             LOGE(message);
             if (throwException) {
                 jstring adinf = env->NewStringUTF(message);
@@ -167,7 +167,7 @@ jobject NativeDecoder::getBitmap()
             boundWidth = env->GetIntField(decodeArea, widthFieldID);
             boundHeight = env->GetIntField(decodeArea, heightFieldID);
             if (boundX >= origwidth-1) {
-                char *message = "X of left top corner of decode area should be less than image width";
+                const char *message = "X of left top corner of decode area should be less than image width";
                 LOGE(*message);
                 if (throwException) {
                     jstring adinf = env->NewStringUTF(message);
@@ -178,7 +178,7 @@ jobject NativeDecoder::getBitmap()
                 return NULL;
             }
             if (boundY >= origheight-1) {
-                char *message = "Y of left top corner of decode area should be less than image height";
+                const char *message = "Y of left top corner of decode area should be less than image height";
                 LOGE(*message);
                 if (throwException) {
                     jstring adinf = env->NewStringUTF(message);
@@ -195,7 +195,7 @@ jobject NativeDecoder::getBitmap()
             if (boundY + boundHeight >= origheight) boundHeight = origheight - boundY -1;
 
             if (boundWidth < 1) {
-                char *message = "Width of decode area can\'t be less than 1";
+                const char *message = "Width of decode area can\'t be less than 1";
                 LOGE(*message);
                 if (throwException) {
                     jstring adinf = env->NewStringUTF(message);
@@ -206,7 +206,7 @@ jobject NativeDecoder::getBitmap()
                 return NULL;
             }
             if (boundHeight < 1) {
-                char *message = "Height of decode area can\'t be less than 1";
+                const char *message = "Height of decode area can\'t be less than 1";
                 LOGE(*message);
                 if (throwException) {
                     jstring adinf = env->NewStringUTF(message);
@@ -254,9 +254,10 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
     int bitdepth = 1;
     TIFFGetField(image, TIFFTAG_BITSPERSAMPLE, &bitdepth);
     if (bitdepth != 1 && bitdepth != 4 && bitdepth != 8 && bitdepth != 16) {
-        LOGE("Only 1, 4, 8 and 16 bits per sample are supported\0");
+        const char * err = "Only 1, 4, 8 and 16 bits per sample are supported";
+        LOGE(err);
         if (throwException) {
-            jstring adinf = charsToJString("Only 1, 4, 8 and 16 bits per sample are supported\0");//env->NewStringUTF(errMsg);
+            jstring adinf = charsToJString(err);//env->NewStringUTF(errMsg);
             throw_decode_file_exception(env, jPath, adinf);
             env->DeleteLocalRef(adinf);
         }
@@ -2383,7 +2384,7 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
 	if (0 ==
         TIFFReadRGBAImageOriented(image, origwidth, origheight, origBuffer, ORIENTATION_TOPLEFT, 0)) {
 	    free(origBuffer);
-	    char *message = "Error reading image";
+	    const char *message = "Error reading image";
         LOGE(*message);
         if (throwException) {
             jstring adinf = env->NewStringUTF(message);
@@ -2602,7 +2603,7 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
 	if (0 ==
         TIFFReadRGBAImageOriented(image, origwidth, origheight, origBuffer, ORIENTATION_TOPLEFT, 0)) {
 	    free(origBuffer);
-	    char *message = "Error reading image";
+	    const char *message = "Error reading image";
         LOGE(*message);
         if (throwException) {
             jstring adinf = env->NewStringUTF(message);
@@ -3458,7 +3459,7 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         }
 
         //Author
-        char * artist;
+        const char * artist;
         tagRead = TIFFGetField(image, TIFFTAG_ARTIST, & artist);
         if (tagRead == 1) {
             LOGI(artist);
@@ -3470,7 +3471,7 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         }
 
         //Copyright
-        char * copyright;
+        const char * copyright;
         tagRead = TIFFGetField(image, TIFFTAG_COPYRIGHT, & copyright);
         if (tagRead == 1) {
             LOGI(copyright);
@@ -3482,7 +3483,7 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         }
 
         //ImageDescription
-        char * imgDescr;
+        const char * imgDescr;
         tagRead = TIFFGetField(image, TIFFTAG_IMAGEDESCRIPTION, & imgDescr);
         if (tagRead == 1) {
             LOGI(imgDescr);
@@ -3494,7 +3495,7 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         }
 
         //Software
-        char * software;
+        const char * software;
         tagRead = TIFFGetField(image, TIFFTAG_SOFTWARE, & software);
         if (tagRead == 1) {
             LOGI(software);
@@ -3506,7 +3507,7 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         }
 
         //DateTime
-        char * datetime;
+        const char * datetime;
         tagRead = TIFFGetField(image, TIFFTAG_DATETIME, & datetime);
         if (tagRead == 1) {
             LOGI(datetime);
@@ -3518,7 +3519,7 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         }
 
         //Host Computer
-        char * host;
+        const char * host;
         tagRead = TIFFGetField(image, TIFFTAG_HOSTCOMPUTER, & host);
         if (tagRead == 1) {
             LOGI(host);
@@ -3530,8 +3531,7 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         }
 }
 
-jstring NativeDecoder::charsToJString(char *chars) {
-
+jstring NativeDecoder::charsToJString(const char *chars) {
     std::string str(chars);
     jbyteArray array = env->NewByteArray(str.size());
     env->SetByteArrayRegion(array, 0, str.size(), (const jbyte*)str.c_str());

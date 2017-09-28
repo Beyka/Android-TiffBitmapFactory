@@ -131,7 +131,7 @@ jboolean PngToTiffConverter::convert()
     //init png struct
     png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     if (!png_ptr) {
-        char *message = "Can\'t create PNG structure";
+        const char *message = "Can\'t create PNG structure";
         LOGE(*message);
         if (throwException) {
             jstring er = env->NewStringUTF(message);
@@ -147,7 +147,7 @@ jboolean PngToTiffConverter::convert()
     //create png info pointer
     info_ptr = png_create_info_struct(png_ptr);
     if (!info_ptr) {
-        char *message = "Can\'t create PNG info structure";
+        const char *message = "Can\'t create PNG info structure";
         LOGE(*message);
         if (throwException) {
             jstring er = env->NewStringUTF(message);
@@ -160,7 +160,7 @@ jboolean PngToTiffConverter::convert()
 
     //png error handler
     if (setjmp(png_jmpbuf(png_ptr))) {
-        char *message = "Error reading PNG";
+        const char *message = "Error reading PNG";
         LOGE(message);
         if (throwException) {
             jstring er = env->NewStringUTF(message);
