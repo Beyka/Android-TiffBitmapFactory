@@ -13,13 +13,21 @@
 #include <tiffio.h>
 #include "NativeExceptions.h"
 
-#define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "NativeDecoder", "%s", x)
-#define LOGII(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeDecoder", "%s %d", x, y)
-#define LOGIF(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeDecoder", "%s %f", x, y)
-#define LOGIS(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeDecoder", "%s %s", x, y)
-
-#define LOGE(x) __android_log_print(ANDROID_LOG_ERROR, "NativeDecoder", "%s", x)
-#define LOGES(x, y) __android_log_print(ANDROID_LOG_ERROR, "NativeDecoder", "%s %s", x, y)
+#ifdef NDEBUG
+    #define LOGI(x)
+    #define LOGII(x, y)
+    #define LOGIF(x, y)
+    #define LOGIS(x, y)
+    #define LOGE(x)
+    #define LOGES(x, y)
+#else
+    #define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "NativeDecoder", "%s", x)
+    #define LOGII(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeDecoder", "%s %d", x, y)
+    #define LOGIF(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeDecoder", "%s %f", x, y)
+    #define LOGIS(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeDecoder", "%s %s", x, y)
+    #define LOGE(x) __android_log_print(ANDROID_LOG_ERROR, "NativeDecoder", "%s", x)
+    #define LOGES(x, y) __android_log_print(ANDROID_LOG_ERROR, "NativeDecoder", "%s %s", x, y)
+#endif
 
 class NativeDecoder
 {

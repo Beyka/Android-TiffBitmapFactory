@@ -8,12 +8,19 @@
 #include "NativeDecoder.h"
 /* Header for class NativeTiffBitmapFactory */
 
-#define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffBitmapFactory", "%s", x)
-#define LOGII(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffBitmapFactory", "%s %d", x, y)
-#define LOGIS(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffBitmapFactory", "%s %s", x, y)
-
-#define LOGE(x) __android_log_print(ANDROID_LOG_ERROR, "NativeTiffBitmapFactory", "%s", x)
-#define LOGES(x, y) __android_log_print(ANDROID_LOG_ERROR, "NativeTiffBitmapFactory", "%s %s", x, y)
+#ifdef NDEBUG
+    #define LOGI(x)
+    #define LOGII(x, y)
+    #define LOGIS(x, y)
+    #define LOGE(x)
+    #define LOGES(x, y)
+#else
+    #define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffBitmapFactory", "%s", x)
+    #define LOGII(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffBitmapFactory", "%s %d", x, y)
+    #define LOGIS(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffBitmapFactory", "%s %s", x, y)
+    #define LOGE(x) __android_log_print(ANDROID_LOG_ERROR, "NativeTiffBitmapFactory", "%s", x)
+    #define LOGES(x, y) __android_log_print(ANDROID_LOG_ERROR, "NativeTiffBitmapFactory", "%s %s", x, y)
+#endif
 
 #ifndef _Included_org_beyka_tiffbitmapfactory_TiffBitmapFactory
 #define _Included_org_beyka_tiffbitmapfactory_TiffBitmapFactory

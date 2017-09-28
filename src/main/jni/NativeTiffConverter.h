@@ -17,14 +17,21 @@
 #include "BmpToTiffConverter.h"
 #include "BitmapReader.h"
 
-
-#define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffConverter", "%s", x)
-#define LOGII(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffConverter", "%s %d", x, y)
-#define LOGIF(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffConverter", "%s %f", x, y)
-#define LOGIS(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffConverter", "%s %s", x, y)
-
-#define LOGE(x) __android_log_print(ANDROID_LOG_ERROR, "NativeTiffConverter", "%s", x)
-#define LOGES(x, y) __android_log_print(ANDROID_LOG_ERROR, "NativeTiffConverter", "%s %s", x, y)
+#ifdef NDEBUG
+    #define LOGI(x)
+    #define LOGII(x, y)
+    #define LOGIF(x, y)
+    #define LOGIS(x, y)
+    #define LOGE(x)
+    #define LOGES(x, y)
+#else
+    #define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffConverter", "%s", x)
+    #define LOGII(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffConverter", "%s %d", x, y)
+    #define LOGIF(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffConverter", "%s %f", x, y)
+    #define LOGIS(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeTiffConverter", "%s %s", x, y)
+    #define LOGE(x) __android_log_print(ANDROID_LOG_ERROR, "NativeTiffConverter", "%s", x)
+    #define LOGES(x, y) __android_log_print(ANDROID_LOG_ERROR, "NativeTiffConverter", "%s %s", x, y)
+#endif
 
 #ifndef TIFFSAMPLE_NATIVETIFFCONVERTER_H
 #define TIFFSAMPLE_NATIVETIFFCONVERTER_H

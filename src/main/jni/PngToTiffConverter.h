@@ -14,14 +14,23 @@
 #include <setjmp.h>
 #include "BaseTiffConverter.h"
 
-#define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "PngToTiffConverter", "%s", x)
-#define LOGII(x, y) __android_log_print(ANDROID_LOG_DEBUG, "PngToTiffConverter", "%s %d", x, y)
-#define LOGIF(x, y) __android_log_print(ANDROID_LOG_DEBUG, "PngToTiffConverter", "%s %f", x, y)
-#define LOGIS(x, y) __android_log_print(ANDROID_LOG_DEBUG, "PngToTiffConverter", "%s %s", x, y)
-
-#define LOGE(x) __android_log_print(ANDROID_LOG_ERROR, "PngToTiffConverter", "%s", x)
-#define LOGES(x, y) __android_log_print(ANDROID_LOG_ERROR, "PngToTiffConverter", "%s %s", x, y)
-#define LOGEI(x, y) __android_log_print(ANDROID_LOG_ERROR, "PngToTiffConverter", "%s %d", x, y)
+#ifdef NDEBUG
+    #define LOGI(x)
+    #define LOGII(x, y)
+    #define LOGIF(x, y)
+    #define LOGIS(x, y)
+    #define LOGE(x)
+    #define LOGES(x, y)
+    #define LOGEI(x, y)
+#else
+    #define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "PngToTiffConverter", "%s", x)
+    #define LOGII(x, y) __android_log_print(ANDROID_LOG_DEBUG, "PngToTiffConverter", "%s %d", x, y)
+    #define LOGIF(x, y) __android_log_print(ANDROID_LOG_DEBUG, "PngToTiffConverter", "%s %f", x, y)
+    #define LOGIS(x, y) __android_log_print(ANDROID_LOG_DEBUG, "PngToTiffConverter", "%s %s", x, y)
+    #define LOGE(x) __android_log_print(ANDROID_LOG_ERROR, "PngToTiffConverter", "%s", x)
+    #define LOGES(x, y) __android_log_print(ANDROID_LOG_ERROR, "PngToTiffConverter", "%s %s", x, y)
+    #define LOGEI(x, y) __android_log_print(ANDROID_LOG_ERROR, "PngToTiffConverter", "%s %d", x, y)
+#endif
 
 class PngToTiffConverter : public BaseTiffConverter
 {
