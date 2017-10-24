@@ -38,7 +38,9 @@ TiffToJpgConverter::~TiffToJpgConverter()
 
 jboolean TiffToJpgConverter::convert()
 {
-    readOptions();
+    if (!readOptions()) {
+        return JNI_FALSE;
+    }
 
     //in c++ path
     const char *strTiffPath = NULL;

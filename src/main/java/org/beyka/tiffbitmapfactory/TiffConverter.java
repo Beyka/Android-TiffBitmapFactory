@@ -191,6 +191,15 @@ public class TiffConverter {
         //public Orientation orientation;
 
         /**
+         * If this field is non-null - Converter will use only area specified in {@link DecodeArea} object to convert
+         * For decoding not full bitmap, but only part of it - create new {@link DecodeArea} object and specify:
+         * <p>{@link DecodeArea#x x}, {@link DecodeArea#y y} - left top corner of decoding area </p>
+         * <p>{@link DecodeArea#width width} - width of decoding area </p>
+         * <p>{@link DecodeArea#height height} - height of decoding area </p>
+         */
+        public DecodeArea inDecodeArea;
+
+        /**
          * <b>For converting from ANY to TIFF cases</b>
          * The number of pixels per {@link org.beyka.tiffbitmapfactory.TiffConverter.ConverterOptions#resUnit} in the ImageWidth direction.
          * <p> It is not mandatory that the image be actually displayed or printed at the size implied by this parameter.

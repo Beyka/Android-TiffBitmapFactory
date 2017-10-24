@@ -124,7 +124,7 @@ jobject NativeDecoder::getBitmap()
         env->DeleteLocalRef(config);
 
         jfieldID gOptions_DecodeAreaFieldId = env->GetFieldID(jBitmapOptionsClass, "inDecodeArea",
-                                                                "Lorg/beyka/tiffbitmapfactory/TiffBitmapFactory$DecodeArea;");
+                                                                "Lorg/beyka/tiffbitmapfactory/DecodeArea;");
         jobject decodeArea = env->GetObjectField(optionsObject, gOptions_DecodeAreaFieldId);
 
         //if directory number < 0 set it to 0
@@ -156,7 +156,7 @@ jobject NativeDecoder::getBitmap()
         //Read decode bounds if exists
         if (decodeArea) {
             LOGI("Decode bounds present");
-            jclass decodeAreaClass = env->FindClass("org/beyka/tiffbitmapfactory/TiffBitmapFactory$DecodeArea");
+            jclass decodeAreaClass = env->FindClass("org/beyka/tiffbitmapfactory/DecodeArea");
             jfieldID xFieldID = env->GetFieldID(decodeAreaClass, "x", "I");
             jfieldID yFieldID = env->GetFieldID(decodeAreaClass, "y", "I");
             jfieldID widthFieldID = env->GetFieldID(decodeAreaClass, "width", "I");
@@ -224,6 +224,7 @@ jobject NativeDecoder::getBitmap()
 
             hasBounds = 1;
             env->DeleteLocalRef(decodeAreaClass);
+            env->DeleteLocalRef(decodeArea);
         }
 
         jobject java_bitmap = NULL;

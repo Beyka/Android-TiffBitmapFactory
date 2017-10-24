@@ -6,6 +6,7 @@
 
 BaseTiffConverter::BaseTiffConverter(JNIEnv *e, jclass clazz, jstring in, jstring out, jobject opts, jobject listener)
 {
+    boundX = boundY = boundWidth = boundHeight = -1;
     availableMemory = 8000 * 8000 * 4;
     env = e;
     inPath = in;
@@ -39,9 +40,9 @@ BaseTiffConverter::~BaseTiffConverter()
     }
 }
 
-void BaseTiffConverter::readOptions()
+char BaseTiffConverter::readOptions()
 {
-    if (optionsObj == NULL) return;
+    if (optionsObj == NULL) return 1;
 
     jfieldID tiffdirfield = env->GetFieldID(jConvertOptionsClass, "readTiffDirectory", "I");
     tiffDirectory = env->GetIntField(optionsObj, tiffdirfield);
@@ -116,6 +117,86 @@ void BaseTiffConverter::readOptions()
     jfieldID resUnitOrdinalFieldID = env->GetFieldID(resolutionUnitClass, "ordinal", "I");
     resUnit = env->GetIntField(resUnitObject, resUnitOrdinalFieldID);
     env->DeleteLocalRef(resolutionUnitClass);
+
+    //Get decode are
+    jfieldID gOptions_decodeAreaFieldID = env->GetFieldID(jConvertOptionsClass,
+                                                           "inDecodeArea",
+                                                           "Lorg/beyka/tiffbitmapfactory/DecodeArea;");
+    jobject decodeAreaObj = env->GetObjectField(optionsObj, gOptions_decodeAreaFieldID);
+    if (decodeAreaObj) {
+        LOGI("Decode bounds present");
+        jclass decodeAreaClass = env->FindClass("org/beyka/tiffbitmapfactory/DecodeArea");
+        jfieldID xFieldID = env->GetFieldID(decodeAreaClass, "x", "I");
+        jfieldID yFieldID = env->GetFieldID(decodeAreaClass, "y", "I");
+        jfieldID widthFieldID = env->GetFieldID(decodeAreaClass, "width", "I");
+        jfieldID heightFieldID = env->GetFieldID(decodeAreaClass, "height", "I");
+
+        boundX = env->GetIntField(decodeAreaObj, xFieldID);
+        boundY = env->GetIntField(decodeAreaObj, yFieldID);
+        boundWidth = env->GetIntField(decodeAreaObj, widthFieldID);
+        boundHeight = env->GetIntField(decodeAreaObj, heightFieldID);
+        if (boundX >= width-1) {
+            const char *message = "X of left top corner of decode area should be less than image width";
+            LOGE(*message);
+            if (throwException) {
+                jstring adinf = env->NewStringUTF(message);
+                throw_decode_file_exception(env, inPath, adinf);
+                env->DeleteLocalRef(adinf);
+            }
+            env->DeleteLocalRef(decodeAreaClass);
+            return 0;
+        }
+        if (boundY >= height-1) {
+            const char *message = "Y of left top corner of decode area should be less than image height";
+            LOGE(*message);
+            if (throwException) {
+                jstring adinf = env->NewStringUTF(message);
+                throw_decode_file_exception(env, inPath, adinf);
+                env->DeleteLocalRef(adinf);
+            }
+            env->DeleteLocalRef(decodeAreaClass);
+            return 0;
+        }
+
+        if (boundX < 0) boundX = 0;
+        if (boundY < 0) boundY = 0;
+        if (boundX + boundWidth >= width) boundWidth = width - boundX -1;
+        if (boundY + boundHeight >= height) boundHeight = height - boundY -1;
+
+        if (boundWidth < 1) {
+            const char *message = "Width of decode area can\'t be less than 1";
+            LOGE(*message);
+            if (throwException) {
+                jstring adinf = env->NewStringUTF(message);
+                throw_decode_file_exception(env, inPath, adinf);
+                env->DeleteLocalRef(adinf);
+            }
+            env->DeleteLocalRef(decodeAreaClass);
+            return 0;
+        }
+        if (boundHeight < 1) {
+            const char *message = "Height of decode area can\'t be less than 1";
+            LOGE(*message);
+            if (throwException) {
+                jstring adinf = env->NewStringUTF(message);
+                throw_decode_file_exception(env, inPath, adinf);
+                env->DeleteLocalRef(adinf);
+            }
+            env->DeleteLocalRef(decodeAreaClass);
+            return 0;
+        }
+
+        LOGII("Decode X", boundX);
+        LOGII("Decode Y", boundY);
+        LOGII("Decode width", boundWidth);
+        LOGII("Decode height", boundHeight);
+
+        hasBounds = 1;
+        env->DeleteLocalRef(decodeAreaClass);
+
+    }
+
+    return 1;
 
 }
 

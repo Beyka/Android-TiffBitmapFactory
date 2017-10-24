@@ -68,8 +68,13 @@ class BaseTiffConverter {
         const char *cdescription = NULL;
         jstring software;
         const char *csoftware = NULL;
+        int boundX;
+        int boundY;
+        int boundWidth;
+        int boundHeight;
+        char hasBounds;
 
-        void readOptions();
+        char readOptions();
         char *getCreationDate();
         void sendProgress(jlong, jlong);
         jboolean checkStop();
