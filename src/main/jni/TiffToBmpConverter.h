@@ -49,6 +49,9 @@ class TiffToBmpConverter : public BaseTiffConverter
         jboolean convertFromImage();
         jboolean convertFromTile();
         jboolean convertFromStrip();
+        //jboolean convertFromImageWithBounds();
+        //jboolean convertFromTileWithBounds();
+        //jboolean convertFromStripWithBounds();
 
         TIFF *tiffImage;
         short origorientation;

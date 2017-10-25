@@ -38,9 +38,7 @@ TiffToJpgConverter::~TiffToJpgConverter()
 
 jboolean TiffToJpgConverter::convert()
 {
-    if (!readOptions()) {
-        return JNI_FALSE;
-    }
+    readOptions();
 
     //in c++ path
     const char *strTiffPath = NULL;
@@ -101,6 +99,10 @@ jboolean TiffToJpgConverter::convert()
     }
     LOGII("image width", width);
     LOGII("image height", height);
+
+    if (!normalizeDecodeArea()) {
+        return JNI_FALSE;
+    }
 
     cinfo.image_width = width;
     cinfo.image_height = height;

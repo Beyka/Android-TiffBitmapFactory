@@ -52,6 +52,10 @@ class BaseTiffConverter {
 
         uint32 width;
         uint32 height;
+        uint32 outWidth;
+        uint32 outHeight;
+        uint32 outStartX;
+        uint32 outStartY;
 
         jlong availableMemory;
         jboolean throwException;
@@ -74,13 +78,15 @@ class BaseTiffConverter {
         int boundHeight;
         char hasBounds;
 
-        char readOptions();
+        void readOptions();
+        char normalizeDecodeArea();
         char *getCreationDate();
         void sendProgress(jlong, jlong);
         jboolean checkStop();
         void rotateTileLinesVertical(uint32, uint32, uint32*, uint32*);
         void rotateTileLinesHorizontal(uint32, uint32, uint32*, uint32*);
         void normalizeTile(uint32, uint32, uint32*);
+
 };
 
 #endif //TIFFSAMPLE_BASETOTIFFCONVERTER_H

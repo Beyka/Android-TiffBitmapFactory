@@ -21,9 +21,7 @@ TiffToBmpConverter::~TiffToBmpConverter()
 
 jboolean TiffToBmpConverter::convert()
 {
-    if (!readOptions()) {
-        return JNI_FALSE;
-    }
+    readOptions();
 
     //in c++ path
     const char *strTiffPath = NULL;
@@ -71,10 +69,35 @@ jboolean TiffToBmpConverter::convert()
         origorientation = ORIENTATION_TOPLEFT;
     }
 
+    if (!normalizeDecodeArea()) {
+        fclose(outFIle);
+        return JNI_FALSE;
+    }
+
     LOGII("image width", width);
     LOGII("image height", height);
+    LOGII("image bound width", boundWidth);
+    LOGII("image bound height", boundHeight);
 
-    unsigned long long imageDataSize = (width * 3 + width % 4) * height;
+    unsigned long long imageDataSize = 0;
+    if (hasBounds) {
+        imageDataSize = (boundWidth * 3 + boundWidth % 4) * boundHeight;
+        outWidth = boundWidth;
+        outHeight = boundHeight;
+        outStartX = boundX;
+        outStartY = boundY;
+    } else {
+        imageDataSize = (width * 3 + width % 4) * height;
+        outWidth = width;
+        outHeight = height;
+        outStartX = 0;
+        outStartY = 0;
+
+    }
+    LOGII("image out width", outWidth);
+    LOGII("image out height", outHeight);
+
+
     LOGII("image data size", imageDataSize);
 
     LOGII("size", sizeof(BITMAPINFOHEADER));
@@ -87,8 +110,8 @@ jboolean TiffToBmpConverter::convert()
     bmpHeader->bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);//sizeof(BITMAPFILEHEADER) + 108;
 
     bmpInfo->biSize = 108;
-    bmpInfo->biWidth = width;
-    bmpInfo->biHeight = height;
+    bmpInfo->biWidth = outWidth;
+    bmpInfo->biHeight = outHeight;
     bmpInfo->biBitCount = 24;
     bmpInfo->biPlanes = 1;
     bmpInfo->biCompression = 0;
@@ -118,11 +141,11 @@ jboolean TiffToBmpConverter::convert()
             result = convertFromImage();
             break;
         case DECODE_METHOD_TILE:
-            result = convertFromTile();
-            break;
-        case DECODE_METHOD_STRIP:
-            result = convertFromStrip();
-            break;
+           result = convertFromTile();
+           break;
+       case DECODE_METHOD_STRIP:
+           result = convertFromStrip();
+           break;
     }
 
     fclose(outFIle);
@@ -140,7 +163,7 @@ jboolean TiffToBmpConverter::convertFromImage() {
     int origBufferSize = width * height * sizeof(uint32);
 
     unsigned long estimateMem = origBufferSize;
-    estimateMem += width * 3 + width % 4; //working buf to write to file
+    estimateMem += outWidth * 3 + outWidth % 4; //working buf to write to file
     LOGII("estimateMem", estimateMem);
     if (estimateMem > availableMemory && availableMemory != -1) {
         LOGEI("Not enough memory", availableMemory);
@@ -174,31 +197,36 @@ jboolean TiffToBmpConverter::convertFromImage() {
     }
     LOGI("tiff read");
 
-    jlong total = width * height;
+    jlong total = outWidth * outHeight;
+    int outY, outX;
     sendProgress(0, total);
 
     //24 bpp bmp should has with multiple 4
-    int rowSize = width * 3 + width % 4;
+    int rowSize = outWidth * 3 + outWidth % 4;
     unsigned char *row = new unsigned char[rowSize];
 
     for (int y = 0; y < height ; y++) {
+        if (y < outStartY || y >= outStartY + outHeight) continue;
         if (checkStop()) {
             free(origBuffer);
             return JNI_FALSE;
         }
-        sendProgress(y * width, total);
+        outY = y - outStartY;
+        sendProgress(outY * outWidth, total);
 
         for (int x = 0; x < width * 3; x += 3) {
+            if (x < outStartX * 3 || x >= (outStartX + outWidth) * 3) continue;
+            outX = x - (outStartX*3);
             uint32 pix = origBuffer[y * width + x/3];
             unsigned char *vp = (unsigned char *)&pix;
             //in bmp colors stores as bgr
-            row[x] = vp[2]; //red
-            row[x+1] = vp[1]; //green
-            row[x+2] = vp[0];   //blue
+            row[outX] = vp[2]; //red
+            row[outX+1] = vp[1]; //green
+            row[outX+2] = vp[0];   //blue
         }
 
         //in bmp lines stored fliped verticaly. Write lines from bottom to top
-        fseek(outFIle, 122 + (height - y - 1) * rowSize , SEEK_SET);
+        fseek(outFIle, 122 + (outHeight - outY - 1) * rowSize , SEEK_SET);
         fwrite(row,rowSize,1,outFIle);
     }
     free(row);
@@ -251,7 +279,7 @@ jboolean TiffToBmpConverter::convertFromTile() {
     uint32 imageWritedLines = 0;
 
     //24 bpp bmp should has with multiple 4
-    int scanlineSize = width * 3 + width % 4;
+    int scanlineSize = outWidth * 3 + outWidth % 4;
     unsigned char *scanline = new unsigned char[scanlineSize];
 
     for (row = 0; row < height; row += tileHeight) {
@@ -321,21 +349,24 @@ jboolean TiffToBmpConverter::convertFromTile() {
             }
         }
 
+        int outY, outX;
         int tileShift = 0;
         for (int y = starty; y < tileHeight; y++) {
             if (imageWritedLines == height) break;
-
-
+            if (y + row < outStartY || y + row >= outStartY + outHeight) continue;
+            outY = y + row - outStartY;
             for (int x = 0; x < width * 3; x += 3) {
+                if (x < outStartX * 3 || x >= (outStartX + outWidth) * 3) continue;
+                outX = x - (outStartX*3);
                 uint32 pix = raster[y * workingWidth + x/3];
                 unsigned char *vp = (unsigned char *)&pix;
-                scanline[x] = vp[2];
-                scanline[x+1] = vp[1];
-                scanline[x+2] = vp[0];
+                scanline[outX] = vp[2];
+                scanline[outX+1] = vp[1];
+                scanline[outX+2] = vp[0];
             }
 
             //in bmp lines stored fliped verticaly. Write lines from bottom to top
-            fseek(outFIle, 122 + (height - tileShift - row - 1) * scanlineSize , SEEK_SET);
+            fseek(outFIle, 122 + (/*height - tileShift - row*/outHeight - outY - 1) * scanlineSize , SEEK_SET);
             fwrite(scanline,scanlineSize,1,outFIle);
             tileShift++;
             imageWritedLines++;
@@ -368,7 +399,7 @@ jboolean TiffToBmpConverter::convertFromStrip() {
 
     unsigned long estimateMem = width * sizeof(uint32);//working buf
     estimateMem += width * rowPerStrip * sizeof (uint32);//raster
-    estimateMem += width * 3 + width % 4;
+    estimateMem += outWidth * 3 + outWidth % 4;
     //estimateMem += 4 * width * sizeof(png_bytep); //buf for writing to png
     LOGII("estimateMem", estimateMem);
     if (estimateMem > availableMemory && availableMemory != -1) {
@@ -391,7 +422,7 @@ jboolean TiffToBmpConverter::convertFromStrip() {
     uint32 rows_to_write = 0;
 
     //24 bpp bmp should has with multiple 4
-    int rowSize = width * 3 + width % 4;
+    int rowSize = outWidth * 3 + outWidth % 4;
     unsigned char *row = new unsigned char[rowSize];
     for (int i = 0; i < stripMax*rowPerStrip; i += rowPerStrip) {
         if (checkStop()) {
@@ -405,6 +436,10 @@ jboolean TiffToBmpConverter::convertFromStrip() {
             }
             return JNI_FALSE;
         }
+
+        if ((i < outStartY && i + rowPerStrip < outStartY) || (i >= outStartY + outHeight && i + rowPerStrip >= outStartY + outHeight)) continue;
+        LOGII("i", i);
+
         sendProgress(i * width, total);
         TIFFReadRGBAStrip(tiffImage, i, raster);
 
@@ -438,18 +473,23 @@ jboolean TiffToBmpConverter::convertFromStrip() {
                 }
         }
 
+        int outY, outX;
         for (int y = 0; y < rows_to_write; y++) {
+            if (i + y < outStartY || i + y > outStartY + outHeight) continue;
+            outY = i + y - outStartY;
             for (int x = 0; x < width * 3; x += 3) {
+                if (x < outStartX * 3 || x >= (outStartX + outWidth) * 3) continue;
+                outX = x - (outStartX*3);
                 uint32 pix = raster[y * width + x/3];
                 unsigned char *vp = (unsigned char *)&pix;
                 //in bmp colors stores as bgr
-                row[x] = vp[2]; //red
-                row[x+1] = vp[1]; //green
-                row[x+2] = vp[0];   //blue
+                row[outX] = vp[2]; //red
+                row[outX+1] = vp[1]; //green
+                row[outX+2] = vp[0];   //blue
             }
 
             //in bmp lines stored fliped verticaly. Write lines from bottom to top
-            fseek(outFIle, 122 + (height - i - y - 1) * rowSize , SEEK_SET);
+            fseek(outFIle, 122 + (outHeight - outY - 1) * rowSize , SEEK_SET);
             fwrite(row,rowSize,1,outFIle);
         }
     }

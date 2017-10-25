@@ -34,9 +34,7 @@ PngToTiffConverter::~PngToTiffConverter() {
 
 jboolean PngToTiffConverter::convert()
 {
-    if (!readOptions()) {
-        return JNI_FALSE;
-    }
+    readOptions();
 
     //open tiff file for writing or appending
     const char *outCPath = NULL;

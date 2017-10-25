@@ -7,6 +7,7 @@
 BaseTiffConverter::BaseTiffConverter(JNIEnv *e, jclass clazz, jstring in, jstring out, jobject opts, jobject listener)
 {
     boundX = boundY = boundWidth = boundHeight = -1;
+    hasBounds = 0;
     availableMemory = 8000 * 8000 * 4;
     env = e;
     inPath = in;
@@ -40,9 +41,9 @@ BaseTiffConverter::~BaseTiffConverter()
     }
 }
 
-char BaseTiffConverter::readOptions()
+void BaseTiffConverter::readOptions()
 {
-    if (optionsObj == NULL) return 1;
+    if (optionsObj == NULL) return;
 
     jfieldID tiffdirfield = env->GetFieldID(jConvertOptionsClass, "readTiffDirectory", "I");
     tiffDirectory = env->GetIntField(optionsObj, tiffdirfield);
@@ -135,7 +136,21 @@ char BaseTiffConverter::readOptions()
         boundY = env->GetIntField(decodeAreaObj, yFieldID);
         boundWidth = env->GetIntField(decodeAreaObj, widthFieldID);
         boundHeight = env->GetIntField(decodeAreaObj, heightFieldID);
-        if (boundX >= width-1) {
+
+
+        LOGII("Decode X", boundX);
+        LOGII("Decode Y", boundY);
+        LOGII("Decode width", boundWidth);
+        LOGII("Decode height", boundHeight);
+
+        hasBounds = 1;
+        env->DeleteLocalRef(decodeAreaClass);
+    }
+}
+
+char BaseTiffConverter::normalizeDecodeArea() {
+    if (!hasBounds) return 1;
+    if (boundX >= width-1) {
             const char *message = "X of left top corner of decode area should be less than image width";
             LOGE(*message);
             if (throwException) {
@@ -143,7 +158,6 @@ char BaseTiffConverter::readOptions()
                 throw_decode_file_exception(env, inPath, adinf);
                 env->DeleteLocalRef(adinf);
             }
-            env->DeleteLocalRef(decodeAreaClass);
             return 0;
         }
         if (boundY >= height-1) {
@@ -154,7 +168,6 @@ char BaseTiffConverter::readOptions()
                 throw_decode_file_exception(env, inPath, adinf);
                 env->DeleteLocalRef(adinf);
             }
-            env->DeleteLocalRef(decodeAreaClass);
             return 0;
         }
 
@@ -171,7 +184,6 @@ char BaseTiffConverter::readOptions()
                 throw_decode_file_exception(env, inPath, adinf);
                 env->DeleteLocalRef(adinf);
             }
-            env->DeleteLocalRef(decodeAreaClass);
             return 0;
         }
         if (boundHeight < 1) {
@@ -182,22 +194,9 @@ char BaseTiffConverter::readOptions()
                 throw_decode_file_exception(env, inPath, adinf);
                 env->DeleteLocalRef(adinf);
             }
-            env->DeleteLocalRef(decodeAreaClass);
             return 0;
         }
-
-        LOGII("Decode X", boundX);
-        LOGII("Decode Y", boundY);
-        LOGII("Decode width", boundWidth);
-        LOGII("Decode height", boundHeight);
-
-        hasBounds = 1;
-        env->DeleteLocalRef(decodeAreaClass);
-
-    }
-
-    return 1;
-
+        return 1;
 }
 
 char *BaseTiffConverter::getCreationDate() {

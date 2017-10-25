@@ -36,9 +36,7 @@ BmpToTiffConverter::~BmpToTiffConverter()
 jboolean BmpToTiffConverter::convert()
 {
     LOGI("CONVERT");
-    if (!readOptions()) {
-        return JNI_FALSE;
-    }
+    readOptions();
 
     //open tiff file for writing or appending
     const char *outCPath = NULL;

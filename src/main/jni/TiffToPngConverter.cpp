@@ -47,9 +47,7 @@ TiffToPngConverter::~TiffToPngConverter()
 
 jboolean TiffToPngConverter::convert()
 {
-    if (!readOptions()) {
-        return JNI_FALSE;
-    }
+    readOptions();
 
     //in c++ path
     const char *strTiffPath = NULL;
@@ -141,6 +139,10 @@ jboolean TiffToPngConverter::convert()
     }
     LOGII("image width", width);
     LOGII("image height", height);
+
+    if (!normalizeDecodeArea()) {
+        return JNI_FALSE;
+    }
 
     //set png data
     png_set_IHDR(png_ptr, info_ptr, width, height, 8, PNG_COLOR_TYPE_RGB_ALPHA,
