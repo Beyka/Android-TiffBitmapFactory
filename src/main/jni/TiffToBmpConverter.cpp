@@ -79,8 +79,8 @@ jboolean TiffToBmpConverter::convert()
     LOGII("image bound width", boundWidth);
     LOGII("image bound height", boundHeight);
 
-    unsigned long long imageDataSize = 0;
-    if (hasBounds) {
+    unsigned long long imageDataSize = (outWidth * 3 + outWidth % 4) * outHeight;
+    /*if (hasBounds) {
         imageDataSize = (boundWidth * 3 + boundWidth % 4) * boundHeight;
         outWidth = boundWidth;
         outHeight = boundHeight;
@@ -93,7 +93,7 @@ jboolean TiffToBmpConverter::convert()
         outStartX = 0;
         outStartY = 0;
 
-    }
+    }*/
     LOGII("image out width", outWidth);
     LOGII("image out height", outHeight);
 
@@ -132,7 +132,7 @@ jboolean TiffToBmpConverter::convert()
     fwrite(bmpHeader,sizeof(BITMAPFILEHEADER),1,outFIle);
     fseek(outFIle, sizeof(BITMAPFILEHEADER) , SEEK_SET);
     fwrite(bmpInfo,sizeof(BITMAPINFOHEADER),1,outFIle);
-    fseek(outFIle, sizeof(BITMAPFILEHEADER) + 108/*sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)*/ , SEEK_SET);
+    fseek(outFIle, sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) , SEEK_SET);
 
     jboolean result = JNI_FALSE;
 

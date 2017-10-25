@@ -97,15 +97,20 @@ jboolean TiffToJpgConverter::convert()
     if (origorientation == 0) {
         origorientation = ORIENTATION_TOPLEFT;
     }
-    LOGII("image width", width);
-    LOGII("image height", height);
 
     if (!normalizeDecodeArea()) {
         return JNI_FALSE;
     }
 
-    cinfo.image_width = width;
-    cinfo.image_height = height;
+    LOGII("image width", width);
+    LOGII("image height", height);
+    LOGII("image bound width", boundWidth);
+    LOGII("image bound height", boundHeight);
+    LOGII("image out width", outWidth);
+    LOGII("image out height", outHeight);
+
+    cinfo.image_width = outWidth;
+    cinfo.image_height = outHeight;
     cinfo.input_components = 3;
     cinfo.in_color_space = JCS_RGB;
 
@@ -121,8 +126,8 @@ jboolean TiffToJpgConverter::convert()
     LOGI("start compressing");
 
     jboolean result = JNI_FALSE;
-    //result = convertFromTile();
-    switch(getDecodeMethod()) {
+    result = convertFromTile();
+    /*switch(getDecodeMethod()) {
         case DECODE_METHOD_IMAGE:
             result = convertFromImage();
             break;
@@ -132,7 +137,7 @@ jboolean TiffToJpgConverter::convert()
         case DECODE_METHOD_STRIP:
             result = convertFromStrip();
             break;
-    }
+    }*/
 
     if (result) {
         jpeg_finish_compress(&cinfo);
@@ -145,7 +150,7 @@ jboolean TiffToJpgConverter::convertFromImage() {
     int origBufferSize = width * height * sizeof(uint32);
 
     unsigned long estimateMem = origBufferSize;
-    estimateMem += width * sizeof(unsigned char) * 3;//working buf
+    estimateMem += outWidth * sizeof(unsigned char) * 3;//working buf
     LOGII("estimateMem", estimateMem);
     if (estimateMem > availableMemory && availableMemory != -1) {
         LOGEI("Not enough memory", availableMemory);
@@ -181,6 +186,7 @@ jboolean TiffToJpgConverter::convertFromImage() {
     jlong total = width * height;
     sendProgress(0, total);
 
+    int outY, outX;
     JSAMPROW row_pointer[1];
     for (int y = 0; y < height; y++) {
         if (checkStop()) {
@@ -188,14 +194,19 @@ jboolean TiffToJpgConverter::convertFromImage() {
             return JNI_FALSE;
         }
         sendProgress(y * width, total);
-        unsigned char *row = (unsigned char*)malloc(width * sizeof(unsigned char) * 3);
+        if (y < outStartY || y >= outStartY + outHeight) continue;
+        outY = y - outStartY;
+
+        unsigned char *row = (unsigned char*)malloc(outWidth * sizeof(unsigned char) * 3);
 
         for (int x = 0; x < width * 3; x += 3) {
+            if (x < outStartX * 3 || x >= (outStartX + outWidth) * 3) continue;
+            outX = x - (outStartX*3);
             uint32 pix = origBuffer[y * width + x/3];
             unsigned char *vp = (unsigned char *)&pix;
-            row[x] = vp[0];
-            row[x+1] = vp[1];
-            row[x+2] = vp[2];
+            row[outX] = vp[0];
+            row[outX+1] = vp[1];
+            row[outX+2] = vp[2];
         }
         row_pointer[0] = row;
         jpeg_write_scanlines(&cinfo, row_pointer, 1);
@@ -224,7 +235,7 @@ jboolean TiffToJpgConverter::convertFromTile() {
     unsigned long estimateMem = rasterSize * sizeof(uint32); //raster
     estimateMem += tileWidth * tileHeight * sizeof(uint32); //tile raster
     estimateMem += tileWidth * sizeof (uint32); //working buf
-    estimateMem += width * sizeof(unsigned char) * 3; //bufer for writing to jpg
+    estimateMem += outWidth * sizeof(unsigned char) * 3; //bufer for writing to jpg
     LOGII("estimateMem", estimateMem);
     if (estimateMem > availableMemory && availableMemory != -1) {
         LOGEI("Not enought memory", availableMemory);
@@ -313,11 +324,13 @@ jboolean TiffToJpgConverter::convertFromTile() {
             }
         }
 
+        int outY, outX;
         JSAMPROW row_pointer[1];
         for (int y = starty; y < tileHeight; y++) {
             if (imageWritedLines == height) break;
-
-            unsigned char *jpgrow = (unsigned char*)malloc(width * sizeof(unsigned char) * 3);
+            if (y + row < outStartY || y + row >= outStartY + outHeight) continue;
+            outY = y + row - outStartY;
+            unsigned char *jpgrow = (unsigned char*)malloc(outWidth * sizeof(unsigned char) * 3);
 
            // uint32 *rasterLine = (uint32 *)malloc(width * sizeof(uint32));
 
@@ -326,11 +339,13 @@ jboolean TiffToJpgConverter::convertFromTile() {
             //}
 
             for (int x = 0; x < width * 3; x += 3) {
+                if (x < outStartX * 3 || x >= (outStartX + outWidth) * 3) continue;
+                outX = x - (outStartX*3);
                 uint32 pix = raster[y * workingWidth + x/3];
                 unsigned char *vp = (unsigned char *)&pix;
-                jpgrow[x] = vp[0];
-                jpgrow[x+1] = vp[1];
-                jpgrow[x+2] = vp[2];
+                jpgrow[outX] = vp[0];
+                jpgrow[outX+1] = vp[1];
+                jpgrow[outX+2] = vp[2];
             }
             row_pointer[0] = jpgrow;
             jpeg_write_scanlines(&cinfo, row_pointer, 1);
@@ -371,7 +386,7 @@ jboolean TiffToJpgConverter::convertFromStrip() {
 
     unsigned long estimateMem = width * sizeof(uint32);//working buf
     estimateMem += width * rowPerStrip * sizeof (uint32);//raster
-    estimateMem += width * sizeof(unsigned char) * 3; //buf for writing to jpg
+    estimateMem += outWidth * sizeof(unsigned char) * 3; //buf for writing to jpg
     LOGII("estimateMem", estimateMem);
     if (estimateMem > availableMemory && availableMemory != -1) {
         LOGEI("Not enought memory", availableMemory);
@@ -434,16 +449,22 @@ jboolean TiffToJpgConverter::convertFromStrip() {
                 }
 
         }
+        int outY, outX;
         JSAMPROW row_pointer[1];
         for (int y = 0; y < rows_to_write; y++) {
-            unsigned char *jpgrow = (unsigned char*)malloc(width * sizeof(unsigned char) * 3);
+            if (i + y < outStartY || i + y > outStartY + outHeight) continue;
+            outY = i + y - outStartY;
+
+            unsigned char *jpgrow = (unsigned char*)malloc(outWidth * sizeof(unsigned char) * 3);
 
             for (int x = 0; x < width * 3; x += 3) {
+                if (x < outStartX * 3 || x >= (outStartX + outWidth) * 3) continue;
+                outX = x - (outStartX*3);
                 uint32 pix = raster[y * width + x/3];
                 unsigned char *vp = (unsigned char *)&pix;
-                jpgrow[x] = vp[0];
-                jpgrow[x+1] = vp[1];
-                jpgrow[x+2] = vp[2];
+                jpgrow[outX] = vp[0];
+                jpgrow[outX+1] = vp[1];
+                jpgrow[outX+2] = vp[2];
             }
             row_pointer[0] = jpgrow;
             jpeg_write_scanlines(&cinfo, row_pointer, 1);

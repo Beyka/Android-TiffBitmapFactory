@@ -149,54 +149,66 @@ void BaseTiffConverter::readOptions()
 }
 
 char BaseTiffConverter::normalizeDecodeArea() {
-    if (!hasBounds) return 1;
-    if (boundX >= width-1) {
-            const char *message = "X of left top corner of decode area should be less than image width";
-            LOGE(*message);
-            if (throwException) {
-                jstring adinf = env->NewStringUTF(message);
-                throw_decode_file_exception(env, inPath, adinf);
-                env->DeleteLocalRef(adinf);
+    if (hasBounds) {
+        if (boundX >= width-1) {
+                const char *message = "X of left top corner of decode area should be less than image width";
+                LOGE(*message);
+                if (throwException) {
+                    jstring adinf = env->NewStringUTF(message);
+                    throw_decode_file_exception(env, inPath, adinf);
+                    env->DeleteLocalRef(adinf);
+                }
+                return 0;
             }
-            return 0;
-        }
-        if (boundY >= height-1) {
-            const char *message = "Y of left top corner of decode area should be less than image height";
-            LOGE(*message);
-            if (throwException) {
-                jstring adinf = env->NewStringUTF(message);
-                throw_decode_file_exception(env, inPath, adinf);
-                env->DeleteLocalRef(adinf);
+            if (boundY >= height-1) {
+                const char *message = "Y of left top corner of decode area should be less than image height";
+                LOGE(*message);
+                if (throwException) {
+                    jstring adinf = env->NewStringUTF(message);
+                    throw_decode_file_exception(env, inPath, adinf);
+                    env->DeleteLocalRef(adinf);
+                }
+                return 0;
             }
-            return 0;
-        }
 
-        if (boundX < 0) boundX = 0;
-        if (boundY < 0) boundY = 0;
-        if (boundX + boundWidth >= width) boundWidth = width - boundX -1;
-        if (boundY + boundHeight >= height) boundHeight = height - boundY -1;
+            if (boundX < 0) boundX = 0;
+            if (boundY < 0) boundY = 0;
+            if (boundX + boundWidth >= width) boundWidth = width - boundX -1;
+            if (boundY + boundHeight >= height) boundHeight = height - boundY -1;
 
-        if (boundWidth < 1) {
-            const char *message = "Width of decode area can\'t be less than 1";
-            LOGE(*message);
-            if (throwException) {
-                jstring adinf = env->NewStringUTF(message);
-                throw_decode_file_exception(env, inPath, adinf);
-                env->DeleteLocalRef(adinf);
+            if (boundWidth < 1) {
+                const char *message = "Width of decode area can\'t be less than 1";
+                LOGE(*message);
+                if (throwException) {
+                    jstring adinf = env->NewStringUTF(message);
+                    throw_decode_file_exception(env, inPath, adinf);
+                    env->DeleteLocalRef(adinf);
+                }
+                return 0;
             }
-            return 0;
-        }
-        if (boundHeight < 1) {
-            const char *message = "Height of decode area can\'t be less than 1";
-            LOGE(*message);
-            if (throwException) {
-                jstring adinf = env->NewStringUTF(message);
-                throw_decode_file_exception(env, inPath, adinf);
-                env->DeleteLocalRef(adinf);
+            if (boundHeight < 1) {
+                const char *message = "Height of decode area can\'t be less than 1";
+                LOGE(*message);
+                if (throwException) {
+                    jstring adinf = env->NewStringUTF(message);
+                    throw_decode_file_exception(env, inPath, adinf);
+                    env->DeleteLocalRef(adinf);
+                }
+                return 0;
             }
-            return 0;
-        }
-        return 1;
+
+            outWidth = boundWidth;
+            outHeight = boundHeight;
+            outStartX = boundX;
+            outStartY = boundY;
+
+            return 1;
+    } else {
+            outWidth = width;
+            outHeight = height;
+            outStartX = 0;
+            outStartY = 0;
+    }
 }
 
 char *BaseTiffConverter::getCreationDate() {
