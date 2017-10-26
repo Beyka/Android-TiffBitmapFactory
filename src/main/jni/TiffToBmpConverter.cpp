@@ -80,20 +80,7 @@ jboolean TiffToBmpConverter::convert()
     LOGII("image bound height", boundHeight);
 
     unsigned long long imageDataSize = (outWidth * 3 + outWidth % 4) * outHeight;
-    /*if (hasBounds) {
-        imageDataSize = (boundWidth * 3 + boundWidth % 4) * boundHeight;
-        outWidth = boundWidth;
-        outHeight = boundHeight;
-        outStartX = boundX;
-        outStartY = boundY;
-    } else {
-        imageDataSize = (width * 3 + width % 4) * height;
-        outWidth = width;
-        outHeight = height;
-        outStartX = 0;
-        outStartY = 0;
 
-    }*/
     LOGII("image out width", outWidth);
     LOGII("image out height", outHeight);
 
@@ -475,7 +462,7 @@ jboolean TiffToBmpConverter::convertFromStrip() {
 
         int outY, outX;
         for (int y = 0; y < rows_to_write; y++) {
-            if (i + y < outStartY || i + y > outStartY + outHeight) continue;
+            if (i + y < outStartY || i + y >= outStartY + outHeight) continue;
             outY = i + y - outStartY;
             for (int x = 0; x < width * 3; x += 3) {
                 if (x < outStartX * 3 || x >= (outStartX + outWidth) * 3) continue;

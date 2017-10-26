@@ -126,8 +126,8 @@ jboolean TiffToJpgConverter::convert()
     LOGI("start compressing");
 
     jboolean result = JNI_FALSE;
-    result = convertFromTile();
-    /*switch(getDecodeMethod()) {
+
+    switch(getDecodeMethod()) {
         case DECODE_METHOD_IMAGE:
             result = convertFromImage();
             break;
@@ -137,7 +137,7 @@ jboolean TiffToJpgConverter::convert()
         case DECODE_METHOD_STRIP:
             result = convertFromStrip();
             break;
-    }*/
+    }
 
     if (result) {
         jpeg_finish_compress(&cinfo);
@@ -452,7 +452,7 @@ jboolean TiffToJpgConverter::convertFromStrip() {
         int outY, outX;
         JSAMPROW row_pointer[1];
         for (int y = 0; y < rows_to_write; y++) {
-            if (i + y < outStartY || i + y > outStartY + outHeight) continue;
+            if (i + y < outStartY || i + y >= outStartY + outHeight) continue;
             outY = i + y - outStartY;
 
             unsigned char *jpgrow = (unsigned char*)malloc(outWidth * sizeof(unsigned char) * 3);
