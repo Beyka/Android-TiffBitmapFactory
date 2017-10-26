@@ -145,7 +145,7 @@ jboolean TiffToPngConverter::convert()
     }
 
     //set png data
-    png_set_IHDR(png_ptr, info_ptr, width, height, 8, PNG_COLOR_TYPE_RGB_ALPHA,
+    png_set_IHDR(png_ptr, info_ptr, outWidth, outHeight, 8, PNG_COLOR_TYPE_RGB_ALPHA,
                 PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
                 PNG_FILTER_TYPE_DEFAULT);
 
@@ -182,7 +182,7 @@ jboolean TiffToPngConverter::convertFromImage() {
     int origBufferSize = width * height * sizeof(uint32);
 
     unsigned long estimateMem = origBufferSize;
-    estimateMem += 4 * width * sizeof(png_bytep);//working buf
+    estimateMem += 4 * outWidth * sizeof(png_bytep);//working buf
     LOGII("estimateMem", estimateMem);
     if (estimateMem > availableMemory && availableMemory != -1) {
         LOGEI("Not enough memory", availableMemory);
@@ -218,14 +218,19 @@ jboolean TiffToPngConverter::convertFromImage() {
     jlong total = width * height;
     sendProgress(0, total);
 
+    int outY, outX;
+
     for (int y = 0; y < height; y++) {
+        if (y < outStartY || y >= outStartY + outHeight) continue;
         if (checkStop()) {
             free(origBuffer);
             return JNI_FALSE;
         }
+        outY = y - outStartY;
         sendProgress(y * width, total);
-        png_bytep row = (png_bytep)malloc(4 * width * sizeof(png_bytep));
-        memcpy(row, origBuffer + (y * width), width * 4);
+
+        png_bytep row = (png_bytep)malloc(4 * outWidth * sizeof(png_bytep));
+        memcpy(row, origBuffer + (y * width + outStartX), outWidth * 4);
         png_write_row(png_ptr, row);
         delete(row);
     }
@@ -252,7 +257,7 @@ jboolean TiffToPngConverter::convertFromTile() {
     unsigned long estimateMem = rasterSize * sizeof(uint32); //raster
     estimateMem += tileWidth * tileHeight * sizeof(uint32); //tile raster
     estimateMem += tileWidth * sizeof (uint32); //working buf
-    estimateMem += 4 * width * sizeof(png_bytep); //bufer for writing to png
+    estimateMem += 4 * outWidth * sizeof(png_bytep); //bufer for writing to png
     LOGII("estimateMem", estimateMem);
     if (estimateMem > availableMemory && availableMemory != -1) {
         LOGEI("Not enought memory", availableMemory);
@@ -345,18 +350,14 @@ jboolean TiffToPngConverter::convertFromTile() {
             }
         }
 
-        //LOGI("writing to png");
-        //LOGII("endy", endy);
-        //LOGII("endx", endx);
+        int outY, outX;
         for (int y = starty; y < tileHeight; y++) {
             if (imageWritedLines == height) break;
+            if (y + row < outStartY || y + row >= outStartY + outHeight) continue;
+            outY = y + row - outStartY;
             //create temp raster and write there pixels than not null
-            //uint32 *rasterLine = (uint32 *)malloc(width * sizeof(uint32));
-            //for (int x = startx, x2 = 0; x2 < width; x++, x2++) {
-            //    rasterLine[x2] = raster[y * workingWidth + x];
-            //}
-            png_bytep pngrow = (png_bytep)malloc(4 * width * sizeof(png_bytep));
-            memcpy(pngrow, raster + y * workingWidth, width * 4);
+            png_bytep pngrow = (png_bytep)malloc(4 * outWidth * sizeof(png_bytep));
+            memcpy(pngrow, raster + y * workingWidth + outStartX, outWidth * 4);
             //memcpy(pngrow, rasterLine, width * 4);
             png_write_row(png_ptr, pngrow);
             free(pngrow);
@@ -395,10 +396,11 @@ jboolean TiffToPngConverter::convertFromStrip() {
     uint32 stripMax = TIFFNumberOfStrips (tiffImage);
     int rowPerStrip = -1;
     TIFFGetField(tiffImage, TIFFTAG_ROWSPERSTRIP, &rowPerStrip);
+    LOGII("RPS", rowPerStrip);
 
     unsigned long estimateMem = width * sizeof(uint32);//working buf
     estimateMem += width * rowPerStrip * sizeof (uint32);//raster
-    estimateMem += 4 * width * sizeof(png_bytep); //buf for writing to png
+    estimateMem += 4 * outWidth * sizeof(png_bytep); //buf for writing to png
     LOGII("estimateMem", estimateMem);
     if (estimateMem > availableMemory && availableMemory != -1) {
         LOGEI("Not enought memory", availableMemory);
@@ -462,11 +464,15 @@ jboolean TiffToPngConverter::convertFromStrip() {
 
         }
 
+        int outY, outX;
         for (int y = 0; y < rows_to_write; y++) {
-            png_bytep row = (png_bytep)malloc(4 * width * sizeof(png_bytep));
-            memcpy(row, raster + (y * width), width * 4);
-            png_write_row(png_ptr, row);
-            delete(row);
+            if (i + y < outStartY || i + y >= outStartY + outHeight) continue;
+            outY = i + y - outStartY;
+            LOGII("out Y", outY);
+            png_bytep pngrow = (png_bytep)malloc(4 * outWidth * sizeof(png_bytep));
+            memcpy(pngrow, raster + y * width + outStartX, outWidth * 4);
+            png_write_row(png_ptr, pngrow);
+            free(pngrow);
         }
 
     }
