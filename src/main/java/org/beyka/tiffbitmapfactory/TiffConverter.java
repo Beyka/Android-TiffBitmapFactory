@@ -191,13 +191,14 @@ public class TiffConverter {
         //public Orientation orientation;
 
         /**
-         * If this field is non-null - Converter will use only area specified in {@link DecodeArea} object to convert
-         * For decoding not full bitmap, but only part of it - create new {@link DecodeArea} object and specify:
+         * If this field is non-null - Converter will use only area specified in {@link DecodeArea} object to convert.
+         * <p><b>This field works only when convert from TIFF.</b></p>
+         * <p>For decoding not full bitmap, but only part of it - create new {@link DecodeArea} object and specify:</p>
          * <p>{@link DecodeArea#x x}, {@link DecodeArea#y y} - left top corner of decoding area </p>
          * <p>{@link DecodeArea#width width} - width of decoding area </p>
          * <p>{@link DecodeArea#height height} - height of decoding area </p>
          */
-        public DecodeArea inDecodeArea;
+        public DecodeArea inTiffDecodeArea;
 
         /**
          * <b>For converting from ANY to TIFF cases</b>

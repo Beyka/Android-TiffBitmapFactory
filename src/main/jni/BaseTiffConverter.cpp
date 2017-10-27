@@ -121,7 +121,7 @@ void BaseTiffConverter::readOptions()
 
     //Get decode are
     jfieldID gOptions_decodeAreaFieldID = env->GetFieldID(jConvertOptionsClass,
-                                                           "inDecodeArea",
+                                                           "inTiffDecodeArea",
                                                            "Lorg/beyka/tiffbitmapfactory/DecodeArea;");
     jobject decodeAreaObj = env->GetObjectField(optionsObj, gOptions_decodeAreaFieldID);
     if (decodeAreaObj) {
