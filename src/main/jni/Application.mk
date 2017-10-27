@@ -6,4 +6,4 @@ APP_PLATFORM=android-8
 
 APP_ABI := all
 
-APP_OPTIM := debug
+#APP_OPTIM := debug
