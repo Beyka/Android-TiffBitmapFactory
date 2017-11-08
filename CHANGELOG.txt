@@ -1,3 +1,6 @@
+0.9.8.2
+-Added handling of SIGSEGV crashes from libtiff
+
 0.9.8
 -Added support for dirrect converting files to TIFF and from TIFF
 -Fixed bug causing crashing while saving tiff
