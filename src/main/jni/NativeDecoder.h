@@ -11,6 +11,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <tiffio.h>
+#include <signal.h>
+#include <setjmp.h>
 #include "NativeExceptions.h"
 
 #ifdef NDEBUG
@@ -46,9 +48,15 @@ class NativeDecoder
         static int const DECODE_METHOD_IMAGE = 1;
         static int const DECODE_METHOD_TILE = 2;
         static int const DECODE_METHOD_STRIP = 3;
+
         //fields
         JNIEnv *env;
         jclass clazz;
+
+        static jmp_buf tile_buf;
+        static jmp_buf strip_buf;
+        static jmp_buf image_buf;
+
         jobject optionsObject;
         jobject listenerObject;
         jclass jIProgressListenerClass;
@@ -92,6 +100,15 @@ class NativeDecoder
         jstring charsToJString(const char *);
         jboolean checkStop();
         void sendProgress(jlong, jlong);
+        //functions for catching SIGSEGV from libtiff methods
+        void signalFromTileHandler(int code, siginfo_t *siginfo, void *sc);
+        void signalFromStripHandler(int code, siginfo_t *siginfo, void *sc);
+
+        static void tileErrorHandler(int code, siginfo_t *siginfo, void *sc);
+        static void stripErrorHandler(int code, siginfo_t *siginfo, void *sc);
+        static void imageErrorHandler(int code, siginfo_t *siginfo, void *sc);
 };
+
+
 
 #endif //TIFFSAMPLE_NATIVEDECODER_H

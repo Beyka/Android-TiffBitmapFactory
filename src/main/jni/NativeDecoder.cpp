@@ -5,8 +5,13 @@
 #include "NativeDecoder.h"
 #include <string>
 
+jmp_buf NativeDecoder::tile_buf;
+jmp_buf NativeDecoder::strip_buf;
+jmp_buf NativeDecoder::image_buf;
+
 NativeDecoder::NativeDecoder(JNIEnv *e, jclass c, jstring path, jobject opts, jobject listener)
 {
+
     availableMemory = 8000*8000*4; // use 244Mb restriction for decoding full image
     env = e;
     clazz = c;
@@ -417,6 +422,16 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
 
 jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwidth, int *bitmapheight) {
 
+    //init signal handler for catch SIGSEGV error that could be raised in libtiff
+    struct sigaction act;
+    memset(&act, 0, sizeof(act));
+    sigemptyset(&act.sa_mask);
+    act.sa_sigaction = stripErrorHandler;
+    act.sa_flags = SA_SIGINFO | SA_ONSTACK;
+    if(sigaction(SIGSEGV, &act, 0) < 0) {
+        LOGE("Can\'t setup signal handler. Working without errors catching mechanism");
+    }
+
     LOGII("width", origwidth);
     LOGII("height", origheight);
 
@@ -481,6 +496,29 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
     int isSecondRasterExist = 0;
     int ok = 1;
     uint32 rows_to_write = 0;
+
+    //check for error
+    if (setjmp(NativeDecoder::strip_buf)) {
+        LOGE("Catched error signal");
+        if (raster) {
+            _TIFFfree(raster);
+            raster = NULL;
+        }
+        if (rasterForBottomLine) {
+            _TIFFfree(rasterForBottomLine);
+            rasterForBottomLine = NULL;
+        }
+        if (matrixTopLine) {
+            _TIFFfree(matrixTopLine);
+            matrixTopLine = NULL;
+        }
+        if (matrixBottomLine) {
+            _TIFFfree(matrixBottomLine);
+            matrixBottomLine = NULL;
+        }
+
+        return NULL;
+    }
 
     for (int i = 0; i < stripMax*rowPerStrip; i += rowPerStrip) {
 
@@ -846,6 +884,16 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
 
 jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int *bitmapwidth, int *bitmapheight) {
 
+    //init signal handler for catch SIGSEGV error that could be raised in libtiff
+    struct sigaction act;
+    memset(&act, 0, sizeof(act));
+    sigemptyset(&act.sa_mask);
+    act.sa_sigaction = stripErrorHandler;
+    act.sa_flags = SA_SIGINFO | SA_ONSTACK;
+    if(sigaction(SIGSEGV, &act, 0) < 0) {
+        LOGE("Can\'t setup signal handler. Working without errors catching mechanism");
+    }
+
     LOGII("width", origwidth);
     LOGII("height", origheight);
 
@@ -915,6 +963,29 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
     int isSecondRasterExist = 0;
     int ok = 1;
     uint32 rows_to_write = 0;
+
+    //check for error
+    if (setjmp(NativeDecoder::strip_buf)) {
+        LOGE("Catched error signal");
+        if (raster) {
+            _TIFFfree(raster);
+            raster = NULL;
+        }
+        if (rasterForBottomLine) {
+            _TIFFfree(rasterForBottomLine);
+            rasterForBottomLine = NULL;
+        }
+        if (matrixTopLine) {
+            _TIFFfree(matrixTopLine);
+            matrixTopLine = NULL;
+        }
+        if (matrixBottomLine) {
+            _TIFFfree(matrixBottomLine);
+            matrixBottomLine = NULL;
+        }
+
+        return NULL;
+    }
 
     for (int i = 0; (i < stripMax*rowPerStrip || i > boundY + boundHeight) ; i += rowPerStrip) {
 
@@ -1368,6 +1439,16 @@ void NativeDecoder::rotateTileLinesHorizontal(uint32 tileHeight, uint32 tileWidt
 
 jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidth, int *bitmapheight) {
 
+        //init signal handler for catch SIGSEGV error that could be raised in libtiff
+        struct sigaction act;
+        memset(&act, 0, sizeof(act));
+        sigemptyset(&act.sa_mask);
+        act.sa_sigaction = tileErrorHandler;
+        act.sa_flags = SA_SIGINFO | SA_ONSTACK;
+        if(sigaction(SIGSEGV, &act, 0) < 0) {
+            LOGE("Can\'t setup signal handler. Working without errors catching mechanism");
+        }
+
         jint *pixels = NULL;
         *bitmapwidth = origwidth / inSampleSize;
         *bitmapheight = origheight / inSampleSize;
@@ -1411,8 +1492,29 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
         uint32 globalProcessedX = 0;
         uint32 globalProcessedY = 0;
 
-        for (row = 0; row < origheight; row += tileHeight) {
+        //check for error
+        if (setjmp(NativeDecoder::tile_buf)) {
+            LOGE("Catched error signal");
+            if (rasterTile) {
+                _TIFFfree(rasterTile);
+                rasterTile = NULL;
+            }
+            if (rasterTileLeft) {
+                _TIFFfree(rasterTileLeft);
+                rasterTileLeft = NULL;
+            }
+            if (rasterTileRight) {
+                _TIFFfree(rasterTileRight);
+                rasterTileRight = NULL;
+            }
+            if (work_line_buf) {
+                _TIFFfree(work_line_buf);
+                work_line_buf = NULL;
+            }
+            return NULL;
+        }
 
+        for (row = 0; row < origheight; row += tileHeight) {
             short leftTileExists = 0;
             short rightTileExists = 0;
             for (column = 0; column < origwidth; column += tileWidth) {
@@ -1834,6 +1936,17 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
 
 jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *bitmapwidth, int *bitmapheight) {
 
+        //init signal handler for catch SIGSEGV error that could be raised in libtiff
+        struct sigaction act;
+        memset(&act, 0, sizeof(act));
+        sigemptyset(&act.sa_mask);
+        act.sa_sigaction = tileErrorHandler;
+        act.sa_flags = SA_SIGINFO | SA_ONSTACK;
+        if(sigaction(SIGSEGV, &act, 0) < 0) {
+            LOGE("Can\'t setup signal handler. Working without errors catching mechanism");
+        }
+
+
         //First read all tiles that are on necessary area
 
         uint32 tileWidth = 0, tileHeight = 0;
@@ -1884,6 +1997,28 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
         uint32 *rasterTileRight = (uint32 *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32));
 
         uint32 *work_line_buf = (uint32*)_TIFFmalloc(tileWidth * sizeof (uint32));
+
+        //check for error
+        if (setjmp(NativeDecoder::tile_buf)) {
+            LOGE("Catched error signal");
+            if (rasterTile) {
+                _TIFFfree(rasterTile);
+                rasterTile = NULL;
+            }
+            if (rasterTileLeft) {
+                _TIFFfree(rasterTileLeft);
+                rasterTileLeft = NULL;
+            }
+            if (rasterTileRight) {
+                _TIFFfree(rasterTileRight);
+                rasterTileRight = NULL;
+            }
+            if (work_line_buf) {
+                _TIFFfree(work_line_buf);
+                work_line_buf = NULL;
+            }
+            return NULL;
+        }
 
         //this variable calculate processed pixels for x and y direction to make right offsets at the begining of next tile
         //offset calculated from condition globalProcessed % inSampleSize should be 0
@@ -2352,6 +2487,16 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
 
 jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwidth, int *bitmapheight)
 {
+    //init signal handler for catch SIGSEGV error that could be raised in libtiff
+    struct sigaction act;
+    memset(&act, 0, sizeof(act));
+    sigemptyset(&act.sa_mask);
+    act.sa_sigaction = imageErrorHandler;
+    act.sa_flags = SA_SIGINFO | SA_ONSTACK;
+    if(sigaction(SIGSEGV, &act, 0) < 0) {
+        LOGE("Can\'t setup signal handler. Working without errors catching mechanism");
+    }
+
     //buffer size for decoding tiff image in RGBA format
     int origBufferSize = origwidth * origheight * sizeof(unsigned int);
 
@@ -2382,6 +2527,23 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
         return NULL;
     }
 
+    jint *pixels = NULL;
+
+    //check for error
+    if (setjmp(NativeDecoder::image_buf)) {
+        LOGI("Catched error signal");
+        if (origBuffer) {
+            _TIFFfree(origBuffer);
+            origBuffer = NULL;
+        }
+        if (pixels) {
+            free(pixels);
+            pixels = NULL;
+        }
+        return NULL;
+    }
+
+
 	if (0 ==
         TIFFReadRGBAImageOriented(image, origwidth, origheight, origBuffer, ORIENTATION_TOPLEFT, 0)) {
 	    free(origBuffer);
@@ -2394,8 +2556,6 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
         }
         return NULL;
     }
-
-    jint *pixels = NULL;
 
     if (inSampleSize == 1) {
         // Use buffer as is.
@@ -2571,6 +2731,16 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
 
 jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int *bitmapwidth, int *bitmapheight)
 {
+    //init signal handler for catch SIGSEGV error that could be raised in libtiff
+    struct sigaction act;
+    memset(&act, 0, sizeof(act));
+    sigemptyset(&act.sa_mask);
+    act.sa_sigaction = imageErrorHandler;
+    act.sa_flags = SA_SIGINFO | SA_ONSTACK;
+    if(sigaction(SIGSEGV, &act, 0) < 0) {
+        LOGE("Can\'t setup signal handler. Working without errors catching mechanism");
+    }
+
     //buffer size for decoding tiff image in RGBA format
     int origBufferSize = origwidth * origheight * sizeof(unsigned int);
 
@@ -2594,6 +2764,21 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
     }
 
     unsigned int *origBuffer = NULL;
+    jint *pixels = NULL;
+
+    //check for error
+    if (setjmp(NativeDecoder::image_buf)) {
+        LOGI("Catched error signal");
+        if (origBuffer) {
+            _TIFFfree(origBuffer);
+            origBuffer = NULL;
+        }
+        if (pixels) {
+            free(pixels);
+            pixels = NULL;
+        }
+        return NULL;
+    }
 
     origBuffer = (unsigned int *) _TIFFmalloc(origBufferSize);
     if (origBuffer == NULL) {
@@ -2617,7 +2802,7 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
     progressTotal = boundWidth/inSampleSize * boundHeight/inSampleSize;
 
     // Sample the buffer.
-    jint * pixels = (jint *) malloc(pixelsBufferSize);
+    pixels = (jint *) malloc(pixelsBufferSize);
     if (pixels == NULL) {
         LOGE("Can\'t allocate memory for temp buffer");
         return NULL;
@@ -3558,6 +3743,21 @@ void NativeDecoder::sendProgress(jlong current, jlong total) {
         jmethodID methodid = env->GetMethodID(jIProgressListenerClass, "reportProgress", "(JJ)V");
         env->CallVoidMethod(listenerObject, methodid, current, total);
     }
+}
+
+void NativeDecoder::tileErrorHandler(int code, siginfo_t *siginfo, void *sc) {
+    LOGE("tileErrorHandler");
+    longjmp(tile_buf, 1);
+}
+
+void NativeDecoder::stripErrorHandler(int code, siginfo_t *siginfo, void *sc) {
+    LOGE("stripErrorHandler");
+    longjmp(strip_buf, 1);
+}
+
+void NativeDecoder::imageErrorHandler(int code, siginfo_t *siginfo, void *sc) {
+    LOGE("imageErrorHandler");
+    longjmp(image_buf, 1);
 }
 
 
