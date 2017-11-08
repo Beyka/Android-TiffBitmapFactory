@@ -499,7 +499,6 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
 
     //check for error
     if (setjmp(NativeDecoder::strip_buf)) {
-        LOGE("Catched error signal");
         if (raster) {
             _TIFFfree(raster);
             raster = NULL;
@@ -515,6 +514,14 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
         if (matrixBottomLine) {
             _TIFFfree(matrixBottomLine);
             matrixBottomLine = NULL;
+        }
+
+        const char * err = "Caught SIGSEGV signal(Segmentation fault or invalid memory reference)";
+        LOGE(err);
+        if (throwException) {
+            jstring adinf = charsToJString(err);
+            throw_decode_file_exception(env, jPath, adinf);
+            env->DeleteLocalRef(adinf);
         }
 
         return NULL;
@@ -966,7 +973,6 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
 
     //check for error
     if (setjmp(NativeDecoder::strip_buf)) {
-        LOGE("Catched error signal");
         if (raster) {
             _TIFFfree(raster);
             raster = NULL;
@@ -982,6 +988,14 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
         if (matrixBottomLine) {
             _TIFFfree(matrixBottomLine);
             matrixBottomLine = NULL;
+        }
+
+        const char * err = "Caught SIGSEGV signal(Segmentation fault or invalid memory reference)";
+        LOGE(err);
+        if (throwException) {
+            jstring adinf = charsToJString(err);
+            throw_decode_file_exception(env, jPath, adinf);
+            env->DeleteLocalRef(adinf);
         }
 
         return NULL;
@@ -1494,7 +1508,6 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
 
         //check for error
         if (setjmp(NativeDecoder::tile_buf)) {
-            LOGE("Catched error signal");
             if (rasterTile) {
                 _TIFFfree(rasterTile);
                 rasterTile = NULL;
@@ -1511,6 +1524,15 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                 _TIFFfree(work_line_buf);
                 work_line_buf = NULL;
             }
+
+            const char * err = "Caught SIGSEGV signal(Segmentation fault or invalid memory reference)";
+            LOGE(err);
+            if (throwException) {
+                jstring adinf = charsToJString(err);
+                throw_decode_file_exception(env, jPath, adinf);
+                env->DeleteLocalRef(adinf);
+            }
+
             return NULL;
         }
 
@@ -2000,7 +2022,6 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
 
         //check for error
         if (setjmp(NativeDecoder::tile_buf)) {
-            LOGE("Catched error signal");
             if (rasterTile) {
                 _TIFFfree(rasterTile);
                 rasterTile = NULL;
@@ -2017,6 +2038,15 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
                 _TIFFfree(work_line_buf);
                 work_line_buf = NULL;
             }
+
+        const char * err = "Caught SIGSEGV signal(Segmentation fault or invalid memory reference)";
+        LOGE(err);
+        if (throwException) {
+            jstring adinf = charsToJString(err);
+            throw_decode_file_exception(env, jPath, adinf);
+            env->DeleteLocalRef(adinf);
+        }
+
             return NULL;
         }
 
@@ -2531,7 +2561,6 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
 
     //check for error
     if (setjmp(NativeDecoder::image_buf)) {
-        LOGI("Catched error signal");
         if (origBuffer) {
             _TIFFfree(origBuffer);
             origBuffer = NULL;
@@ -2540,6 +2569,15 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
             free(pixels);
             pixels = NULL;
         }
+
+        const char * err = "Caught SIGSEGV signal(Segmentation fault or invalid memory reference)";
+        LOGE(err);
+        if (throwException) {
+            jstring adinf = charsToJString(err);
+            throw_decode_file_exception(env, jPath, adinf);
+            env->DeleteLocalRef(adinf);
+        }
+
         return NULL;
     }
 
@@ -2768,7 +2806,6 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
 
     //check for error
     if (setjmp(NativeDecoder::image_buf)) {
-        LOGI("Catched error signal");
         if (origBuffer) {
             _TIFFfree(origBuffer);
             origBuffer = NULL;
@@ -2777,6 +2814,15 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
             free(pixels);
             pixels = NULL;
         }
+
+        const char * err = "Caught SIGSEGV signal(Segmentation fault or invalid memory reference)";
+        LOGE(err);
+        if (throwException) {
+            jstring adinf = charsToJString(err);
+            throw_decode_file_exception(env, jPath, adinf);
+            env->DeleteLocalRef(adinf);
+        }
+
         return NULL;
     }
 
