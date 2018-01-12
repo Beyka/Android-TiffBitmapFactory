@@ -1,3 +1,6 @@
+0.9.8.3
+-Fixed impossibility to convert full image without bounds
+
 0.9.8.2
 -Added handling of SIGSEGV crashes from libtiff
 
