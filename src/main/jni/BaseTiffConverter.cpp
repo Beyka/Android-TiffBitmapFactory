@@ -208,6 +208,8 @@ char BaseTiffConverter::normalizeDecodeArea() {
             outHeight = height;
             outStartX = 0;
             outStartY = 0;
+
+            return 1;
     }
 }
 
