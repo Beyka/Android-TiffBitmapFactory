@@ -61,6 +61,7 @@ class NativeDecoder
         jobject listenerObject;
         jclass jIProgressListenerClass;
         jclass jBitmapOptionsClass;
+        jclass jThreadClass = NULL;
         jstring jPath;
         jboolean throwException;
         jboolean useOrientationTag;

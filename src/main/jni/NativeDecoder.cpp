@@ -35,6 +35,7 @@ NativeDecoder::NativeDecoder(JNIEnv *e, jclass c, jstring path, jobject opts, jo
     jBitmapOptionsClass = env->FindClass(
                         "org/beyka/tiffbitmapfactory/TiffBitmapFactory$Options");
     jIProgressListenerClass = env->FindClass("org/beyka/tiffbitmapfactory/IProgressListener");
+    jThreadClass = env->FindClass("java/lang/Thread");
 }
 
 NativeDecoder::~NativeDecoder()
@@ -60,6 +61,11 @@ NativeDecoder::~NativeDecoder()
         env->DeleteLocalRef(jIProgressListenerClass);
         jIProgressListenerClass = NULL;
     }
+
+    if (jThreadClass) {
+            env->DeleteLocalRef(jThreadClass);
+            jThreadClass = NULL;
+        }
 }
 
 jobject NativeDecoder::getBitmap()
@@ -3776,12 +3782,22 @@ jstring NativeDecoder::charsToJString(const char *chars) {
 }
 
 jboolean NativeDecoder::checkStop() {
-    jfieldID stopFieldId = env->GetFieldID(jBitmapOptionsClass,
-                                           "isStoped",
-                                           "Z");
-    jboolean stop = env->GetBooleanField(optionsObject, stopFieldId);
+    jmethodID methodID = env->GetStaticMethodID(jThreadClass, "interrupted", "()Z");
+    jboolean interupted = env->CallStaticBooleanMethod(jThreadClass, methodID);
 
-    return stop;
+    jboolean stop;
+
+    if (optionsObject) {
+        jfieldID stopFieldId = env->GetFieldID(jBitmapOptionsClass,
+                                               "isStoped",
+                                               "Z");
+        stop = env->GetBooleanField(optionsObject, stopFieldId);
+
+    } else {
+        stop = JNI_FALSE;
+    }
+
+    return interupted || stop;
 }
 
 void NativeDecoder::sendProgress(jlong current, jlong total) {

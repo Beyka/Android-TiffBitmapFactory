@@ -49,6 +49,7 @@ class BaseTiffConverter {
         jobject listener = NULL;
         jclass jConvertOptionsClass = NULL;
         jclass jIProgressListenerClass = NULL;
+        jclass jThreadClass = NULL;
 
         uint32 width;
         uint32 height;

@@ -19,6 +19,7 @@ BaseTiffConverter::BaseTiffConverter(JNIEnv *e, jclass clazz, jstring in, jstrin
     tiffDirectory = 0;
     jIProgressListenerClass = env->FindClass("org/beyka/tiffbitmapfactory/IProgressListener");
     jConvertOptionsClass = env->FindClass("org/beyka/tiffbitmapfactory/TiffConverter$ConverterOptions");
+    jThreadClass = env->FindClass("java/lang/Thread");
 
     compressionInt = 5;
 }
@@ -38,6 +39,11 @@ BaseTiffConverter::~BaseTiffConverter()
     if (jIProgressListenerClass) {
         env->DeleteLocalRef(jIProgressListenerClass);
         jIProgressListenerClass = NULL;
+    }
+
+    if (jThreadClass) {
+        env->DeleteLocalRef(jThreadClass);
+        jThreadClass = NULL;
     }
 }
 
@@ -230,15 +236,22 @@ void BaseTiffConverter::sendProgress(jlong current, jlong total) {
 }
 
 jboolean BaseTiffConverter::checkStop() {
+    jmethodID methodID = env->GetStaticMethodID(jThreadClass, "interrupted", "()Z");
+    jboolean interupted = env->CallStaticBooleanMethod(jThreadClass, methodID);
+
+    jboolean stop;
+
     if (optionsObj) {
         jfieldID stopFieldId = env->GetFieldID(jConvertOptionsClass,
                                                "isStoped",
                                                "Z");
-        jboolean stop = env->GetBooleanField(optionsObj, stopFieldId);
-        return stop;
+        stop = env->GetBooleanField(optionsObj, stopFieldId);
+
     } else {
-        return JNI_FALSE;
+        stop = JNI_FALSE;
     }
+
+    return interupted || stop;
 }
 
 void BaseTiffConverter::rotateTileLinesVertical(uint32 tileHeight, uint32 tileWidth, uint32* whatRotate, uint32 *bufferLine) {
