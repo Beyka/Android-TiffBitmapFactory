@@ -2,14 +2,14 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.novoda.bintray-release'
 
 android {
-    compileSdkVersion 22
-    buildToolsVersion "26.0.2"
+    compileSdkVersion 27
+    buildToolsVersion '27.0.3'
 
     def softwareName
 
     defaultConfig {
         minSdkVersion 8
-        targetSdkVersion 22
+        targetSdkVersion 27
         versionCode 982
         versionName "0.9.8.2"
 
@@ -47,6 +47,7 @@ dependencies {
 publish {
     bintrayUser = user
     bintrayKey = key
+    userOrg = user
     dryRun = false
     groupId = 'com.github.beyka'
     artifactId = 'androidtiffbitmapfactory'
