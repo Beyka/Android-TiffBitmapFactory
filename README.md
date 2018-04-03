@@ -77,12 +77,11 @@ For avoiding of memory errors, library now has option called inAvailableMemory. 
 
 #### Stop decoding that runs in separate thread
 ```Java
-final TiffBitmapFactory.Options options = new TiffBitmapFactory.Options();
 //Running decoding of big image in separate thread
 Thread thread = new Thread(new Runnable() {
         @Override
         public void run() {
-            Bitmap bitmap = TiffBitmapFactory.decodePath("/sdcard/big_tiff_image.tif", options);
+            Bitmap bitmap = TiffBitmapFactory.decodePath("/sdcard/big_tiff_image.tif");
         }
     }).start();
 //To stop thread just interrupt thread as usual
