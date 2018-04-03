@@ -1,3 +1,6 @@
+0.9.8.4
+- Added possibility to cancel background processing by interrupting of worker thread as usual in Java
+
 0.9.8.3
 -Fixed impossibility to convert full image without bounds
 
