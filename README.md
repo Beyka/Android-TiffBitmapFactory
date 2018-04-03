@@ -13,7 +13,7 @@ Supported architectures: all
 ### Installation
 Just add to your gradle dependencies :
 ```
-compile 'com.github.beyka:androidtiffbitmapfactory:0.9.8.3'
+compile 'com.github.beyka:androidtiffbitmapfactory:0.9.8.4'
 ```
 And do not forget to add WRITE_EXTERNAL_STORAGE permission to main project manifest
 
@@ -77,16 +77,16 @@ For avoiding of memory errors, library now has option called inAvailableMemory. 
 
 #### Stop decoding that runs in separate thread
 ```Java
-final TiffBitmapFactory.Options options = new TiffBitmapFactory.Options();
 //Running decoding of big image in separate thread
-    new Thread(new Runnable() {
+Thread thread = new Thread(new Runnable() {
         @Override
         public void run() {
-            Bitmap bitmap = TiffBitmapFactory.decodePath("/sdcard/big_tiff_image.tif", options);
+            Bitmap bitmap = TiffBitmapFactory.decodePath("/sdcard/big_tiff_image.tif");
         }
-    }).start();
-//To stop thread just call stop() method in options object
-options.stop();
+    });
+thread.start();
+//To stop thread just interrupt thread as usual
+thread.interrupt();
 ```
 
 #### Saving tiff file
