@@ -83,7 +83,8 @@ Thread thread = new Thread(new Runnable() {
         public void run() {
             Bitmap bitmap = TiffBitmapFactory.decodePath("/sdcard/big_tiff_image.tif");
         }
-    }).start();
+    });
+thread.start();
 //To stop thread just interrupt thread as usual
 thread.interrupt();
 ```
