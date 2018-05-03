@@ -10,8 +10,8 @@ android {
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 27
-        versionCode 982
-        versionName "0.9.8.2"
+        versionCode 985
+        versionName "0.9.8.5"
 
         softwareName = "\"" + project.name + "-" + versionName + "\""
     }
@@ -51,7 +51,7 @@ publish {
     dryRun = false
     groupId = 'com.github.beyka'
     artifactId = 'androidtiffbitmapfactory'
-    publishVersion = '0.9.8.2'
+    publishVersion = '0.9.8.5'
     desc = 'Library for opening and saving TIFF image files on android devices'
     licences = ['MIT']
     website = 'https://github.com/Beyka/Android-TiffBitmapFactory'
