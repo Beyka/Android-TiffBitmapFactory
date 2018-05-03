@@ -8,6 +8,7 @@
 jmp_buf NativeDecoder::tile_buf;
 jmp_buf NativeDecoder::strip_buf;
 jmp_buf NativeDecoder::image_buf;
+jmp_buf NativeDecoder::general_buf;
 
 NativeDecoder::NativeDecoder(JNIEnv *e, jclass c, jstring path, jobject opts, jobject listener)
 {
@@ -70,6 +71,28 @@ NativeDecoder::~NativeDecoder()
 
 jobject NativeDecoder::getBitmap()
 {
+        //init signal handler for catch SIGSEGV error that could be raised in libtiff
+        struct sigaction act;
+        memset(&act, 0, sizeof(act));
+        sigemptyset(&act.sa_mask);
+        act.sa_sigaction = generalErrorHandler;
+        act.sa_flags = SA_SIGINFO | SA_ONSTACK;
+        if(sigaction(SIGSEGV, &act, 0) < 0) {
+            LOGE("Can\'t setup signal handler. Working without errors catching mechanism");
+        }
+
+        //check for error
+        if (setjmp(NativeDecoder::general_buf)) {
+             const char * err = "Caught SIGSEGV signal(Segmentation fault or invalid memory reference)";
+             LOGE(err);
+             if (throwException) {
+                 jstring adinf = charsToJString(err);
+                 throw_decode_file_exception(env, jPath, adinf);
+                 env->DeleteLocalRef(adinf);
+             }
+            return NULL;
+        }
+
         //Get options from TiffBitmapFactory$Options
         jfieldID gOptions_ThrowExceptionFieldID = env->GetFieldID(jBitmapOptionsClass,
                                                                           "inThrowException",
@@ -3820,6 +3843,11 @@ void NativeDecoder::stripErrorHandler(int code, siginfo_t *siginfo, void *sc) {
 void NativeDecoder::imageErrorHandler(int code, siginfo_t *siginfo, void *sc) {
     LOGE("imageErrorHandler");
     longjmp(image_buf, 1);
+}
+
+void NativeDecoder::generalErrorHandler(int code, siginfo_t *siginfo, void *sc) {
+    LOGE("generalErrorHandler");
+    longjmp(general_buf, 1);
 }
 
 
