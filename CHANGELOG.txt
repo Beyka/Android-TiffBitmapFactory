@@ -1,3 +1,6 @@
+0.9.8.6
+- Changed binary files (rebuild)
+
 0.9.8.5
 - Added signal handling of SIGSEGV signal before open tiff images to prevent many silent crashes from libtiff
 
