@@ -56,11 +56,13 @@ class NativeDecoder
         static jmp_buf tile_buf;
         static jmp_buf strip_buf;
         static jmp_buf image_buf;
+        static jmp_buf general_buf;
 
         jobject optionsObject;
         jobject listenerObject;
         jclass jIProgressListenerClass;
         jclass jBitmapOptionsClass;
+        jclass jThreadClass = NULL;
         jstring jPath;
         jboolean throwException;
         jboolean useOrientationTag;
@@ -107,6 +109,7 @@ class NativeDecoder
         static void tileErrorHandler(int code, siginfo_t *siginfo, void *sc);
         static void stripErrorHandler(int code, siginfo_t *siginfo, void *sc);
         static void imageErrorHandler(int code, siginfo_t *siginfo, void *sc);
+        static void generalErrorHandler(int code, siginfo_t *siginfo, void *sc);
 };
 
 

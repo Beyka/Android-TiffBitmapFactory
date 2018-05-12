@@ -134,12 +134,14 @@ public class TiffConverter {
 
         /**
          * Uses for stoping of native thread
+         * @deprecated As of release 0.9.8.4, replaced by {@link Thread#interrupt()}
          */
         private volatile boolean isStoped;
 
         /**
          * Stop native convert thread
          * If converting is started in any thread except main, calling of this method will cause force stop of converting and returning of false.
+         * @deprecated As of release 0.9.8.4, replaced by {@link Thread#interrupt()}
          */
         public void stop() {
             isStoped = true;
