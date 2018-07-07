@@ -168,7 +168,6 @@ jboolean JpgToTiffConverter::convert()
 
     componentsPerPixel = cinfo.output_components;
 
-    //TODO wrute tiff
     //Create tiff structure
     TIFFSetField(tiffImage, TIFFTAG_IMAGEWIDTH, width);
     TIFFSetField(tiffImage, TIFFTAG_IMAGELENGTH, height);
@@ -217,6 +216,11 @@ jboolean JpgToTiffConverter::convert()
     //maximum size for strip should be less than 2Mb if memory available
     unsigned long MB2 = (availableMemory == -1 || availableMemory > 3 * 1024 * 1024) ? 2 * 1024 * 1024 : width * 4;
     int rowPerStrip = MB2/rowSize;
+    //TODO This is workaround. Need to understand why FAX compression schemes have shift in strips.
+    if (compressionInt == COMPRESSION_CCITTRLE || compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
+        rowPerStrip = 1;
+    }
+
     if (rowPerStrip >= height) {
         rowPerStrip = height / 4;
     }
@@ -293,7 +297,6 @@ jboolean JpgToTiffConverter::convert()
                     conversion_result = JNI_FALSE;
                     return conversion_result;
                 }
-                LOGII("TRC", totalRowCounter);
                 if (compressionInt == COMPRESSION_CCITTRLE || compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
                     int compressedWidth = (width/8 + 0.5);
                     unsigned char *bilevel = convertArgbToBilevel(data, componentsPerPixel, width, rowPerStrip);
