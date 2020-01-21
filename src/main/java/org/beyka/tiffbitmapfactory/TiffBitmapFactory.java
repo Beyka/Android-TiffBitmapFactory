@@ -71,11 +71,7 @@ public class TiffBitmapFactory {
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
      */
     public static Bitmap decodeFile(File file) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
-        long time = System.currentTimeMillis();
-        Log.i("THREAD", "Starting decode " + file.getAbsolutePath());
-        Bitmap mbp = nativeDecodePath(file.getAbsolutePath(), new Options(), null);
-        Log.w("THREAD", "elapsed ms: " + (System.currentTimeMillis() - time) + " for " + file.getAbsolutePath());
-        return mbp;
+        return decodeFile(file, null, null);
     }
 
     /**
@@ -91,11 +87,7 @@ public class TiffBitmapFactory {
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when {@link Options#inAvailableMemory} not enought to decode image
      */
     public static Bitmap decodeFile(File file, Options options) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
-        long time = System.currentTimeMillis();
-        Log.i("THREAD", "Starting decode " + file.getAbsolutePath());
-        Bitmap mbp = nativeDecodePath(file.getAbsolutePath(), options, null);
-        Log.w("THREAD", "elapsed ms: " + (System.currentTimeMillis() - time) + " for " + file.getAbsolutePath());
-        return mbp;
+        return decodeFile(file, options, null);
     }
 
     /**
@@ -131,11 +123,7 @@ public class TiffBitmapFactory {
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
      */
     public static Bitmap decodePath(String path) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
-        long time = System.currentTimeMillis();
-        Log.i("THREAD", "Starting decode " + path);
-        Bitmap mbp = nativeDecodePath(path, new Options(), null);
-        Log.w("THREAD", "elapsed ms: " + (System.currentTimeMillis() - time) + " for " + path);
-        return mbp;
+        return decodePath(path, null, null);
     }
 
     /**
@@ -152,11 +140,7 @@ public class TiffBitmapFactory {
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
      */
     public static Bitmap decodePath(String path, Options options) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
-        long time = System.currentTimeMillis();
-        Log.i("THREAD", "Starting decode " + path);
-        Bitmap mbp = nativeDecodePath(path, options, null);
-        Log.w("THREAD", "elapsed ms: " + (System.currentTimeMillis() - time) + " for " + path);
-        return mbp;
+        return decodePath(path, options);
     }
 
     /**
@@ -181,7 +165,64 @@ public class TiffBitmapFactory {
         return mbp;
     }
 
+    /**
+     * Decode file descriptor to bitmap with specified options. If the specified file name is null,
+     * or cannot be decoded into a bitmap, the function returns null.
+     * @param fileDescriptor - file descriptor that represent file to decode
+     * @return The decoded bitmap, or null if the image data could not be
+     *         decoded, or, if options is non-null, if options requested only the
+     *         size be returned (in {@link Options#outWidth}, {@link Options#outHeight}, {@link Options#outDirectoryCount})
+     *
+     * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while decoding image
+     * @throws org.beyka.tiffbitmapfactory.exceptions.CantOpenFileException when {@code file} not exist or {@code file} is not tiff image
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
+     */
+    public static Bitmap decodeFileDescriptor(int fileDescriptor) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
+        return decodeFileDescriptor(fileDescriptor, null, null);
+    }
+
+    /**
+     * Decode file descriptor to bitmap with specified options. If the specified file name is null,
+     * or cannot be decoded into a bitmap, the function returns null.
+     * @param fileDescriptor - file descriptor that represent file to decode
+     * @param options - options for decoding
+     * @return The decoded bitmap, or null if the image data could not be
+     *         decoded, or, if options is non-null, if options requested only the
+     *         size be returned (in {@link Options#outWidth}, {@link Options#outHeight}, {@link Options#outDirectoryCount})
+     *
+     * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while decoding image
+     * @throws org.beyka.tiffbitmapfactory.exceptions.CantOpenFileException when {@code file} not exist or {@code file} is not tiff image
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
+     */
+    public static Bitmap decodeFileDescriptor(int fileDescriptor, Options options) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
+        return decodeFileDescriptor(fileDescriptor, options, null);
+    }
+
+    /**
+     * Decode file descriptor to bitmap with specified options. If the specified file name is null,
+     * or cannot be decoded into a bitmap, the function returns null.
+     * @param fileDescriptor - file descriptor that represent file to decode
+     * @param options - options for decoding
+     * @param listener - listener which will receive decoding progress
+     * @return The decoded bitmap, or null if the image data could not be
+     *         decoded, or, if options is non-null, if options requested only the
+     *         size be returned (in {@link Options#outWidth}, {@link Options#outHeight}, {@link Options#outDirectoryCount})
+     *
+     * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while decoding image
+     * @throws org.beyka.tiffbitmapfactory.exceptions.CantOpenFileException when {@code file} not exist or {@code file} is not tiff image
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
+     */
+    public static Bitmap decodeFileDescriptor(int fileDescriptor, Options options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
+        long time = System.currentTimeMillis();
+        Log.i("THREAD", "Starting decode descriptor " + fileDescriptor);
+        Bitmap mbp = nativeDecodeFD(fileDescriptor, options, listener);
+        Log.w("THREAD", "elapsed ms: " + (System.currentTimeMillis() - time) + " for descriptor " + fileDescriptor);
+        return mbp;
+    }
+
     private static native Bitmap nativeDecodePath(String path, Options options, IProgressListener listener);
+
+    private static native Bitmap nativeDecodeFD(int fd, Options options, IProgressListener listener);
 
     /**
      * Options class to specify decoding parameterMs

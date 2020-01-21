@@ -22,6 +22,7 @@
     #define LOGIS(x, y)
     #define LOGE(x)
     #define LOGES(x, y)
+    #define LOGEI(x, y)
 #else
     #define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "NativeDecoder", "%s", x)
     #define LOGII(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeDecoder", "%s %d", x, y)
@@ -29,11 +30,13 @@
     #define LOGIS(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeDecoder", "%s %s", x, y)
     #define LOGE(x) __android_log_print(ANDROID_LOG_ERROR, "NativeDecoder", "%s", x)
     #define LOGES(x, y) __android_log_print(ANDROID_LOG_ERROR, "NativeDecoder", "%s %s", x, y)
+    #define LOGES(x, y) __android_log_print(ANDROID_LOG_ERROR, "NativeDecoder", "%s %d", x, y)
 #endif
 
 class NativeDecoder
 {
     public:
+        explicit NativeDecoder(JNIEnv *, jclass, jint, jobject, jobject);
         explicit NativeDecoder(JNIEnv *, jclass, jstring, jobject, jobject);
         ~NativeDecoder();
         jobject getBitmap();
@@ -49,6 +52,12 @@ class NativeDecoder
         static int const DECODE_METHOD_TILE = 2;
         static int const DECODE_METHOD_STRIP = 3;
 
+        static int const DECODE_MODE_FILE_PATH = 1;
+        static int const DECODE_MODE_FILE_DESCRIPTOR = 2;
+
+        //decoding mode
+        int decodingMode;
+
         //fields
         JNIEnv *env;
         jclass clazz;
@@ -63,6 +72,7 @@ class NativeDecoder
         jclass jIProgressListenerClass;
         jclass jBitmapOptionsClass;
         jclass jThreadClass = NULL;
+        jint jFd;
         jstring jPath;
         jboolean throwException;
         jboolean useOrientationTag;
@@ -105,6 +115,10 @@ class NativeDecoder
         //functions for catching SIGSEGV from libtiff methods
         void signalFromTileHandler(int code, siginfo_t *siginfo, void *sc);
         void signalFromStripHandler(int code, siginfo_t *siginfo, void *sc);
+
+        //throwing exceptions
+        void throwDecodeFileException(const char *);
+        void throwCantOpenFileException();
 
         static void tileErrorHandler(int code, siginfo_t *siginfo, void *sc);
         static void stripErrorHandler(int code, siginfo_t *siginfo, void *sc);

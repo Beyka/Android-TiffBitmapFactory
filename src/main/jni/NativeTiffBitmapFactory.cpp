@@ -17,6 +17,17 @@ JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
     return java_bitmap;
 }
 
+JNIEXPORT jobject
+JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodeFD
+        (JNIEnv *env, jclass clazz, jint fd, jobject options, jobject listener) {
+
+    NativeDecoder *decoder = new NativeDecoder(env, clazz, fd, options, listener);
+    jobject java_bitmap = decoder->getBitmap();
+    delete(decoder);
+
+    return java_bitmap;
+}
+
 #ifdef __cplusplus
 }
 #endif
