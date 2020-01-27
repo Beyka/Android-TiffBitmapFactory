@@ -75,7 +75,7 @@ public class TiffSaver {
 //        int pixels[] = new int[bmp.getWidth() * bmp.getHeight()];
 //        bmp.getPixels(pixels, 0, bmp.getWidth(), 0, 0, bmp.getWidth(), bmp.getHeight());
 
-        return save(destinationPath, bmp, options, false);
+        return save(destinationPath, -1, bmp, options, false);
     }
 
     /**
@@ -136,10 +136,68 @@ public class TiffSaver {
 //        int pixels[] = new int[bmp.getWidth() * bmp.getHeight()];
 //        bmp.getPixels(pixels, 0, bmp.getWidth(), 0, 0, bmp.getWidth(), bmp.getHeight());
 
-        return save(destinationPath, bmp, options, true);
+        return save(destinationPath, -1, bmp, options, true);
     }
 
-    private static synchronized native boolean save(String filePath, Bitmap bmp, SaveOptions options, boolean append);
+    /**
+     * Save bitmap to file with default {@link TiffSaver.SaveOptions options}.
+     *
+     * @param fileDescriptor - file descriptor that represent file to write bitmap
+     * @param bmp         - Bitmap for saving
+     * @return true if bitmap was saved successful or false otherwise
+     * @throws CantOpenFileException when {@code destination} not exist or can't be opened for writing
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
+     * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while saving image
+     */
+    public static boolean saveBitmap(int fileDescriptor, Bitmap bmp) throws CantOpenFileException, NotEnoughtMemoryException {
+        return saveBitmap(fileDescriptor, bmp, new SaveOptions());
+    }
+
+    /**
+     * Save bitmap to file with default {@link TiffSaver.SaveOptions options}.
+     *
+     * @param fileDescriptor - file descriptor that represent file to write bitmap
+     * @param bmp         - Bitmap for saving
+     * @param options     - options for saving
+     * @return true if bitmap was saved successful or false otherwise
+     * @throws CantOpenFileException when {@code destination} not exist or can't be opened for writing
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
+     * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while saving image
+     */
+    public static boolean saveBitmap(int fileDescriptor, Bitmap bmp, SaveOptions options) throws CantOpenFileException, NotEnoughtMemoryException {
+        return save(null, fileDescriptor, bmp, options, false);
+    }
+
+    /**
+     * Save bitmap to file with default {@link TiffSaver.SaveOptions options}.
+     *
+     * @param fileDescriptor - file descriptor that represent file to write bitmap
+     * @param bmp         - Bitmap for saving
+     * @return true if bitmap was saved successful or false otherwise
+     * @throws CantOpenFileException when {@code destination} not exist or can't be opened for writing
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
+     * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while saving image
+     */
+    public static boolean appendBitmap(int fileDescriptor, Bitmap bmp) throws CantOpenFileException, NotEnoughtMemoryException {
+        return appendBitmap(fileDescriptor, bmp, new SaveOptions());
+    }
+
+    /**
+     * Save bitmap to file with default {@link TiffSaver.SaveOptions options}.
+     *
+     * @param fileDescriptor - file descriptor that represent file to write bitmap
+     * @param bmp         - Bitmap for saving
+     * @param options     - options for saving
+     * @return true if bitmap was saved successful or false otherwise
+     * @throws CantOpenFileException when {@code destination} not exist or can't be opened for writing
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
+     * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while saving image
+     */
+    public static boolean appendBitmap(int fileDescriptor, Bitmap bmp, SaveOptions options) throws CantOpenFileException, NotEnoughtMemoryException {
+        return save(null, fileDescriptor, bmp, options, true);
+    }
+
+    private static synchronized native boolean save(String filePath, int fileDescriptor, Bitmap bmp, SaveOptions options, boolean append);
 
 
     /**
