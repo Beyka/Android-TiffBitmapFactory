@@ -3881,8 +3881,6 @@ void NativeDecoder::throwCantOpenFileException() {
     } else if (decodingMode == DECODE_MODE_FILE_DESCRIPTOR) {
         throw_cant_open_file_exception_fd(env, jFd);
     }
-
-
 }
 
 

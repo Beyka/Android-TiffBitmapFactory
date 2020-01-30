@@ -58,6 +58,9 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertBmpTiff
   (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
 
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertBmpTiffFd
+  (JNIEnv *, jclass, jint, jint, jobject, jobject);
+
 JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_readBmp
   (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
 
@@ -73,6 +76,9 @@ JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_readBmp
    //        00 00 02 00 ( cursor files )
 JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImageType
   (JNIEnv *, jclass, jstring);
+
+JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImageTypeFd
+  (JNIEnv *, jclass, jint);
 
 //constants for check files
 const jint IMAGE_FILE_INVALID = 0;

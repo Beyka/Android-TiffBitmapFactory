@@ -311,7 +311,6 @@ __android_log_write(ANDROID_LOG_ERROR, "NativeTiffSaver", "Test Error here");
         // Open the TIFF file
         if (!append) {
             if ((output_image = TIFFFdOpen(fileDescriptor, "", "w")) == NULL) {
-                close(fileDescriptor);
                 LOGE("Unable to write tif file");
                 if (strPath) {
                     throw_cant_open_file_exception(env, filePath);
@@ -322,7 +321,6 @@ __android_log_write(ANDROID_LOG_ERROR, "NativeTiffSaver", "Test Error here");
             }
         } else {
             if ((output_image = TIFFFdOpen(fileDescriptor, "", "a")) == NULL) {
-                close(fileDescriptor);
                 LOGE("Unable to write tif file");
                 if (strPath) {
                     throw_cant_open_file_exception(env, filePath);
@@ -403,12 +401,6 @@ __android_log_write(ANDROID_LOG_ERROR, "NativeTiffSaver", "Test Error here");
 
         // Close the file
         TIFFClose(output_image);
-
-        //if file descriptor was openned then close it
-
-        if (fileDescriptor >= 0) {
-            close(fileDescriptor);
-        }
 /*
         //free temp array
         free (array);
