@@ -37,12 +37,12 @@ class BmpToTiffConverter : public BaseTiffConverter
 {
     public:
         explicit BmpToTiffConverter(JNIEnv *, jclass, jstring, jstring, jobject, jobject);
+        explicit BmpToTiffConverter(JNIEnv *, jclass, jint, jint, jobject, jobject);
         ~BmpToTiffConverter();
         virtual jboolean convert();
 
     private:
         TIFF *tiffImage;
-        FILE *inFile;
         BITMAPFILEHEADER *bmp;
         BITMAPINFOHEADER *inf;
 

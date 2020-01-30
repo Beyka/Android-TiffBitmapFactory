@@ -24,7 +24,7 @@ public class TiffConverter {
      * @return true if convert process have been successful
      */
     public static boolean convertToTiff(File inFile, File outFile, ConverterOptions options, IProgressListener listener) {
-        return convertToTiff(inFile.getAbsoluteFile(), outFile.getAbsoluteFile(), options, listener);
+        return convertToTiff(inFile.getAbsolutePath(), outFile.getAbsolutePath(), options, listener);
     }
 
     /**
@@ -51,6 +51,29 @@ public class TiffConverter {
         return false;
     }
 
+    /**
+     * Convert any of supported formats from {@link ImageFormat} to tiff
+     * @param inFd file descriptor that represent income file
+     * @param outFd file descriptor that represent outcome tiff file
+     * @param options converter options
+     * @param listener listener which will receive converting progress
+     *
+     * @return true if convert process have been successful
+     */
+    public static boolean convertToTiff(int inFd, int outFd, ConverterOptions options, IProgressListener listener) {
+        switch (getImageTypeFd(inFd)) {
+//            case JPEG:
+//                return convertJpgTiff(inPath, outPath, options, listener);
+//            case PNG:
+//                return convertPngTiff(inPath, outPath, options, listener);
+            case BMP:
+                return convertBmpTiffFd(inFd, outFd, options, listener);
+            case TIFF:
+                // TODO: 9/19/17 make convert tiff to tiff method
+                break;
+        }
+        return false;
+    }
 
 
     /**
@@ -114,11 +137,28 @@ public class TiffConverter {
     public static native boolean convertBmpTiff(String bmp, String tiff, ConverterOptions options, IProgressListener listener);
 
     /**
+     * Convert bmp to tiff file. Uses direct data read method, that decrease memory usage.
+     * @param bmp file descriptor that represent income bmp file
+     * @param tiff file descriptor that represent outcome tiff file
+     * @param options converter options
+     * @param listener listener which will receive converting progress
+     * @return true if convert process have been successful
+     */
+    public static native boolean convertBmpTiffFd(int bmp, int tiff, ConverterOptions options, IProgressListener listener);
+
+    /**
      * Return type of file.
      * @param path - file path
      * @return
      */
     public static native ImageFormat getImageType(String path);
+
+    /**
+     * Return type of file.
+     * @param fd - file descriptor for file
+     * @return
+     */
+    public static native ImageFormat getImageTypeFd(int fd);
 
     public static final class ConverterOptions {
 

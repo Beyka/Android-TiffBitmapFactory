@@ -8,6 +8,11 @@ BmpToTiffConverter::BmpToTiffConverter(JNIEnv *e, jclass clazz, jstring in, jstr
 {
 }
 
+BmpToTiffConverter::BmpToTiffConverter(JNIEnv *e, jclass clazz, jint in, jint out, jobject opts, jobject listener)
+    : BaseTiffConverter(e, clazz, in, out, opts, listener)
+{
+}
+
 BmpToTiffConverter::~BmpToTiffConverter()
 {
     LOGI("Destructor");
@@ -16,11 +21,6 @@ BmpToTiffConverter::~BmpToTiffConverter()
         tiffImage = NULL;
     }
     LOGI("Tiff removed");
-
-    if (inFile) {
-        fclose(inFile);
-    }
-    LOGI("File closed");
 
     if (inf) {
         delete inf;
@@ -38,80 +38,59 @@ jboolean BmpToTiffConverter::convert()
     LOGI("CONVERT");
     readOptions();
 
-    //open tiff file for writing or appending
-    const char *outCPath = NULL;
-    outCPath = env->GetStringUTFChars(outPath, 0);
-    LOGIS("OUT path", outCPath);
+    if(outFd == -1) {
+        //open tiff file for writing or appending
+        const char *outCPath = NULL;
+        outCPath = env->GetStringUTFChars(outPath, 0);
+        LOGIS("OUT path", outCPath);
+        LOGIS("nativeTiffOpenForSave", outCPath);
+        int mode = O_RDWR | O_CREAT | O_TRUNC | 0;
+        if (appendTiff) {
+            mode = O_RDWR | O_CREAT;
+        }
+         outFd = open(outCPath, mode, 0666);
+         if (outFd < 0) {
+            throw_cant_open_file_exception(env, outPath);
+            env->ReleaseStringUTFChars(outPath, outCPath);
+            return JNI_FALSE;
+         }
+         env->ReleaseStringUTFChars(outPath, outCPath);
+    }
 
-    int fileDescriptor = -1;
     if (!appendTiff) {
-        if((tiffImage = TIFFOpen(outCPath, "w")) == NULL) {
-            LOGE("can not open file. Trying file descriptor");
-            //if TIFFOpen returns null then try to open file from descriptor
-            int mode = O_RDWR | O_CREAT | O_TRUNC | 0;
-            fileDescriptor = open(outCPath, mode, 0666);
-            if (fileDescriptor < 0) {
-                LOGE("Unable to create tif file descriptor");
-                if (throwException) {
-                    throw_cant_open_file_exception(env, outPath);
-                }
-                env->ReleaseStringUTFChars(outPath, outCPath);
-                return JNI_FALSE;
-            } else {
-                if ((tiffImage = TIFFFdOpen(fileDescriptor, outCPath, "w")) == NULL) {
-                    close(fileDescriptor);
-                    LOGE("Unable to write tif file");
-                    if (throwException) {
-                        throw_cant_open_file_exception(env, outPath);
-                    }
-                    env->ReleaseStringUTFChars(outPath, outCPath);
-                    return JNI_FALSE;
-                }
+        if ((tiffImage = TIFFFdOpen(outFd, "", "w")) == NULL) {
+            LOGE("Unable to open tif file");
+            if (throwException) {
+                throw_cant_open_file_exception_fd(env, outFd);
             }
+            return JNI_FALSE;
         }
     } else {
-        if((tiffImage = TIFFOpen(outCPath, "a")) == NULL){
-            LOGE("can not open file. Trying file descriptor");
-            //if TIFFOpen returns null then try to open file from descriptor
-            int mode = O_RDWR|O_CREAT;
-            fileDescriptor = open(outCPath, mode, 0666);
-            if (fileDescriptor < 0) {
-                LOGE("Unable to create tif file descriptor");
-                if (throwException) {
-                    throw_cant_open_file_exception(env, outPath);
-                }
-                env->ReleaseStringUTFChars(outPath, outCPath);
-                return JNI_FALSE;
-            } else {
-                if ((tiffImage = TIFFFdOpen(fileDescriptor, outCPath, "a")) == NULL) {
-                    close(fileDescriptor);
-                    LOGE("Unable to write tif file");
-                    if (throwException) {
-                        throw_cant_open_file_exception(env, outPath);
-                    }
-                    env->ReleaseStringUTFChars(outPath, outCPath);
-                    return JNI_FALSE;
-                    }
-                }
+         if ((tiffImage = TIFFFdOpen(outFd, "", "a")) == NULL) {
+            LOGE("Unable to open tif file");
+            if (throwException) {
+                throw_cant_open_file_exception_fd(env, outFd);
             }
+            return JNI_FALSE;
+         }
     }
-    env->ReleaseStringUTFChars(outPath, outCPath);
 
     //open bmp file fow reading
-    const char *inCPath = NULL;
-    inCPath = env->GetStringUTFChars(inPath, 0);
-    LOGIS("IN path", inCPath);
-    inFile = fopen(inCPath, "rb");
-    if (!inFile) {
-        if (throwException) {
+    if(inFd == -1) {
+        const char *inCPath = NULL;
+        inCPath = env->GetStringUTFChars(inPath, 0);
+        LOGIS("IN path", inCPath);
+        int mode = O_RDONLY;
+        inFd = open(inCPath, mode, 0666);
+        if (inFd < 0) {
+            LOGES("Can\'t open in file", inCPath);
             throw_cant_open_file_exception(env, inPath);
+            env->ReleaseStringUTFChars(inPath, inCPath);
+            return JNI_FALSE;
         }
-        LOGES("Can\'t open out file", inCPath);
-        env->ReleaseStringUTFChars(inPath, inCPath);
-        return JNI_FALSE;
-    } else {
         env->ReleaseStringUTFChars(inPath, inCPath);
     }
+
     //Read header of bitmap file
     readHeaders();
 
@@ -120,7 +99,7 @@ jboolean BmpToTiffConverter::convert()
     if (!is_bmp) {
         LOGE("Not bmp file");
         if (throwException) {
-            throw_cant_open_file_exception(env, inPath);
+            throw_cant_open_file_exception_fd(env, inFd);
         }
         return JNI_FALSE;
     }
@@ -129,17 +108,17 @@ jboolean BmpToTiffConverter::convert()
     if (inf->biBitCount != 16 && inf->biBitCount != 24 && inf->biBitCount != 32 && inf->biBitCount != 0) {
         LOGE("Support only 24bpp bitmaps");
         if (throwException) {
-            throw_cant_open_file_exception(env, inPath);
+            throw_cant_open_file_exception_fd(env, inFd);
         }
         return JNI_FALSE;
     }
     LOGII("Bits per pixel", inf->biBitCount);
 
-         int compression = inf->biCompression;
-                  LOGII("compression", inf->biCompression);
-                  for (int i = 0; i < 3; i++) {
-                      LOGII("mask", inf->biPalete[i]);
-                  }
+    int compression = inf->biCompression;
+    LOGII("compression", inf->biCompression);
+    for (int i = 0; i < 3; i++) {
+        LOGII("mask", inf->biPalete[i]);
+    }
 
     //Component per pixel will be always 4. Alpha will be always 0xff
     int componentsPerPixel = 4;//inf->biBitCount / 8;
@@ -229,9 +208,6 @@ jboolean BmpToTiffConverter::convert()
         int compressedWidth = (width/8 + 0.5);
         for (int y = 0; y < height; y+=rowPerStrip) {
             if (checkStop()) {
-                if (fileDescriptor >= 0) {
-                    close(fileDescriptor);
-                }
                 conversion_result = JNI_FALSE;
                 return conversion_result;
             }
@@ -249,9 +225,6 @@ jboolean BmpToTiffConverter::convert()
     } else if (compressionInt == COMPRESSION_JPEG) {
         for (int ys = 0; ys < height; ys+=rowPerStrip) {
         if (checkStop()) {
-            if (fileDescriptor >= 0) {
-                close(fileDescriptor);
-            }
             return JNI_FALSE;
         }
         int rowToRead = rowPerStrip;
@@ -272,9 +245,6 @@ jboolean BmpToTiffConverter::convert()
         TIFFSetField(tiffImage, TIFFTAG_ROWSPERSTRIP, rowPerStrip);
         for (int y = 0; y < height; y+=rowPerStrip) {
             if (checkStop()) {
-                if (fileDescriptor >= 0) {
-                    close(fileDescriptor);
-                }
                 return JNI_FALSE;
             }
             int rowToRead = rowPerStrip;
@@ -301,10 +271,12 @@ void BmpToTiffConverter::readHeaders()
 {
     bmp = new BITMAPFILEHEADER;
     inf = new BITMAPINFOHEADER;
-    fread(bmp, sizeof(BITMAPFILEHEADER), 1, inFile);
-    LOGI("bmp read");
-    fread(inf, sizeof(BITMAPINFOHEADER), 1, inFile);
-    LOGI("inf read");
+    int br = read(inFd, bmp, sizeof(BITMAPFILEHEADER));
+    LOGII("Read bytes ", br);
+    LOGIS("bmp read ", bmp);
+    int bi = read(inFd, inf, sizeof(BITMAPINFOHEADER));
+    LOGII("Read bytes ", bi);
+    LOGIS("inf read ", (char*)inf);
 }
 
 uint32 *BmpToTiffConverter::getPixelsFromBmp(int offset, int limit)
@@ -350,9 +322,8 @@ uint32 *BmpToTiffConverter::getPixelsFrom16Bmp(int offset, int limit)
     //in bitmap picture stored fliped from up to down.
     //when need read 0 row - should read height-1 row
     //seek file to position from the end of file to read
-    fseek(inFile, bmp->bfOffBits + (height - offset - limit) * (width * 2 + (width * 2) % 4) , SEEK_SET);
-
-    int n = fread(buf, sizeof(unsigned char), size, inFile);
+    lseek(inFd, bmp->bfOffBits + (height - offset - limit) * (width * 2 + (width * 2) % 4) , SEEK_SET);
+    int n = read(inFd, buf, size);
     LOGII("Read bytes", n);
 
     int temp, line, i, j, numImgBytes, ind = 0;
@@ -431,9 +402,9 @@ uint32 *BmpToTiffConverter::getPixelsFrom24Bmp(int offset, int limit)
     //in bitmap picture stored fliped from up to down.
     //when need read 0 row - should read height-1 row
     //seek file to position from the end of file to read
-    fseek(inFile, bmp->bfOffBits + (height - offset - limit) * (width * 3 + width % 4) , SEEK_SET);
+    lseek(inFd, bmp->bfOffBits + (height - offset - limit) * (width * 3 + width % 4) , SEEK_SET);
+    int n = read(inFd, buf, size);
 
-    int n = fread(buf, sizeof(unsigned char), size, inFile);
     LOGII("Read bytes", n);
 
     int temp, line, i, j, numImgBytes, ind = 0;
@@ -503,9 +474,9 @@ uint32 *BmpToTiffConverter::getPixelsFrom32Bmp(int offset, int limit)
     //in bitmap picture stored fliped from up to down.
     //when need read 0 row - should read height-1 row
     //seek file to position from the end of file to read
-    fseek(inFile, bmp->bfOffBits + (height - offset - limit) * width * 4, SEEK_SET);
+    lseek(inFd, bmp->bfOffBits + (height - offset - limit) * width * 4, SEEK_SET);
+    int n = read(inFd, buf, size);
 
-    int n = fread(buf, sizeof(unsigned char), size, inFile);
     LOGII("Read bytes", n);
 
     int temp, line, i, j, numImgBytes, ind = 0;
