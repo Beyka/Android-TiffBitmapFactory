@@ -14,7 +14,7 @@
 #include <setjmp.h>
 #include "BaseTiffConverter.h"
 
-#ifdef NDEBUG
+/*#ifdef NDEBUG
     #define LOGI(x)
     #define LOGII(x, y)
     #define LOGIF(x, y)
@@ -22,7 +22,7 @@
     #define LOGE(x)
     #define LOGES(x, y)
     #define LOGEI(x, y);
-#else
+#else*/
     #define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "JpgToTiffConverter", "%s", x)
     #define LOGII(x, y) __android_log_print(ANDROID_LOG_DEBUG, "JpgToTiffConverter", "%s %d", x, y)
     #define LOGIF(x, y) __android_log_print(ANDROID_LOG_DEBUG, "JpgToTiffConverter", "%s %f", x, y)
@@ -30,12 +30,13 @@
     #define LOGE(x) __android_log_print(ANDROID_LOG_ERROR, "JpgToTiffConverter", "%s", x)
     #define LOGES(x, y) __android_log_print(ANDROID_LOG_ERROR, "JpgToTiffConverter", "%s %s", x, y)
     #define LOGEI(x, y) __android_log_print(ANDROID_LOG_ERROR, "JpgToTiffConverter", "%s %d", x, y)
-#endif
+//#endif
 
 class JpgToTiffConverter : public BaseTiffConverter
 {
     public:
         explicit JpgToTiffConverter(JNIEnv *, jclass, jstring, jstring, jobject, jobject);
+        explicit JpgToTiffConverter(JNIEnv *, jclass, jint, jint, jobject, jobject);
         ~JpgToTiffConverter();
         virtual jboolean convert();
 

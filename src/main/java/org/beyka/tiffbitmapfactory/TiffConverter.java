@@ -62,8 +62,8 @@ public class TiffConverter {
      */
     public static boolean convertToTiff(int inFd, int outFd, ConverterOptions options, IProgressListener listener) {
         switch (getImageTypeFd(inFd)) {
-//            case JPEG:
-//                return convertJpgTiff(inPath, outPath, options, listener);
+            case JPEG:
+                return convertJpgTiffFd(inFd, outFd, options, listener);
 //            case PNG:
 //                return convertPngTiff(inPath, outPath, options, listener);
             case BMP:
@@ -115,6 +115,16 @@ public class TiffConverter {
      * @return true if convert process have been successful
      */
     public static native boolean convertJpgTiff(String jpg, String tiff, ConverterOptions options, IProgressListener listener);
+
+    /**
+     * Convert jpeg to tiff file. Uses direct data read method, that decrease memory usage.
+     * @param jpg file descriptor that represent income jpeg file
+     * @param tiff file descriptor that represent outcome tiff file
+     * @param options converter options
+     * @param listener listener which will receive converting progress
+     * @return true if convert process have been successful
+     */
+    public static native boolean convertJpgTiffFd(int jpg, int tiff, ConverterOptions options, IProgressListener listener);
 
     /**
      * Convert tiff to bmp file. Uses direct data read method, that decrease memory usage

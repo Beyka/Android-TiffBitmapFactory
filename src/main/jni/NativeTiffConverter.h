@@ -55,6 +55,9 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertJpgTiff
   (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
 
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertJpgTiffFd
+  (JNIEnv *, jclass, jint, jint, jobject, jobject);
+
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertBmpTiff
   (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
 

@@ -12,6 +12,14 @@ JpgToTiffConverter::JpgToTiffConverter(JNIEnv *e, jclass clazz, jstring in, jstr
     compressionInt = 5;
 }
 
+JpgToTiffConverter::JpgToTiffConverter(JNIEnv *e, jclass clazz, jint in, jint out, jobject opts, jobject listener)
+    : BaseTiffConverter(e, clazz, in, out, opts, listener)
+{
+    jpeg_struct_init = 0;
+
+    compressionInt = 5;
+}
+
 JpgToTiffConverter::~JpgToTiffConverter()
 {
     LOGI("Destructor");
@@ -36,8 +44,47 @@ jboolean JpgToTiffConverter::convert()
 {
     readOptions();
 
+        if(outFd == -1) {
+            //open tiff file for writing or appending
+            const char *outCPath = NULL;
+            outCPath = env->GetStringUTFChars(outPath, 0);
+            LOGIS("OUT path", outCPath);
+            LOGIS("nativeTiffOpenForSave", outCPath);
+            int mode = O_RDWR | O_CREAT | O_TRUNC | 0;
+            if (appendTiff) {
+                mode = O_RDWR | O_CREAT;
+            }
+             outFd = open(outCPath, mode, 0666);
+             if (outFd < 0) {
+                throw_cant_open_file_exception(env, outPath);
+                env->ReleaseStringUTFChars(outPath, outCPath);
+                return JNI_FALSE;
+             }
+             env->ReleaseStringUTFChars(outPath, outCPath);
+        }
+
+        if (!appendTiff) {
+            if ((tiffImage = TIFFFdOpen(outFd, "", "w")) == NULL) {
+                LOGE("Unable to open tif file");
+                if (throwException) {
+                    throw_cant_open_file_exception_fd(env, outFd);
+                }
+                return JNI_FALSE;
+            }
+        } else {
+             if ((tiffImage = TIFFFdOpen(outFd, "", "a")) == NULL) {
+                LOGE("Unable to open tif file");
+                if (throwException) {
+                    throw_cant_open_file_exception_fd(env, outFd);
+                }
+                return JNI_FALSE;
+             }
+        }
+
+
+
     //open tiff file for writing or appending
-    const char *outCPath = NULL;
+   /* const char *outCPath = NULL;
     outCPath = env->GetStringUTFChars(outPath, 0);
     LOGIS("OUT path", outCPath);
 
@@ -94,10 +141,18 @@ jboolean JpgToTiffConverter::convert()
         }
     }
     env->ReleaseStringUTFChars(outPath, outCPath);
+    */
 
     //open jpg file fow reading
     const char *inCPath = NULL;
-    inCPath = env->GetStringUTFChars(inPath, 0);
+    if (inPath) {
+        inCPath = env->GetStringUTFChars(inPath, 0);
+        LOGIS("IN path", inCPath);
+        inFile = fopen(inCPath, "rb");
+    } else {
+        inFile = fdopen(inFd, "rb");
+    }
+    /*inCPath = env->GetStringUTFChars(inPath, 0);
     LOGIS("IN path", inCPath);
     inFile = fopen(inCPath, "rb");
     if (!inFile) {
@@ -109,7 +164,7 @@ jboolean JpgToTiffConverter::convert()
         return JNI_FALSE;
     } else {
         env->ReleaseStringUTFChars(inPath, inCPath);
-    }
+    }*/
 
     //read file header
     size_t byte_count = 8;
@@ -123,7 +178,11 @@ jboolean JpgToTiffConverter::convert()
     if (!is_jpg) {
         LOGE("Not jpeg file");
         if (throwException) {
-            throw_cant_open_file_exception(env, inPath);
+            if (inFd == -1) {
+                throw_cant_open_file_exception(env, inPath);
+            } else {
+                throw_cant_open_file_exception_fd(env, inFd);
+            }
         }
         return JNI_FALSE;
     } else {
