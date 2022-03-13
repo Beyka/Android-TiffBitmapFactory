@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <tiffio.h>
+#include "string.h"
 #include "NativeExceptions.h"
 #include <jni.h>
 #include <android/log.h>
