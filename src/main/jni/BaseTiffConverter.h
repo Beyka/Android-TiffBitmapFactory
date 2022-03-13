@@ -13,6 +13,7 @@
 #include <android/log.h>
 #include "unistd.h"
 #include <ctime>
+#include "string.h"
 
 #ifdef NDEBUG
     #define LOGI(x)

@@ -1,15 +1,16 @@
-apply plugin: 'com.android.library'
-apply plugin: 'com.novoda.bintray-release'
+plugins {
+    id "com.android.library"
+}
 
 android {
-    compileSdkVersion 27
-    buildToolsVersion '27.0.3'
+    compileSdkVersion 30
+    buildToolsVersion '30.0.3'
 
     def softwareName
 
     defaultConfig {
         minSdkVersion 8
-        targetSdkVersion 27
+        targetSdkVersion 30
         versionCode 987
         versionName "0.9.8.7"
 
@@ -29,6 +30,8 @@ android {
         }
     }
 
+    ndkVersion "21.3.6528147"
+
     sourceSets.main {
         jni.srcDirs = []
         jniLibs.srcDir 'src/main/libs'
@@ -44,16 +47,9 @@ android {
 dependencies {
 }
 
-publish {
-    bintrayUser = user
-    bintrayKey = key
-    userOrg = user
-    dryRun = false
-    groupId = 'com.github.beyka'
-    artifactId = 'androidtiffbitmapfactory'
-    publishVersion = '0.9.8.7'
-    desc = 'Library for opening and saving TIFF image files on android devices'
-    licences = ['MIT']
-    website = 'https://github.com/Beyka/Android-TiffBitmapFactory'
+ext {
+    PUBLISH_GROUP_ID = 'io.github.beyka'
+    PUBLISH_VERSION = '0.9.8.7'
+    PUBLISH_ARTIFACT_ID = 'Android-TiffBitmapFactory'
 }
-
+apply from: "${rootProject.projectDir}/publish-module.gradle"
