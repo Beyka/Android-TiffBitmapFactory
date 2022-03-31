@@ -35,6 +35,7 @@
 class BaseTiffConverter {
     public:
         explicit BaseTiffConverter(JNIEnv *, jclass, jstring, jstring, jobject, jobject);
+        explicit BaseTiffConverter(JNIEnv *, jclass, jint, jint, jobject, jobject);
         ~BaseTiffConverter();
         virtual jboolean convert() = 0;
 
@@ -46,6 +47,8 @@ class BaseTiffConverter {
         JNIEnv *env;
         jstring inPath;
         jstring outPath;
+        jint inFd;
+        jint outFd;
         jobject optionsObj = NULL;
         jobject listener = NULL;
         jclass jConvertOptionsClass = NULL;

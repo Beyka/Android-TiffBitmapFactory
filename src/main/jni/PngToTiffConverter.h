@@ -36,6 +36,7 @@ class PngToTiffConverter : public BaseTiffConverter
 {
     public:
         explicit PngToTiffConverter(JNIEnv *, jclass, jstring, jstring, jobject, jobject);
+        explicit PngToTiffConverter(JNIEnv *, jclass, jint, jint, jobject, jobject);
         ~PngToTiffConverter();
         virtual jboolean convert();
 

@@ -37,6 +37,7 @@ class TiffToBmpConverter : public BaseTiffConverter
 {
     public:
         explicit TiffToBmpConverter(JNIEnv *, jclass, jstring, jstring, jobject, jobject);
+        explicit TiffToBmpConverter(JNIEnv *, jclass, jint, jint, jobject, jobject);
         ~TiffToBmpConverter();
         virtual jboolean convert();
 

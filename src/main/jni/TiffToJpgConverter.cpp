@@ -10,6 +10,12 @@ TiffToJpgConverter::TiffToJpgConverter(JNIEnv *e, jclass clazz, jstring in, jstr
     jpeg_struct_init = 0;
 }
 
+TiffToJpgConverter::TiffToJpgConverter(JNIEnv *e, jclass clazz, jint in, jint out, jobject opts, jobject listener)
+    : BaseTiffConverter(e, clazz, in, out, opts, listener)
+{
+    jpeg_struct_init = 0;
+}
+
 TiffToJpgConverter::~TiffToJpgConverter()
 {
     LOGI("destructor");
@@ -39,9 +45,42 @@ TiffToJpgConverter::~TiffToJpgConverter()
 jboolean TiffToJpgConverter::convert()
 {
     readOptions();
+    LOGI("Optioons read done");
+
+    LOGII("inFd=", inFd);
+    if (inFd == -1) {
+        const char *inCPath = NULL;
+        inCPath = env->GetStringUTFChars(inPath, 0);
+        LOGIS("IN path", inCPath);
+        inFd = open(inCPath, O_RDWR, 0666);
+        if (inFd == -1) {
+            if (throwException) {
+                throw_cant_open_file_exception(env, inPath);
+            }
+            LOGES("Can\'t open in file", inCPath);
+            env->ReleaseStringUTFChars(inPath, inCPath);
+            return JNI_FALSE;
+        }
+        env->ReleaseStringUTFChars(inPath, inCPath);
+    }
+
+    //open tiff image for reading
+    tiffImage = TIFFFdOpen(inFd, "", "r");
+    if (tiffImage == NULL) {
+        if (throwException) {
+            if (inFd < 0) {
+                throw_cant_open_file_exception(env, inPath);
+            } else {
+                throw_cant_open_file_exception_fd(env, inFd);
+            }
+        }
+        return JNI_FALSE;
+    }
+    LOGI("Tiff file opened for reading");
+
 
     //in c++ path
-    const char *strTiffPath = NULL;
+    /*const char *strTiffPath = NULL;
     strTiffPath = env->GetStringUTFChars(inPath, 0);
     LOGIS("IN path", strTiffPath);
 
@@ -57,10 +96,36 @@ jboolean TiffToJpgConverter::convert()
     } else {
         env->ReleaseStringUTFChars(inPath, strTiffPath);
     }
-    LOGI("Tiff file opened for reading");
+    LOGI("Tiff file opened for reading");*/
 
-    //open png file for writing
-    const char *strPngPath = NULL;
+    //open jpg file for writing
+    LOGII("outFd=", outFd);
+    if(outFd == -1) {
+    LOGI("Opening jpg as File");
+        //open tiff file for writing or appending
+        const char *outCPath = NULL;
+        outCPath = env->GetStringUTFChars(outPath, 0);
+        LOGIS("OUT path", outCPath);
+        jpegFile = fopen(outCPath, "w");
+        if (!jpegFile) {
+            throw_cant_open_file_exception(env, outPath);
+            env->ReleaseStringUTFChars(outPath, outCPath);
+            return JNI_FALSE;
+        }
+    } else {
+    LOGI("Opening jpg as FD");
+        jpegFile = fdopen(outFd, "w");
+        if (!jpegFile) {
+            LOGI("JPG file is null");
+            if (throwException) {
+                throw_cant_open_file_exception_fd(env, inFd);
+            }
+            LOGES("Can\'t open out file descriptor", inFd);
+            return JNI_FALSE;
+        }
+    }
+    LOGI("JPG file opened");
+    /*const char *strPngPath = NULL;
     strPngPath = env->GetStringUTFChars(outPath, 0);
     LOGIS("OUT path", strPngPath);
     jpegFile = fopen(strPngPath, "wb");
@@ -73,7 +138,8 @@ jboolean TiffToJpgConverter::convert()
         return JNI_FALSE;
     } else {
         env->ReleaseStringUTFChars(outPath, strPngPath);
-    }
+    }*/
+
 
     LOGI("initialize jpeg structure");
     //set error handling
@@ -176,7 +242,11 @@ jboolean TiffToJpgConverter::convertFromImage() {
         const char *message = "Can\'t read tiff";
         if (throwException) {
             jstring er = env->NewStringUTF(message);
-            throw_decode_file_exception(env, outPath, er);
+            if (outFd == -1) {
+                throw_decode_file_exception(env, outPath, er);
+            } else {
+                throw_decode_file_exception_fd(env, outFd, er);
+            }
             env->DeleteLocalRef(er);
         }
         LOGE(message);

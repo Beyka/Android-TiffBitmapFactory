@@ -11,6 +11,13 @@ TiffToBmpConverter::TiffToBmpConverter(JNIEnv *e, jclass clazz, jstring in, jstr
     bmpInfo = new BITMAPINFOHEADER;
 }
 
+TiffToBmpConverter::TiffToBmpConverter(JNIEnv *e, jclass clazz, jint in, jint out, jobject opts, jobject listener)
+    : BaseTiffConverter(e, clazz, in, out, opts, listener)
+{
+    bmpHeader = new BITMAPFILEHEADER;
+    bmpInfo = new BITMAPINFOHEADER;
+}
+
 TiffToBmpConverter::~TiffToBmpConverter()
 {
     if (bmpHeader)
@@ -22,41 +29,66 @@ TiffToBmpConverter::~TiffToBmpConverter()
 jboolean TiffToBmpConverter::convert()
 {
     readOptions();
+    LOGI("Optioons read done");
 
-    //in c++ path
-    const char *strTiffPath = NULL;
-    strTiffPath = env->GetStringUTFChars(inPath, 0);
-    LOGIS("IN path", strTiffPath);
+    LOGII("inFd=", inFd);
+    if (inFd == -1) {
+        const char *inCPath = NULL;
+        inCPath = env->GetStringUTFChars(inPath, 0);
+        LOGIS("IN path", inCPath);
+        inFd = open(inCPath, O_RDWR, 0666);
+        if (inFd == -1) {
+            if (throwException) {
+                throw_cant_open_file_exception(env, inPath);
+            }
+            LOGES("Can\'t open in file", inCPath);
+            env->ReleaseStringUTFChars(inPath, inCPath);
+            return JNI_FALSE;
+        }
+        env->ReleaseStringUTFChars(inPath, inCPath);
+    }
 
     //open tiff image for reading
-    tiffImage = TIFFOpen(strTiffPath, "r");
+    tiffImage = TIFFFdOpen(inFd, "", "r");
     if (tiffImage == NULL) {
         if (throwException) {
-            throw_cant_open_file_exception(env, inPath);
+            if (inFd < 0) {
+                throw_cant_open_file_exception(env, inPath);
+            } else {
+                throw_cant_open_file_exception_fd(env, inFd);
+            }
         }
-        LOGES("Can\'t open in file", strTiffPath);
-        env->ReleaseStringUTFChars(inPath, strTiffPath);
         return JNI_FALSE;
-    } else {
-        env->ReleaseStringUTFChars(inPath, strTiffPath);
     }
     LOGI("Tiff file opened for reading");
 
     //open bmp file for writing
-    const char *strPngPath = NULL;
-    strPngPath = env->GetStringUTFChars(outPath, 0);
-    LOGIS("OUT path", strPngPath);
-    outFIle = fopen(strPngPath, "wb");
-    if (!outFIle) {
-        if (throwException) {
+    LOGII("outFd=", outFd);
+    if(outFd == -1) {
+    LOGI("Opening bmp as File");
+        //open tiff file for writing or appending
+        const char *outCPath = NULL;
+        outCPath = env->GetStringUTFChars(outPath, 0);
+        LOGIS("OUT path", outCPath);
+        outFIle = fopen(outCPath, "w");
+        if (!outFIle) {
             throw_cant_open_file_exception(env, outPath);
+            env->ReleaseStringUTFChars(outPath, outCPath);
+            return JNI_FALSE;
         }
-        LOGES("Can\'t open out file", strPngPath);
-        env->ReleaseStringUTFChars(outPath, strPngPath);
-        return JNI_FALSE;
     } else {
-        env->ReleaseStringUTFChars(outPath, strPngPath);
+    LOGI("Opening bmp as FD");
+        outFIle = fdopen(outFd, "w");
+        if (!outFIle) {
+            LOGI("BMP file is null");
+            if (throwException) {
+                throw_cant_open_file_exception_fd(env, inFd);
+            }
+            LOGES("Can\'t open out file descriptor", inFd);
+            return JNI_FALSE;
+        }
     }
+    LOGI("BMP file opened");
 
     //set tiff directory and read image dimensions
     TIFFSetDirectory(tiffImage, tiffDirectory);
@@ -176,7 +208,11 @@ jboolean TiffToBmpConverter::convertFromImage() {
         const char *message = "Can\'t read tiff";
         if (throwException) {
             jstring er = env->NewStringUTF(message);
-            throw_decode_file_exception(env, outPath, er);
+            if (outFd == -1) {
+                throw_decode_file_exception(env, outPath, er);
+            } else {
+                throw_decode_file_exception_fd(env, outFd, er);
+            }
             env->DeleteLocalRef(er);
         }
         LOGE(message);

@@ -15,7 +15,9 @@ extern "C" {
     int const paramOrientation = 1;
 
     JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffSaver_save
-    (JNIEnv *env, jclass clazz, jstring filePath, jobject bitmap, jobject options, jboolean append) {
+    (JNIEnv *env, jclass clazz, jstring filePath, jint fileDescriptor, jobject bitmap, jobject options, jboolean append) {
+
+__android_log_write(ANDROID_LOG_ERROR, "NativeTiffSaver", "Test Error here");
 
         //Options class
         jclass jSaveOptionsClass = env->FindClass("org/beyka/tiffbitmapfactory/TiffSaver$SaveOptions");
@@ -81,10 +83,6 @@ extern "C" {
 
         uint32 img_width = info.width;
         uint32 img_height= info.height;
-
-        const char *strPath = NULL;
-        strPath = env->GetStringUTFChars(filePath, 0);
-        LOGIS("nativeTiffOpenForSave", strPath);
 
 /*
         //Get array of jint from jintArray
@@ -292,45 +290,43 @@ extern "C" {
         }
 */
         TIFF *output_image;
-        int fileDescriptor = -1;
+
+        LOGII("Check file descripor", fileDescriptor);
+
+        const char *strPath = NULL;
+        if (fileDescriptor == -1) {
+            strPath = env->GetStringUTFChars(filePath, 0);
+            LOGIS("nativeTiffOpenForSave", strPath);
+            int mode = O_RDWR | O_CREAT | O_TRUNC | 0;
+            if (append) {
+                mode = O_RDWR | O_CREAT;
+            }
+            fileDescriptor = open(strPath, mode, 0666);
+            if (fileDescriptor < 0) {
+                throw_cant_open_file_exception(env, filePath);
+                return JNI_FALSE;
+            }
+        }
 
         // Open the TIFF file
         if (!append) {
-            if((output_image = TIFFOpen(strPath, "w")) == NULL){
-                LOGE("can not open file. Trying file descriptor");
-                //if TIFFOpen returns null then try to open file from descriptor
-                int mode = O_RDWR | O_CREAT | O_TRUNC | 0;
-                fileDescriptor = open(strPath, mode, 0666);
-                if (fileDescriptor < 0) {
-                    LOGE("Unable to create tif file descriptor");
+            if ((output_image = TIFFFdOpen(fileDescriptor, "", "w")) == NULL) {
+                LOGE("Unable to write tif file");
+                if (strPath) {
                     throw_cant_open_file_exception(env, filePath);
-                    return JNI_FALSE;
                 } else {
-                    if ((output_image = TIFFFdOpen(fileDescriptor, strPath, "w")) == NULL) {
-                        close(fileDescriptor);
-                        LOGE("Unable to write tif file");
-                        throw_cant_open_file_exception(env, filePath);
-                        return JNI_FALSE;
-                    }
+                    throw_cant_open_file_exception_fd(env, fileDescriptor);
                 }
+                return JNI_FALSE;
             }
         } else {
-            if((output_image = TIFFOpen(strPath, "a")) == NULL){
-                LOGE("can not open file. Trying file descriptor");
-                //if TIFFOpen returns null then try to open file from descriptor
-                int mode = O_RDWR|O_CREAT;
-                fileDescriptor = open(strPath, mode, 0666);
-                if (fileDescriptor < 0) {
-                    LOGE("Unable to create tif file descriptor");
+            if ((output_image = TIFFFdOpen(fileDescriptor, "", "a")) == NULL) {
+                LOGE("Unable to write tif file");
+                if (strPath) {
                     throw_cant_open_file_exception(env, filePath);
-                    return JNI_FALSE;
                 } else {
-                    if ((output_image = TIFFFdOpen(fileDescriptor, strPath, "a")) == NULL) {
-                        close(fileDescriptor);
-                        LOGE("Unable to write tif file");
-                        throw_cant_open_file_exception(env, filePath);
-                        return JNI_FALSE;
-                    }
+                    throw_cant_open_file_exception_fd(env, fileDescriptor);
+                return JNI_FALSE;
                 }
             }
         }
@@ -405,12 +401,6 @@ extern "C" {
 
         // Close the file
         TIFFClose(output_image);
-
-        //if file descriptor was openned then close it
-
-        if (fileDescriptor >= 0) {
-            close(fileDescriptor);
-        }
 /*
         //free temp array
         free (array);
@@ -439,7 +429,9 @@ extern "C" {
         if (copyrightString) {
             env->ReleaseStringUTFChars(jCopyright, copyrightString);
         }
-        env->ReleaseStringUTFChars(filePath, strPath);
+        if (strPath) {
+            env->ReleaseStringUTFChars(filePath, strPath);
+        }
 //        env->ReleaseIntArrayElements(img, c_array, 0);
 
         if (ret == -1) return JNI_FALSE;

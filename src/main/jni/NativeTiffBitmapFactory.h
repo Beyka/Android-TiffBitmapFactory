@@ -36,6 +36,14 @@ extern "C" {
 JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodePath
   (JNIEnv *, jclass, jstring, jobject, jobject);
 
+/*
+ * Class:     com_example_beyka_tiffexample_TiffBitmapFactory
+ * Method:    nativeDecodePath
+ * Signature: (Ljava/lang/String;I)Landroid/graphics/Bitmap;
+ */
+JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodeFD
+  (JNIEnv *, jclass, jint, jobject, jobject);
+
 
 #ifdef __cplusplus
 }

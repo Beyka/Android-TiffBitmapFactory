@@ -22,6 +22,29 @@ BaseTiffConverter::BaseTiffConverter(JNIEnv *e, jclass clazz, jstring in, jstrin
     jThreadClass = env->FindClass("java/lang/Thread");
 
     compressionInt = 5;
+
+    inFd = -1;
+    outFd = -1;
+}
+
+BaseTiffConverter::BaseTiffConverter(JNIEnv *e, jclass clazz, jint in, jint out, jobject opts, jobject listener)
+{
+    boundX = boundY = boundWidth = boundHeight = -1;
+    hasBounds = 0;
+    availableMemory = 8000 * 8000 * 4;
+    env = e;
+    inFd = in;
+    outFd = out;
+    optionsObj = opts;
+    this->listener = listener;
+    throwException = JNI_FALSE;
+    appendTiff = JNI_FALSE;
+    tiffDirectory = 0;
+    jIProgressListenerClass = env->FindClass("org/beyka/tiffbitmapfactory/IProgressListener");
+    jConvertOptionsClass = env->FindClass("org/beyka/tiffbitmapfactory/TiffConverter$ConverterOptions");
+    jThreadClass = env->FindClass("java/lang/Thread");
+
+    compressionInt = 5;
 }
 
 BaseTiffConverter::~BaseTiffConverter()
@@ -161,7 +184,11 @@ char BaseTiffConverter::normalizeDecodeArea() {
                 LOGE(*message);
                 if (throwException) {
                     jstring adinf = env->NewStringUTF(message);
-                    throw_decode_file_exception(env, inPath, adinf);
+                    if (inPath) {
+                        throw_decode_file_exception(env, inPath, adinf);
+                    } else {
+                        throw_decode_file_exception_fd(env, inFd, adinf);
+                    }
                     env->DeleteLocalRef(adinf);
                 }
                 return 0;
@@ -171,7 +198,11 @@ char BaseTiffConverter::normalizeDecodeArea() {
                 LOGE(*message);
                 if (throwException) {
                     jstring adinf = env->NewStringUTF(message);
-                    throw_decode_file_exception(env, inPath, adinf);
+                    if (inPath) {
+                        throw_decode_file_exception(env, inPath, adinf);
+                    } else {
+                        throw_decode_file_exception_fd(env, inFd, adinf);
+                    }
                     env->DeleteLocalRef(adinf);
                 }
                 return 0;
@@ -187,7 +218,11 @@ char BaseTiffConverter::normalizeDecodeArea() {
                 LOGE(*message);
                 if (throwException) {
                     jstring adinf = env->NewStringUTF(message);
-                    throw_decode_file_exception(env, inPath, adinf);
+                    if (inPath) {
+                        throw_decode_file_exception(env, inPath, adinf);
+                    } else {
+                        throw_decode_file_exception_fd(env, inFd, adinf);
+                    }
                     env->DeleteLocalRef(adinf);
                 }
                 return 0;
@@ -197,7 +232,11 @@ char BaseTiffConverter::normalizeDecodeArea() {
                 LOGE(*message);
                 if (throwException) {
                     jstring adinf = env->NewStringUTF(message);
-                    throw_decode_file_exception(env, inPath, adinf);
+                    if (inPath) {
+                        throw_decode_file_exception(env, inPath, adinf);
+                    } else {
+                        throw_decode_file_exception_fd(env, inFd, adinf);
+                    }
                     env->DeleteLocalRef(adinf);
                 }
                 return 0;

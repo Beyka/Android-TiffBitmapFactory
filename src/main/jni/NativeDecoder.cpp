@@ -10,8 +10,43 @@ jmp_buf NativeDecoder::strip_buf;
 jmp_buf NativeDecoder::image_buf;
 jmp_buf NativeDecoder::general_buf;
 
+//Constructor for decoding from file descriptor
+NativeDecoder::NativeDecoder(JNIEnv *e, jclass c, jint fd, jobject opts, jobject listener)
+{
+
+    decodingMode = DECODE_MODE_FILE_DESCRIPTOR;
+
+    availableMemory = 8000*8000*4; // use 244Mb restriction for decoding full image
+    env = e;
+    clazz = c;
+    optionsObject = opts;
+    listenerObject = listener;
+    jFd = fd;
+
+    origwidth = 0;
+    origheight = 0;
+    origorientation = 0;
+    origcompressionscheme = 0;
+    progressTotal = 0;
+    invertRedAndBlue = false;
+
+    boundX = boundY = boundWidth = boundHeight = -1;
+    hasBounds = 0;
+
+    preferedConfig = NULL;
+    image = NULL;
+
+    jBitmapOptionsClass = env->FindClass(
+                        "org/beyka/tiffbitmapfactory/TiffBitmapFactory$Options");
+    jIProgressListenerClass = env->FindClass("org/beyka/tiffbitmapfactory/IProgressListener");
+    jThreadClass = env->FindClass("java/lang/Thread");
+}
+
+//Constructor for decoding from file path
 NativeDecoder::NativeDecoder(JNIEnv *e, jclass c, jstring path, jobject opts, jobject listener)
 {
+
+    decodingMode = DECODE_MODE_FILE_PATH;
 
     availableMemory = 8000*8000*4; // use 244Mb restriction for decoding full image
     env = e;
@@ -86,9 +121,7 @@ jobject NativeDecoder::getBitmap()
              const char * err = "Caught SIGSEGV signal(Segmentation fault or invalid memory reference)";
              LOGE(err);
              if (throwException) {
-                 jstring adinf = charsToJString(err);
-                 throw_decode_file_exception(env, jPath, adinf);
-                 env->DeleteLocalRef(adinf);
+                 throwDecodeFileException(err);
              }
             return NULL;
         }
@@ -110,9 +143,7 @@ jobject NativeDecoder::getBitmap()
             const char *message = "inSampleSize should be power of 2\0";
             LOGE(message);
             if (throwException) {
-                jstring adinf = env->NewStringUTF(message);
-                throw_decode_file_exception(env, jPath, adinf);
-                env->DeleteLocalRef(adinf);
+                throwDecodeFileException(message);
             }
             return NULL;
         }
@@ -165,21 +196,31 @@ jobject NativeDecoder::getBitmap()
         if (inDirectoryNumber < 0) inDirectoryNumber = 0;
 
         //Open tiff file
-        const char *strPath = NULL;
-        strPath = env->GetStringUTFChars(jPath, 0);
         LOGIS("nativeTiffOpen", strPath);
-
-        image = TIFFOpen(strPath, "r");
+        const char *strPath = NULL;
+        if (decodingMode == DECODE_MODE_FILE_DESCRIPTOR) {
+            image = TIFFFdOpen(jFd, "", "r");
+        } else if (decodingMode == DECODE_MODE_FILE_PATH) {
+            strPath = env->GetStringUTFChars(jPath, 0);
+            image = TIFFOpen(strPath, "r");
+        }
 
         if (image == NULL) {
             if (throwException) {
-                throw_cant_open_file_exception(env, jPath);
+                throwCantOpenFileException();
             }
-            LOGES("Can\'t open bitmap", strPath);
-            env->ReleaseStringUTFChars(jPath, strPath);
+
+            if (decodingMode == DECODE_MODE_FILE_PATH) {
+                LOGES("Can\'t open bitmap", strPath);
+                env->ReleaseStringUTFChars(jPath, strPath);
+            } else {
+                LOGEI("Can\'t open file descriptor", jFd);
+            }
             return NULL;
         } else {
-            env->ReleaseStringUTFChars(jPath, strPath);
+            if (decodingMode == DECODE_MODE_FILE_PATH) {
+                env->ReleaseStringUTFChars(jPath, strPath);
+            }
         }
         LOGI("Tiff is open");
 
@@ -204,9 +245,7 @@ jobject NativeDecoder::getBitmap()
                 const char *message = "X of left top corner of decode area should be less than image width";
                 LOGE(*message);
                 if (throwException) {
-                    jstring adinf = env->NewStringUTF(message);
-                    throw_decode_file_exception(env, jPath, adinf);
-                    env->DeleteLocalRef(adinf);
+                    throwDecodeFileException(message);
                 }
                 env->DeleteLocalRef(decodeAreaClass);
                 return NULL;
@@ -215,9 +254,7 @@ jobject NativeDecoder::getBitmap()
                 const char *message = "Y of left top corner of decode area should be less than image height";
                 LOGE(*message);
                 if (throwException) {
-                    jstring adinf = env->NewStringUTF(message);
-                    throw_decode_file_exception(env, jPath, adinf);
-                    env->DeleteLocalRef(adinf);
+                    throwDecodeFileException(message);
                 }
                 env->DeleteLocalRef(decodeAreaClass);
                 return NULL;
@@ -232,9 +269,7 @@ jobject NativeDecoder::getBitmap()
                 const char *message = "Width of decode area can\'t be less than 1";
                 LOGE(*message);
                 if (throwException) {
-                    jstring adinf = env->NewStringUTF(message);
-                    throw_decode_file_exception(env, jPath, adinf);
-                    env->DeleteLocalRef(adinf);
+                    throwDecodeFileException(message);
                 }
                 env->DeleteLocalRef(decodeAreaClass);
                 return NULL;
@@ -243,9 +278,7 @@ jobject NativeDecoder::getBitmap()
                 const char *message = "Height of decode area can\'t be less than 1";
                 LOGE(*message);
                 if (throwException) {
-                    jstring adinf = env->NewStringUTF(message);
-                    throw_decode_file_exception(env, jPath, adinf);
-                    env->DeleteLocalRef(adinf);
+                    throwDecodeFileException(message);
                 }
                 env->DeleteLocalRef(decodeAreaClass);
                 return NULL;
@@ -292,9 +325,7 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
         const char * err = "Only 1, 4, 8 and 16 bits per sample are supported";
         LOGE(err);
         if (throwException) {
-            jstring adinf = charsToJString(err);//env->NewStringUTF(errMsg);
-            throw_decode_file_exception(env, jPath, adinf);
-            env->DeleteLocalRef(adinf);
+            throwDecodeFileException(err);
         }
         return NULL;
     }
@@ -548,9 +579,7 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
         const char * err = "Caught SIGSEGV signal(Segmentation fault or invalid memory reference)";
         LOGE(err);
         if (throwException) {
-            jstring adinf = charsToJString(err);
-            throw_decode_file_exception(env, jPath, adinf);
-            env->DeleteLocalRef(adinf);
+            throwDecodeFileException(err);
         }
 
         return NULL;
@@ -1022,9 +1051,7 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
         const char * err = "Caught SIGSEGV signal(Segmentation fault or invalid memory reference)";
         LOGE(err);
         if (throwException) {
-            jstring adinf = charsToJString(err);
-            throw_decode_file_exception(env, jPath, adinf);
-            env->DeleteLocalRef(adinf);
+            throwDecodeFileException(err);
         }
 
         return NULL;
@@ -1557,9 +1584,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
             const char * err = "Caught SIGSEGV signal(Segmentation fault or invalid memory reference)";
             LOGE(err);
             if (throwException) {
-                jstring adinf = charsToJString(err);
-                throw_decode_file_exception(env, jPath, adinf);
-                env->DeleteLocalRef(adinf);
+                throwDecodeFileException(err);
             }
 
             return NULL;
@@ -2071,9 +2096,7 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
         const char * err = "Caught SIGSEGV signal(Segmentation fault or invalid memory reference)";
         LOGE(err);
         if (throwException) {
-            jstring adinf = charsToJString(err);
-            throw_decode_file_exception(env, jPath, adinf);
-            env->DeleteLocalRef(adinf);
+            throwDecodeFileException(err);
         }
 
             return NULL;
@@ -2602,9 +2625,7 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
         const char * err = "Caught SIGSEGV signal(Segmentation fault or invalid memory reference)";
         LOGE(err);
         if (throwException) {
-            jstring adinf = charsToJString(err);
-            throw_decode_file_exception(env, jPath, adinf);
-            env->DeleteLocalRef(adinf);
+            throwDecodeFileException(err);
         }
 
         return NULL;
@@ -2617,9 +2638,7 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
 	    const char *message = "Error reading image";
         LOGE(*message);
         if (throwException) {
-            jstring adinf = env->NewStringUTF(message);
-            throw_decode_file_exception(env, jPath, adinf);
-            env->DeleteLocalRef(adinf);
+            throwDecodeFileException(message);
         }
         return NULL;
     }
@@ -2847,9 +2866,7 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
         const char * err = "Caught SIGSEGV signal(Segmentation fault or invalid memory reference)";
         LOGE(err);
         if (throwException) {
-            jstring adinf = charsToJString(err);
-            throw_decode_file_exception(env, jPath, adinf);
-            env->DeleteLocalRef(adinf);
+            throwDecodeFileException(err);
         }
 
         return NULL;
@@ -2867,9 +2884,7 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
 	    const char *message = "Error reading image";
         LOGE(*message);
         if (throwException) {
-            jstring adinf = env->NewStringUTF(message);
-            throw_decode_file_exception(env, jPath, adinf);
-            env->DeleteLocalRef(adinf);
+            throwDecodeFileException(message);
         }
         return NULL;
     }
@@ -3848,6 +3863,24 @@ void NativeDecoder::imageErrorHandler(int code, siginfo_t *siginfo, void *sc) {
 void NativeDecoder::generalErrorHandler(int code, siginfo_t *siginfo, void *sc) {
     LOGE("generalErrorHandler");
     longjmp(general_buf, 1);
+}
+
+void NativeDecoder::throwDecodeFileException(const char *message) {
+    jstring adinf = env->NewStringUTF(message);
+    if (decodingMode == DECODE_MODE_FILE_PATH) {
+        throw_decode_file_exception(env, jPath, adinf);
+    } else if (decodingMode == DECODE_MODE_FILE_DESCRIPTOR) {
+        throw_decode_file_exception_fd(env, jFd, adinf);
+    }
+    env->DeleteLocalRef(adinf);
+}
+
+void NativeDecoder::throwCantOpenFileException() {
+    if (decodingMode == DECODE_MODE_FILE_PATH) {
+        throw_cant_open_file_exception(env, jPath);
+    } else if (decodingMode == DECODE_MODE_FILE_DESCRIPTOR) {
+        throw_cant_open_file_exception_fd(env, jFd);
+    }
 }
 
 

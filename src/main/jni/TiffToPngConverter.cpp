@@ -11,6 +11,13 @@ TiffToPngConverter::TiffToPngConverter(JNIEnv *e, jclass clazz, jstring in, jstr
     png_info_init = 0;
 }
 
+TiffToPngConverter::TiffToPngConverter(JNIEnv *e, jclass clazz, jint in, jint out, jobject opts, jobject listener)
+    : BaseTiffConverter(e, clazz, in, out, opts, listener)
+{
+    png_ptr_init = 0;
+    png_info_init = 0;
+}
+
 TiffToPngConverter::~TiffToPngConverter()
 {
     LOGI("destructor start");
@@ -32,14 +39,6 @@ TiffToPngConverter::~TiffToPngConverter()
 
     if (pngFile) {
         LOGI("pngFile != NULL");
-        /*if (!conversion_result) {
-            const char *strPngPath = NULL;
-            strPngPath = env->GetStringUTFChars(outPath, 0);
-
-            remove(strPngPath);
-
-            env->ReleaseStringUTFChars(outPath, strPngPath);
-        }*/
         fclose(pngFile);
     }
     LOGI("png file free");
@@ -48,41 +47,68 @@ TiffToPngConverter::~TiffToPngConverter()
 jboolean TiffToPngConverter::convert()
 {
     readOptions();
+    LOGI("Optioons read done");
 
-    //in c++ path
-    const char *strTiffPath = NULL;
-    strTiffPath = env->GetStringUTFChars(inPath, 0);
-    LOGIS("IN path", strTiffPath);
+    LOGII("inFd=", inFd);
+    if (inFd == -1) {
+        const char *inCPath = NULL;
+        inCPath = env->GetStringUTFChars(inPath, 0);
+        LOGIS("IN path", inCPath);
+        inFd = open(inCPath, O_RDWR, 0666);
+        if (inFd < 0) {
+            if (throwException) {
+                throw_cant_open_file_exception(env, inPath);
+            }
+            LOGES("Can\'t open in file", inCPath);
+            env->ReleaseStringUTFChars(inPath, inCPath);
+            return JNI_FALSE;
+        }
+        env->ReleaseStringUTFChars(inPath, inCPath);
+    }
 
     //open tiff image for reading
-    tiffImage = TIFFOpen(strTiffPath, "r");
+    tiffImage = TIFFFdOpen(inFd, "", "r");
     if (tiffImage == NULL) {
         if (throwException) {
-            throw_cant_open_file_exception(env, inPath);
+            if (inFd < 0) {
+                throw_cant_open_file_exception(env, inPath);
+            } else {
+                throw_cant_open_file_exception_fd(env, inFd);
+            }
         }
-        LOGES("Can\'t open in file", strTiffPath);
-        env->ReleaseStringUTFChars(inPath, strTiffPath);
         return JNI_FALSE;
-    } else {
-        env->ReleaseStringUTFChars(inPath, strTiffPath);
     }
     LOGI("Tiff file opened for reading");
 
-    //open png file for writing
-    const char *strPngPath = NULL;
-    strPngPath = env->GetStringUTFChars(outPath, 0);
-    LOGIS("OUT path", strPngPath);
-    pngFile = fopen(strPngPath, "wb");
-    if (!pngFile) {
-        if (throwException) {
+    //open png file fow writing
+    LOGII("outFd=", outFd);
+    if(outFd == -1) {
+    LOGI("Opening png as File");
+        //open tiff file for writing or appending
+        const char *outCPath = NULL;
+        outCPath = env->GetStringUTFChars(outPath, 0);
+        LOGIS("OUT path", outCPath);
+        LOGIS("nativeTiffOpenForSave", outCPath);
+
+        pngFile = fopen(outCPath, "w");
+        if (!pngFile) {
             throw_cant_open_file_exception(env, outPath);
+            env->ReleaseStringUTFChars(outPath, outCPath);
+            return JNI_FALSE;
         }
-        LOGES("Can\'t open out file", strPngPath);
-        env->ReleaseStringUTFChars(outPath, strPngPath);
-        return JNI_FALSE;
     } else {
-        env->ReleaseStringUTFChars(outPath, strPngPath);
+    LOGI("Opening png as FD");
+        pngFile = fdopen(outFd, "w");
+        if (!pngFile) {
+            LOGI("PNG file is null");
+            if (throwException) {
+                throw_cant_open_file_exception_fd(env, inFd);
+            }
+            LOGES("Can\'t open out file descriptor", inFd);
+            return JNI_FALSE;
+        }
     }
+    LOGI("PNG file opened");
 
     //create png structure pointer
     png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
@@ -91,7 +117,11 @@ jboolean TiffToPngConverter::convert()
         LOGE(*message);
         if (throwException) {
             jstring er = env->NewStringUTF(message);
-            throw_decode_file_exception(env, outPath, er);
+            if (outFd == -1) {
+                throw_decode_file_exception(env, outPath, er);
+            } else {
+                throw_decode_file_exception_fd(env, outFd, er);
+            }
             env->DeleteLocalRef(er);
         }
         return JNI_FALSE;
@@ -105,7 +135,11 @@ jboolean TiffToPngConverter::convert()
         LOGE(*message);
         if (throwException) {
             jstring er = env->NewStringUTF(message);
-            throw_decode_file_exception(env, outPath, er);
+            if  (outFd == -1) {
+                throw_decode_file_exception(env, outPath, er);
+            } else {
+                throw_decode_file_exception_fd(env, outFd, er);
+            }
             env->DeleteLocalRef(er);
         }
         return JNI_FALSE;
@@ -118,7 +152,11 @@ jboolean TiffToPngConverter::convert()
         LOGE(message);
         if (throwException) {
             jstring er = env->NewStringUTF(message);
-            throw_decode_file_exception(env, outPath, er);
+            if (outFd == -1) {
+                throw_decode_file_exception(env, outPath, er);
+            } else {
+                throw_decode_file_exception_fd(env, outFd, er);
+            }
             env->DeleteLocalRef(er);
         }
         return JNI_FALSE;
@@ -208,7 +246,11 @@ jboolean TiffToPngConverter::convertFromImage() {
         const char *message = "Can\'t read tiff";
         if (throwException) {
             jstring er = env->NewStringUTF(message);
-            throw_decode_file_exception(env, outPath, er);
+            if (outFd == -1) {
+                throw_decode_file_exception(env, outPath, er);
+            } else {
+                throw_decode_file_exception_fd(env, outFd, er);
+            }
             env->DeleteLocalRef(er);
         }
         LOGE(message);
@@ -518,27 +560,4 @@ int TiffToPngConverter::getDecodeMethod() {
 
 	LOGII("Decode method", method);
 	return method;
-    /*int method = -1;
-	uint32 tileWidth, tileHeight;
-	int readTW = 0, readTH = 0;
-    readTW = TIFFGetField(tiffImage, TIFFTAG_TILEWIDTH, &tileWidth);
-    readTH = TIFFGetField(tiffImage, TIFFTAG_TILELENGTH, &tileHeight);
-    int rowPerStrip = -1;
-    TIFFGetField(tiffImage, TIFFTAG_ROWSPERSTRIP, &rowPerStrip);
-    uint32 stripSize = TIFFStripSize (tiffImage);
-    uint32 stripMax = TIFFNumberOfStrips (tiffImage);
-    int estimate = width * 3;
-    LOGII("RPS", rowPerStrip);
-    LOGII("stripSize", stripSize);
-    LOGII("stripMax", stripMax);
-
-    if (rowPerStrip != -1 && stripSize > 0 && stripMax > 1 && rowPerStrip < height) {
-        method = DECODE_METHOD_STRIP;
-    } else if (tileWidth > 0 && tileHeight > 0 && readTH > 0 && readTW > 0) {
-        method = DECODE_METHOD_TILE;
-    } else {
-        method = DECODE_METHOD_IMAGE;
-    }
-	LOGII("Decode method", method);
-	return method;*/
 }

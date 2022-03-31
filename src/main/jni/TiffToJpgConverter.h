@@ -40,6 +40,7 @@ class TiffToJpgConverter : public BaseTiffConverter
 {
     public:
         explicit TiffToJpgConverter(JNIEnv *, jclass, jstring, jstring, jobject, jobject);
+        explicit TiffToJpgConverter(JNIEnv *, jclass, jint, jint, jobject, jobject);
         ~TiffToJpgConverter();
         virtual jboolean convert();
 
