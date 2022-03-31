@@ -1,6 +1,8 @@
 package org.beyka.tiffbitmapfactory;
 
-import android.graphics.Bitmap;
+import org.beyka.tiffbitmapfactory.exceptions.CantOpenFileException;
+import org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException;
+import org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException;
 
 import java.io.File;
 
@@ -15,6 +17,9 @@ public class TiffConverter {
     }
 
     /**
+     * @deprecated Since Android Q is released. You can use this method with scoped storage.
+     * Otherwise use {@link TiffConverter#convertToTiff(int, int, ConverterOptions, IProgressListener)}.
+     * <p></p>
      * Convert any of supported formats from {@link ImageFormat} to tiff
      * @param inFile path to income tiff file
      * @param outFile path to outcome tiff file
@@ -23,11 +28,14 @@ public class TiffConverter {
      *
      * @return true if convert process have been successful
      */
-    public static boolean convertToTiff(File inFile, File outFile, ConverterOptions options, IProgressListener listener) {
+    public static boolean convertToTiff(File inFile, File outFile, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
         return convertToTiff(inFile.getAbsolutePath(), outFile.getAbsolutePath(), options, listener);
     }
 
     /**
+     * @deprecated Since Android Q is released. You can use this method with scoped storage.
+     * Otherwise use {@link TiffConverter#convertToTiff(int, int, ConverterOptions, IProgressListener)}.
+     * <p></p>
      * Convert any of supported formats from {@link ImageFormat} to tiff
      * @param inPath path to income tiff file
      * @param outPath path to outcome tiff file
@@ -36,7 +44,7 @@ public class TiffConverter {
      *
      * @return true if convert process have been successful
      */
-    public static boolean convertToTiff(String inPath, String outPath, ConverterOptions options, IProgressListener listener) {
+    public static boolean convertToTiff(String inPath, String outPath, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
         switch (getImageType(inPath)) {
             case JPEG:
                 return convertJpgTiff(inPath, outPath, options, listener);
@@ -53,6 +61,7 @@ public class TiffConverter {
 
     /**
      * Convert any of supported formats from {@link ImageFormat} to tiff
+     * This method don't close file descriptor
      * @param inFd file descriptor that represent income file
      * @param outFd file descriptor that represent outcome tiff file
      * @param options converter options
@@ -60,12 +69,12 @@ public class TiffConverter {
      *
      * @return true if convert process have been successful
      */
-    public static boolean convertToTiff(int inFd, int outFd, ConverterOptions options, IProgressListener listener) {
+    public static boolean convertToTiff(int inFd, int outFd, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
         switch (getImageTypeFd(inFd)) {
             case JPEG:
                 return convertJpgTiffFd(inFd, outFd, options, listener);
-//            case PNG:
-//                return convertPngTiff(inPath, outPath, options, listener);
+            case PNG:
+                return convertPngTiffFd(inFd, outFd, options, listener);
             case BMP:
                 return convertBmpTiffFd(inFd, outFd, options, listener);
             case TIFF:
@@ -77,6 +86,9 @@ public class TiffConverter {
 
 
     /**
+     * @deprecated Since Android Q is released. You can use this method with scoped storage.
+     * Otherwise use {@link TiffConverter#convertTiffPngFd(int, int, ConverterOptions, IProgressListener)}.
+     * <p></p>
      * Convert tiff to png file. Uses direct data read method, that decrease memory usage
      * @param tiff path to income tiff file
      * @param png path to outcome png file
@@ -84,9 +96,22 @@ public class TiffConverter {
      * @param listener listener which will receive converting progress
      * @return true if convert process have been successful
      */
-    public static native boolean convertTiffPng(String tiff, String png, ConverterOptions options, IProgressListener listener);
+    public static native boolean convertTiffPng(String tiff, String png, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
 
     /**
+     * Convert tiff to png file. Uses direct data read method, that decrease memory usage
+     * @param tiff file descriptor that represent income tiff file
+     * @param png file descriptor that represent outcome png file
+     * @param options converter options
+     * @param listener listener which will receive converting progress
+     * @return true if convert process have been successful
+     */
+    public static native boolean convertTiffPngFd(int tiff, int png, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
+
+    /**
+     * @deprecated Since Android Q is released. You can use this method with scoped storage.
+     * Otherwise use {@link TiffConverter#convertPngTiffFd(int, int, ConverterOptions, IProgressListener)}.
+     * <p></p>
      * Convert png to tiff file. Uses direct data read method, that decrease memory usage.
      * @param png path to income png file
      * @param tiff path to outcome tiff file
@@ -94,9 +119,23 @@ public class TiffConverter {
      * @param listener listener which will receive converting progress
      * @return true if convert process have been successful
      */
-    public static native boolean convertPngTiff(String png, String tiff, ConverterOptions options, IProgressListener listener);
+    public static native boolean convertPngTiff(String png, String tiff, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
 
     /**
+     * Convert png to tiff file. Uses direct data read method, that decrease memory usage.
+     * This method don't close file descriptor
+     * @param png file descriptor that represent income png file
+     * @param tiff file descriptor that represent outcome tiff file
+     * @param options converter options
+     * @param listener listener which will receive converting progress
+     * @return true if convert process have been successful
+     */
+    public static native boolean convertPngTiffFd(int png, int tiff, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
+
+    /**
+     * @deprecated Since Android Q is released. You can use this method with scoped storage.
+     * Otherwise use {@link TiffConverter#convertTiffJpgFd(int, int, ConverterOptions, IProgressListener)}.
+     * <p></p>
      * Convert tiff to jpeg file. Uses direct data read method, that decrease memory usage
      * @param tiff path to income tiff file
      * @param jpg path to outcome jpeg file
@@ -104,9 +143,22 @@ public class TiffConverter {
      * @param listener listener which will receive converting progress
      * @return true if convert process have been successful
      */
-    public static native boolean convertTiffJpg(String tiff, String jpg, ConverterOptions options, IProgressListener listener);
+    public static native boolean convertTiffJpg(String tiff, String jpg, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
 
     /**
+     * Convert tiff to jpg file. Uses direct data read method, that decrease memory usage
+     * @param tiff file descriptor that represent income tiff file
+     * @param jpg file descriptor that represent outcome jpg file
+     * @param options converter options
+     * @param listener listener which will receive converting progress
+     * @return true if convert process have been successful
+     */
+    public static native boolean convertTiffJpgFd(int tiff, int jpg, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
+
+    /**
+     * @deprecated Since Android Q is released. You can use this method with scoped storage.
+     * Otherwise use {@link TiffConverter#convertJpgTiffFd(int, int, ConverterOptions, IProgressListener)}.
+     * <p></p>
      * Convert jpeg to tiff file. Uses direct data read method, that decrease memory usage.
      * @param jpg path to income jpeg file
      * @param tiff path to outcome tiff file
@@ -114,19 +166,23 @@ public class TiffConverter {
      * @param listener listener which will receive converting progress
      * @return true if convert process have been successful
      */
-    public static native boolean convertJpgTiff(String jpg, String tiff, ConverterOptions options, IProgressListener listener);
+    public static native boolean convertJpgTiff(String jpg, String tiff, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
 
     /**
      * Convert jpeg to tiff file. Uses direct data read method, that decrease memory usage.
+     * This method don't close file descriptor
      * @param jpg file descriptor that represent income jpeg file
      * @param tiff file descriptor that represent outcome tiff file
      * @param options converter options
      * @param listener listener which will receive converting progress
      * @return true if convert process have been successful
      */
-    public static native boolean convertJpgTiffFd(int jpg, int tiff, ConverterOptions options, IProgressListener listener);
+    public static native boolean convertJpgTiffFd(int jpg, int tiff, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
 
     /**
+     * @deprecated Since Android Q is released. You can use this method with scoped storage.
+     * Otherwise use {@link TiffConverter#convertTiffBmpFd(int, int, ConverterOptions, IProgressListener)}.
+     * <p></p>
      * Convert tiff to bmp file. Uses direct data read method, that decrease memory usage
      * @param tiff path to income tiff file
      * @param bmp path to outcome jpeg file
@@ -134,9 +190,22 @@ public class TiffConverter {
      * @param listener listener which will receive converting progress
      * @return true if convert process have been successful
      */
-    public static native boolean convertTiffBmp(String tiff, String bmp, ConverterOptions options, IProgressListener listener);
+    public static native boolean convertTiffBmp(String tiff, String bmp, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
 
     /**
+     * Convert tiff to bmp file. Uses direct data read method, that decrease memory usage
+     * @param tiff file descriptor that represent income tiff file
+     * @param bmp file descriptor that represent outcome bmp file
+     * @param options converter options
+     * @param listener listener which will receive converting progress
+     * @return true if convert process have been successful
+     */
+    public static native boolean convertTiffBmpFd(int tiff, int bmp, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
+
+    /**
+     * @deprecated Since Android Q is released. You can use this method with scoped storage.
+     * Otherwise use {@link TiffConverter#convertBmpTiffFd(int, int, ConverterOptions, IProgressListener)}.
+     * <p></p>
      * Convert bmp to tiff file. Uses direct data read method, that decrease memory usage.
      * @param bmp path to income bmp file
      * @param tiff path to outcome tiff file
@@ -144,29 +213,33 @@ public class TiffConverter {
      * @param listener listener which will receive converting progress
      * @return true if convert process have been successful
      */
-    public static native boolean convertBmpTiff(String bmp, String tiff, ConverterOptions options, IProgressListener listener);
+    public static native boolean convertBmpTiff(String bmp, String tiff, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
 
     /**
      * Convert bmp to tiff file. Uses direct data read method, that decrease memory usage.
+     * This method don't close file descriptor
      * @param bmp file descriptor that represent income bmp file
      * @param tiff file descriptor that represent outcome tiff file
      * @param options converter options
      * @param listener listener which will receive converting progress
      * @return true if convert process have been successful
      */
-    public static native boolean convertBmpTiffFd(int bmp, int tiff, ConverterOptions options, IProgressListener listener);
+    public static native boolean convertBmpTiffFd(int bmp, int tiff, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
 
     /**
+     * @deprecated Since Android Q is released. You can use this method with scoped storage.
+     * Otherwise use {@link TiffConverter#getImageTypeFd(int)}.
+     * <p></p>
      * Return type of file.
      * @param path - file path
-     * @return
+     * @return one of {@link ImageFormat} or {@link ImageFormat#UNKNOWN}
      */
     public static native ImageFormat getImageType(String path);
 
     /**
-     * Return type of file.
+     * Return type of file. This method don't close file descriptor
      * @param fd - file descriptor for file
-     * @return
+     * @return one of {@link ImageFormat} or {@link ImageFormat#UNKNOWN}
      */
     public static native ImageFormat getImageTypeFd(int fd);
 

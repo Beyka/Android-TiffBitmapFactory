@@ -38,7 +38,7 @@ jboolean BmpToTiffConverter::convert()
     LOGI("CONVERT");
     readOptions();
 
-    if(outFd == -1) {
+    if(outFd < 0) {
         //open tiff file for writing or appending
         const char *outCPath = NULL;
         outCPath = env->GetStringUTFChars(outPath, 0);
@@ -76,7 +76,7 @@ jboolean BmpToTiffConverter::convert()
     }
 
     //open bmp file fow reading
-    if(inFd == -1) {
+    if(inFd < 0) {
         const char *inCPath = NULL;
         inCPath = env->GetStringUTFChars(inPath, 0);
         LOGIS("IN path", inCPath);

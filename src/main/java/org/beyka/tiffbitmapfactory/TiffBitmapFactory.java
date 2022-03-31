@@ -60,6 +60,9 @@ public class TiffBitmapFactory {
     }
 
     /**
+     * @deprecated Since Android Q is released. You can use this method with scoped storage.
+     * Otherwise use {@link TiffBitmapFactory#decodeFileDescriptor(int)}.
+     * <p></p>
      * Decode file to bitmap with default options. If the specified file name is null,
      * or cannot be decoded into a bitmap, the function returns null.
      * @param file - file to decode
@@ -71,10 +74,13 @@ public class TiffBitmapFactory {
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
      */
     public static Bitmap decodeFile(File file) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
-        return decodeFile(file, null, null);
+        return decodeFile(file, new Options(), null);
     }
 
     /**
+     * @deprecated Since Android Q is released. You can use this method with scoped storage.
+     * Otherwise use {@link TiffBitmapFactory#decodeFileDescriptor(int, Options)}.
+     * <p></p>
      * Decode file to bitmap with specified options. If the specified file name is null,
      * or cannot be decoded into a bitmap, the function returns null.
      * @param file - file to decode
@@ -91,6 +97,9 @@ public class TiffBitmapFactory {
     }
 
     /**
+     * @deprecated Since Android Q is released. You can use this method with scoped storage.
+     * Otherwise use {@link TiffBitmapFactory#decodeFileDescriptor(int, Options, IProgressListener)}.
+     * <p></p>
      * Decode file to bitmap with specified options. If the specified file name is null,
      * or cannot be decoded into a bitmap, the function returns null.
      * @param file - file to decode
@@ -112,6 +121,9 @@ public class TiffBitmapFactory {
     }
 
     /**
+     * @deprecated Since Android Q is released. You can use this method with scoped storage.
+     * Otherwise use {@link TiffBitmapFactory#decodeFileDescriptor(int)}.
+     * <p></p>
      * Decode path to bitmap with default options. If the specified file name is null,
      * or cannot be decoded into a bitmap, the function returns null.
      * @param path - file to decode
@@ -123,10 +135,13 @@ public class TiffBitmapFactory {
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
      */
     public static Bitmap decodePath(String path) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
-        return decodePath(path, null, null);
+        return decodePath(path, new Options(), null);
     }
 
     /**
+     * @deprecated Since Android Q is released. You can use this method with scoped storage.
+     * Otherwise use {@link TiffBitmapFactory#decodeFileDescriptor(int, Options)}.
+     * <p></p>
      * Decode path to bitmap with specified options. If the specified file name is null,
      * or cannot be decoded into a bitmap, the function returns null.
      * @param path - file to decode
@@ -144,6 +159,9 @@ public class TiffBitmapFactory {
     }
 
     /**
+     * @deprecated Since Android Q is released. You can use this method with scoped storage.
+     * Otherwise use {@link TiffBitmapFactory#decodeFileDescriptor(int, Options, IProgressListener)}.
+     * <p></p>
      * Decode path to bitmap with specified options. If the specified file name is null,
      * or cannot be decoded into a bitmap, the function returns null.
      * @param path - file to decode
@@ -178,7 +196,7 @@ public class TiffBitmapFactory {
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
      */
     public static Bitmap decodeFileDescriptor(int fileDescriptor) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
-        return decodeFileDescriptor(fileDescriptor, null, null);
+        return decodeFileDescriptor(fileDescriptor, new Options(), null);
     }
 
     /**

@@ -9,13 +9,6 @@ extern "C" {
 #include "NativeTiffConverter.h"
 #include "png.h"
 
-/*struct png_image {
-	png_uint_32 imWidth, imHeight; //реальный размер картинки
-	png_uint_32 glWidth, glHeight; //размер который подойдет для OpenGL
-	int bit_depth, color_type;
-	char* data; //данные RGB/RGBA
-};*/
-
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffPng
   (JNIEnv *env, jclass clazz, jstring tiffPath, jstring pngPath, jobject options, jobject listener)
   {
@@ -26,11 +19,31 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
     return result;
   }
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffJpg
-  (JNIEnv *env, jclass clazz, jstring tiffPath, jstring pngPath, jobject options, jobject listener)
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffPngFd
+  (JNIEnv *env, jclass clazz, jint tiffFd, jint pngFd, jobject options, jobject listener)
   {
 
-    TiffToJpgConverter *converter = new TiffToJpgConverter(env, clazz, tiffPath, pngPath, options, listener);
+    TiffToPngConverter *converter = new TiffToPngConverter(env, clazz, tiffFd, pngFd, options, listener);
+    jboolean result = converter->convert();
+    delete(converter);
+    return result;
+  }
+
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffJpg
+  (JNIEnv *env, jclass clazz, jstring tiffPath, jstring jpgPath, jobject options, jobject listener)
+  {
+
+    TiffToJpgConverter *converter = new TiffToJpgConverter(env, clazz, tiffPath, jpgPath, options, listener);
+    jboolean result = converter->convert();
+    delete(converter);
+    return result;
+  }
+
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffJpgFd
+  (JNIEnv *env, jclass clazz, jint tiffFd, jint jpgFd, jobject options, jobject listener)
+  {
+
+    TiffToJpgConverter *converter = new TiffToJpgConverter(env, clazz, tiffFd, jpgFd, options, listener);
     jboolean result = converter->convert();
     delete(converter);
     return result;
@@ -46,10 +59,29 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
     return result;
   }
 
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffBmpFd
+  (JNIEnv *env, jclass clazz, jint tiffFd, jint bmpFd, jobject options, jobject listener)
+  {
+
+    TiffToBmpConverter *converter = new TiffToBmpConverter(env, clazz, tiffFd, bmpFd, options, listener);
+    jboolean result = converter->convert();
+    delete(converter);
+    return result;
+  }
+
 JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertPngTiff
   (JNIEnv *env, jclass clazz, jstring pngPath, jstring tiffPath, jobject options, jobject listener)
   {
     PngToTiffConverter *converter = new PngToTiffConverter(env, clazz, pngPath, tiffPath, options, listener);
+    jboolean result = converter->convert();
+    delete(converter);
+    return result;
+  }
+
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertPngTiffFd
+  (JNIEnv *env, jclass clazz, jint pngFd, jint tiffFd, jobject options, jobject listener)
+  {
+    PngToTiffConverter *converter = new PngToTiffConverter(env, clazz, pngFd, tiffFd, options, listener);
     jboolean result = converter->convert();
     delete(converter);
     return result;

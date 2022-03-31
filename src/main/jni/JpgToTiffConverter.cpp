@@ -37,134 +37,75 @@ JpgToTiffConverter::~JpgToTiffConverter()
     if (inFile) {
         fclose(inFile);
     }
-    LOGI("File closed");
+    LOGI("IN file closed");
 }
 
 jboolean JpgToTiffConverter::convert()
 {
     readOptions();
 
-        if(outFd == -1) {
-            //open tiff file for writing or appending
-            const char *outCPath = NULL;
-            outCPath = env->GetStringUTFChars(outPath, 0);
-            LOGIS("OUT path", outCPath);
-            LOGIS("nativeTiffOpenForSave", outCPath);
-            int mode = O_RDWR | O_CREAT | O_TRUNC | 0;
-            if (appendTiff) {
-                mode = O_RDWR | O_CREAT;
-            }
-             outFd = open(outCPath, mode, 0666);
-             if (outFd < 0) {
-                throw_cant_open_file_exception(env, outPath);
-                env->ReleaseStringUTFChars(outPath, outCPath);
-                return JNI_FALSE;
-             }
-             env->ReleaseStringUTFChars(outPath, outCPath);
+    if(outFd < 0) {
+        //open tiff file for writing or appending
+        const char *outCPath = NULL;
+        outCPath = env->GetStringUTFChars(outPath, 0);
+        LOGIS("OUT path", outCPath);
+        LOGIS("nativeTiffOpenForSave", outCPath);
+        int mode = O_RDWR | O_CREAT | O_TRUNC | 0;
+        if (appendTiff) {
+            mode = O_RDWR | O_CREAT;
         }
-
-        if (!appendTiff) {
-            if ((tiffImage = TIFFFdOpen(outFd, "", "w")) == NULL) {
-                LOGE("Unable to open tif file");
-                if (throwException) {
-                    throw_cant_open_file_exception_fd(env, outFd);
-                }
-                return JNI_FALSE;
-            }
-        } else {
-             if ((tiffImage = TIFFFdOpen(outFd, "", "a")) == NULL) {
-                LOGE("Unable to open tif file");
-                if (throwException) {
-                    throw_cant_open_file_exception_fd(env, outFd);
-                }
-                return JNI_FALSE;
-             }
+        outFd = open(outCPath, mode, 0666);
+        if (outFd < 0) {
+            throw_cant_open_file_exception(env, outPath);
+            env->ReleaseStringUTFChars(outPath, outCPath);
+            return JNI_FALSE;
         }
+        env->ReleaseStringUTFChars(outPath, outCPath);
+    }
 
-
-
-    //open tiff file for writing or appending
-   /* const char *outCPath = NULL;
-    outCPath = env->GetStringUTFChars(outPath, 0);
-    LOGIS("OUT path", outCPath);
-
-    int fileDescriptor = -1;
     if (!appendTiff) {
-        if((tiffImage = TIFFOpen(outCPath, "w")) == NULL) {
-            LOGE("can not open file. Trying file descriptor");
-            //if TIFFOpen returns null then try to open file from descriptor
-            int mode = O_RDWR | O_CREAT | O_TRUNC | 0;
-            fileDescriptor = open(outCPath, mode, 0666);
-            if (fileDescriptor < 0) {
-                LOGE("Unable to create tif file descriptor");
-                if (throwException) {
-                    throw_cant_open_file_exception(env, outPath);
-                }
-                env->ReleaseStringUTFChars(outPath, outCPath);
-                return JNI_FALSE;
-            } else {
-                if ((tiffImage = TIFFFdOpen(fileDescriptor, outCPath, "w")) == NULL) {
-                    close(fileDescriptor);
-                    LOGE("Unable to write tif file");
-                    if (throwException) {
-                        throw_cant_open_file_exception(env, outPath);
-                    }
-                    env->ReleaseStringUTFChars(outPath, outCPath);
-                    return JNI_FALSE;
-                }
+        if ((tiffImage = TIFFFdOpen(outFd, "", "w")) == NULL) {
+        LOGE("Unable to open tif file");
+            if (throwException) {
+                throw_cant_open_file_exception_fd(env, outFd);
             }
+            return JNI_FALSE;
         }
     } else {
-        if((tiffImage = TIFFOpen(outCPath, "a")) == NULL){
-            LOGE("can not open file. Trying file descriptor");
-            //if TIFFOpen returns null then try to open file from descriptor
-            int mode = O_RDWR|O_CREAT;
-            fileDescriptor = open(outCPath, mode, 0666);
-            if (fileDescriptor < 0) {
-                LOGE("Unable to create tif file descriptor");
-                if (throwException) {
-                    throw_cant_open_file_exception(env, outPath);
-                }
-                env->ReleaseStringUTFChars(outPath, outCPath);
-                return JNI_FALSE;
-            } else {
-                if ((tiffImage = TIFFFdOpen(fileDescriptor, outCPath, "a")) == NULL) {
-                close(fileDescriptor);
-                LOGE("Unable to write tif file");
-                if (throwException) {
-                    throw_cant_open_file_exception(env, outPath);
-                }
-                env->ReleaseStringUTFChars(outPath, outCPath);
-                return JNI_FALSE;
-                }
+        if ((tiffImage = TIFFFdOpen(outFd, "", "a")) == NULL) {
+            LOGE("Unable to open tif file");
+            if (throwException) {
+                throw_cant_open_file_exception_fd(env, outFd);
             }
+            return JNI_FALSE;
         }
     }
-    env->ReleaseStringUTFChars(outPath, outCPath);
-    */
 
     //open jpg file fow reading
-    const char *inCPath = NULL;
-    if (inPath) {
+    if (inFd < 0) {
+        const char *inCPath = NULL;
         inCPath = env->GetStringUTFChars(inPath, 0);
         LOGIS("IN path", inCPath);
         inFile = fopen(inCPath, "rb");
+        if (!inFile) {
+            if (throwException) {
+                throw_cant_open_file_exception(env, inPath);
+            }
+            LOGES("Can\'t open out file", inCPath);
+            env->ReleaseStringUTFChars(inPath, inCPath);
+            return JNI_FALSE;
+        }
+        env->ReleaseStringUTFChars(inPath, inCPath);
     } else {
         inFile = fdopen(inFd, "rb");
-    }
-    /*inCPath = env->GetStringUTFChars(inPath, 0);
-    LOGIS("IN path", inCPath);
-    inFile = fopen(inCPath, "rb");
-    if (!inFile) {
-        if (throwException) {
-            throw_cant_open_file_exception(env, inPath);
+        if (!inFile) {
+            if (throwException) {
+                throw_cant_open_file_exception_fd(env, inFd);
+            }
+            LOGES("Can\'t open out file descriptor", inFd);
+            return JNI_FALSE;
         }
-        LOGES("Can\'t open in file", inCPath);
-        env->ReleaseStringUTFChars(inPath, inCPath);
-        return JNI_FALSE;
-    } else {
-        env->ReleaseStringUTFChars(inPath, inCPath);
-    }*/
+    }
 
     //read file header
     size_t byte_count = 8;
@@ -178,7 +119,7 @@ jboolean JpgToTiffConverter::convert()
     if (!is_jpg) {
         LOGE("Not jpeg file");
         if (throwException) {
-            if (inFd == -1) {
+            if (inFd < 0) {
                 throw_cant_open_file_exception(env, inPath);
             } else {
                 throw_cant_open_file_exception_fd(env, inFd);
@@ -191,19 +132,6 @@ jboolean JpgToTiffConverter::convert()
 
     /* We set up the normal JPEG error routines, then override error_exit. */
     cinfo.err = jpeg_std_error(&jerr);
-    //cinfo.err = jpeg_std_error(&jerr.pub);
-    //jerr.pub.error_exit = my_error_exit;
-    /* Establish the setjmp return context for my_error_exit to use. */
-    /*if (setjmp(jerr.setjmp_buffer)) {
-       char *message = "Error reading JPEG";
-       LOGE(message);
-       if (throwException) {
-        jstring er = env->NewStringUTF(message);
-        throw_decode_file_exception(env, inPath, er);
-        env->DeleteLocalRef(er);
-       }
-       return JNI_FALSE;
-    }*/
 
     jpeg_create_decompress(&cinfo);
     jpeg_struct_init = 1;

@@ -13,6 +13,15 @@ PngToTiffConverter::PngToTiffConverter(JNIEnv *e, jclass clazz, jstring in, jstr
     compressionInt = 5;
 }
 
+PngToTiffConverter::PngToTiffConverter(JNIEnv *e, jclass clazz, jint in, jint out, jobject opts, jobject listener)
+    : BaseTiffConverter(e, clazz, in, out, opts, listener)
+{
+    png_ptr_init = 0;
+    png_info_init = 0;
+
+    compressionInt = 5;
+}
+
 PngToTiffConverter::~PngToTiffConverter() {
     if (tiffImage) {
         TIFFClose(tiffImage);
@@ -37,78 +46,67 @@ jboolean PngToTiffConverter::convert()
     readOptions();
 
     //open tiff file for writing or appending
-    const char *outCPath = NULL;
-    outCPath = env->GetStringUTFChars(outPath, 0);
-    LOGIS("OUT path", outCPath);
+    if(outFd < 0) {
+        //open tiff file for writing or appending
+        const char *outCPath = NULL;
+        outCPath = env->GetStringUTFChars(outPath, 0);
+        LOGIS("OUT path", outCPath);
+        LOGIS("nativeTiffOpenForSave", outCPath);
+        int mode = O_RDWR | O_CREAT | O_TRUNC | 0;
+        if (appendTiff) {
+            mode = O_RDWR | O_CREAT;
+        }
+        outFd = open(outCPath, mode, 0666);
+        if (outFd < 0) {
+            throw_cant_open_file_exception(env, outPath);
+            env->ReleaseStringUTFChars(outPath, outCPath);
+            return JNI_FALSE;
+        }
+        env->ReleaseStringUTFChars(outPath, outCPath);
+    }
 
-    int fileDescriptor = -1;
     if (!appendTiff) {
-        if((tiffImage = TIFFOpen(outCPath, "w")) == NULL) {
-            LOGE("can not open file. Trying file descriptor");
-            //if TIFFOpen returns null then try to open file from descriptor
-            int mode = O_RDWR | O_CREAT | O_TRUNC | 0;
-            fileDescriptor = open(outCPath, mode, 0666);
-            if (fileDescriptor < 0) {
-                LOGE("Unable to create tif file descriptor");
-                if (throwException) {
-                    throw_cant_open_file_exception(env, outPath);
-                }
-                env->ReleaseStringUTFChars(outPath, outCPath);
-                return JNI_FALSE;
-            } else {
-                if ((tiffImage = TIFFFdOpen(fileDescriptor, outCPath, "w")) == NULL) {
-                    close(fileDescriptor);
-                    LOGE("Unable to write tif file");
-                    if (throwException) {
-                        throw_cant_open_file_exception(env, outPath);
-                    }
-                    env->ReleaseStringUTFChars(outPath, outCPath);
-                    return JNI_FALSE;
-                }
+        if ((tiffImage = TIFFFdOpen(outFd, "", "w")) == NULL) {
+            LOGE("Unable to open tif file");
+            if (throwException) {
+                throw_cant_open_file_exception_fd(env, outFd);
             }
+            return JNI_FALSE;
         }
     } else {
-        if((tiffImage = TIFFOpen(outCPath, "a")) == NULL){
-            LOGE("can not open file. Trying file descriptor");
-            //if TIFFOpen returns null then try to open file from descriptor
-            int mode = O_RDWR|O_CREAT;
-            fileDescriptor = open(outCPath, mode, 0666);
-            if (fileDescriptor < 0) {
-                LOGE("Unable to create tif file descriptor");
-                if (throwException) {
-                    throw_cant_open_file_exception(env, outPath);
-                }
-                env->ReleaseStringUTFChars(outPath, outCPath);
-                return JNI_FALSE;
-            } else {
-                if ((tiffImage = TIFFFdOpen(fileDescriptor, outCPath, "a")) == NULL) {
-                close(fileDescriptor);
-                LOGE("Unable to write tif file");
-                if (throwException) {
-                    throw_cant_open_file_exception(env, outPath);
-                }
-                env->ReleaseStringUTFChars(outPath, outCPath);
-                return JNI_FALSE;
-                }
+        if ((tiffImage = TIFFFdOpen(outFd, "", "a")) == NULL) {
+            LOGE("Unable to open tif file");
+            if (throwException) {
+                throw_cant_open_file_exception_fd(env, outFd);
             }
+            return JNI_FALSE;
         }
     }
-    env->ReleaseStringUTFChars(outPath, outCPath);
 
     //open png file fow reading
-    const char *inCPath = NULL;
-    inCPath = env->GetStringUTFChars(inPath, 0);
-    LOGIS("IN path", inCPath);
-    inFile = fopen(inCPath, "rb");
-    if (!inFile) {
-        if (throwException) {
-            throw_cant_open_file_exception(env, inPath);
+    if (inFd == -1) {
+        const char *inCPath = NULL;
+        inCPath = env->GetStringUTFChars(inPath, 0);
+        LOGIS("IN path", inCPath);
+        inFile = fopen(inCPath, "rb");
+        if (!inFile) {
+            if (throwException) {
+                throw_cant_open_file_exception(env, inPath);
+            }
+            LOGES("Can\'t open in file", inCPath);
+            env->ReleaseStringUTFChars(inPath, inCPath);
+            return JNI_FALSE;
         }
-        LOGES("Can\'t open out file", inCPath);
         env->ReleaseStringUTFChars(inPath, inCPath);
-        return JNI_FALSE;
     } else {
-        env->ReleaseStringUTFChars(inPath, inCPath);
+        inFile = fdopen(inFd, "rb");
+        if (!inFile) {
+            if (throwException) {
+                throw_cant_open_file_exception_fd(env, inFd);
+            }
+            LOGES("Can\'t open out file descriptor", inFd);
+            return JNI_FALSE;
+        }
     }
 
     //read file header
@@ -121,7 +119,11 @@ jboolean PngToTiffConverter::convert()
     if (!is_png) {
         LOGE("Not png file");
         if (throwException) {
-            throw_cant_open_file_exception(env, inPath);
+            if (inFd == -1) {
+                throw_cant_open_file_exception(env, inPath);
+            } else {
+                throw_cant_open_file_exception_fd(env, inFd);
+            }
         }
         return JNI_FALSE;
     } else {
@@ -135,7 +137,11 @@ jboolean PngToTiffConverter::convert()
         LOGE(*message);
         if (throwException) {
             jstring er = env->NewStringUTF(message);
-            throw_decode_file_exception(env, inPath, er);
+            if (inFd < 0) {
+                throw_decode_file_exception(env, inPath, er);
+            } else {
+                throw_decode_file_exception_fd(env, inFd, er);
+            }
             env->DeleteLocalRef(er);
         }
         return JNI_FALSE;
@@ -151,7 +157,11 @@ jboolean PngToTiffConverter::convert()
         LOGE(*message);
         if (throwException) {
             jstring er = env->NewStringUTF(message);
-            throw_decode_file_exception(env, inPath, er);
+            if (inFd < 0) {
+                throw_decode_file_exception(env, inPath, er);
+            } else {
+                throw_decode_file_exception_fd(env, inFd, er);
+            }
             env->DeleteLocalRef(er);
         }
         return JNI_FALSE;
@@ -164,7 +174,11 @@ jboolean PngToTiffConverter::convert()
         LOGE(message);
         if (throwException) {
             jstring er = env->NewStringUTF(message);
-            throw_decode_file_exception(env, inPath, er);
+            if (inFd < 0) {
+                throw_decode_file_exception(env, inPath, er);
+            } else {
+                throw_decode_file_exception_fd(env, inFd, er);
+            }
             env->DeleteLocalRef(er);
         }
         return JNI_FALSE;
@@ -301,9 +315,6 @@ jboolean PngToTiffConverter::convert()
                 for (int sy = 0; sy < rowPerStrip; sy++) {
                     free(row_pointers[sy]);
                 }
-                if (fileDescriptor >= 0) {
-                    close(fileDescriptor);
-                }
                 conversion_result = JNI_FALSE;
                 return conversion_result;
             }
@@ -322,9 +333,6 @@ jboolean PngToTiffConverter::convert()
             if (checkStop()) {
                 for (int sy = 0; sy < rowPerStrip; sy++) {
                     free(row_pointers[sy]);
-                }
-                if (fileDescriptor >= 0) {
-                    close(fileDescriptor);
                 }
                 conversion_result = JNI_FALSE;
                 return conversion_result;
@@ -352,9 +360,6 @@ jboolean PngToTiffConverter::convert()
                 for (int sy = 0; sy < rowPerStrip; sy++) {
                     free(row_pointers[sy]);
                 }
-                if (fileDescriptor >= 0) {
-                    close(fileDescriptor);
-                }
                 conversion_result = JNI_FALSE;
                 return conversion_result;
             }
@@ -381,65 +386,10 @@ jboolean PngToTiffConverter::convert()
     LOGII("ret = ", ret);
 
 
-    //if file descriptor was openned then close it
-    if (fileDescriptor >= 0) {
-        close(fileDescriptor);
-    }
-
     sendProgress(total, total);
     conversion_result = JNI_TRUE;
     return conversion_result;
 }
-
-/*unsigned char * PngToTiffConverter::convertArgbToBilevel(png_byte *row, int samplePerPixel, uint32 width, uint32 height) {
-
-        unsigned char red;
-        unsigned char green;
-        unsigned char blue;
-        unsigned char alpha;
-
-
-        uint32 crPix;
-        uint32 grayPix;
-        int bilevelWidth = (width / 8 + 0.5);
-
-        unsigned char *dest = (unsigned char *) malloc(sizeof(unsigned char) * bilevelWidth);
-
-        uint32 maxGrey = (0.2125 * 255 + 0.7154 * 255 + 0.0721 * 255);
-        uint32 halfGrey = maxGrey/2;
-
-        uint32 shift = 0;
-        unsigned char charsum = 0;
-        int k = 7;
-
-        //for (int y = 0; y < height; y++) {
-            shift = 0;
-            charsum = 0;
-            k = 7;
-            //png_bytep row = data[y];
-            for (int i = 0; i < width; i++) {
-                            png_byte *px = &(row[i * 4]);
-                            red = px[0];
-                            green = px[1];
-                            blue = px[2];
-                                                        //crPix = &(row[x * 4]);
-                            grayPix = (0.2125 * red + 0.7154 * green + 0.0721 * blue);
-
-                            if (grayPix < halfGrey) charsum &= ~(1 << k);
-                            else charsum |= 1 << k;
-
-                            if (k == 0) {
-                                dest[shift] = charsum;
-                                shift++;
-                                k = 7;
-                                charsum = 0;
-                            } else {
-                                k--;
-                            }
-                        }
-        //}
-        return dest;
-}*/
 
 unsigned char * PngToTiffConverter::convertArgbToBilevel(png_bytep *data, int samplePerPixel, uint32 width, uint32 height) {
         unsigned char red;

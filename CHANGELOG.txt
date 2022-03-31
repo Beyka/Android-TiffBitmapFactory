@@ -1,3 +1,6 @@
+0.9.9.0
+- Added support for decoding and converting files from file descriptors
+
 0.9.8.7
 - Fixed converting from JPG to TIFF with CCITTRLE, CCITTFAX3, CCITTFAX4 compression schemes
 
