@@ -54,6 +54,7 @@ NativeDecoder::NativeDecoder(JNIEnv *e, jclass c, jstring path, jobject opts, jo
     optionsObject = opts;
     listenerObject = listener;
     jPath = path;
+    jFd = 0;
 
     origwidth = 0;
     origheight = 0;
@@ -78,8 +79,10 @@ NativeDecoder::~NativeDecoder()
 {
     LOGI("Destructor");
     if (image) {
-        TIFFClose(image);
-        image = NULL;
+        if (jFd == 0) {
+            TIFFClose(image);
+            image = NULL;
+        }
     }
 
     //Release global reference for Bitmap.Config
