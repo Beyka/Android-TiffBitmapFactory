@@ -13,7 +13,7 @@ Supported architectures: all
 ### Installation
 Just add to your gradle dependencies :
 ```
-implementation 'io.github.beyka:Android-TiffBitmapFactory:0.9.9.0'
+implementation 'io.github.beyka:Android-TiffBitmapFactory:0.9.9.1'
 ```
 And do not forget to add WRITE_EXTERNAL_STORAGE permission to main project manifest
 
