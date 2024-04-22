@@ -25,40 +25,75 @@ dnl OF THIS SOFTWARE.
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.64)
-AC_INIT([LibTIFF Software],[3.9.2],[tiff@lists.maptools.org],[tiff])
+AC_INIT([LibTIFF Software],[4.6.0t],[tiff@lists.osgeo.org],[tiff])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR(m4)
 AC_LANG(C)
 
-dnl Compute the canonical target-system type variable
-AC_CANONICAL_TARGET
+dnl Compute the canonical host (run-time) system type variable
+AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([dist-xz tar-ustar])
 dnl Do not rebuild generated files every time
 AM_MAINTAINER_MODE
 
 dnl Versioning.
 dnl Don't fill the ALPHA_VERSION field, if not applicable.
-LIBTIFF_MAJOR_VERSION=3
-LIBTIFF_MINOR_VERSION=9
-LIBTIFF_MICRO_VERSION=2
-LIBTIFF_ALPHA_VERSION=
+LIBTIFF_MAJOR_VERSION=4
+LIBTIFF_MINOR_VERSION=6
+LIBTIFF_MICRO_VERSION=0
+LIBTIFF_ALPHA_VERSION=t
 LIBTIFF_VERSION=$LIBTIFF_MAJOR_VERSION.$LIBTIFF_MINOR_VERSION.$LIBTIFF_MICRO_VERSION$LIBTIFF_ALPHA_VERSION
-dnl This will be used with the 'make release' target
-LIBTIFF_RELEASE_DATE=`date +"%Y%m%d"`
+dnl This (LIBTIFF_RELEASE_DATE) is used to set the #define TIFFLIB_VERSION in tiffvers.h.
+LIBTIFF_RELEASE_DATE=$(cat ${srcdir}/RELEASE-DATE)
+
+
+dnl Libtool library revision control info
+dnl See the libtool documentation under the heading "Libtool's versioning
+dnl system" in order to understand the meaning of these fields
+dnl
+dnl current
+dnl      The most recent interface number that this library implements.
+dnl revision
+dnl      The implementation number of the current interface.
+dnl age
+dnl      The difference between the newest and oldest interfaces that
+dnl      this library implements. In other words, the library implements
+dnl      all the interface numbers in the range from number current -
+dnl      age to current.
+dnl
+dnl Here are a set of rules to help you update your library version
+dnl information:
+dnl
+dnl  1. Start with version information of `0:0:0' for each libtool library.
+dnl  2. Update the version information only immediately before a public
+dnl     release of your software. More frequent updates are unnecessary, and
+dnl     only guarantee that the current interface number gets larger faster.
+dnl  3. If the library source code has changed at all since the last update,
+dnl     then increment revision (`c:r:a' becomes `c:r+1:a').
+dnl  4. If any interfaces have been added, removed, or changed since the last
+dnl     update, increment current, and set revision to 0.
+dnl  5. If any interfaces have been added since the last public release, then
+dnl     increment age.
+dnl  6. If any interfaces have been removed since the last public release,
+dnl     then set age to 0.                                
+LIBTIFF_CURRENT=6
+LIBTIFF_REVISION=3
+LIBTIFF_AGE=0
+LIBTIFF_VERSION_INFO=$LIBTIFF_CURRENT:$LIBTIFF_REVISION:$LIBTIFF_AGE
 
 # This is a special hack for OpenBSD and MirOS systems. The dynamic linker
 # in OpenBSD uses some special semantics for shared libraries. Their soname
 # contains only two numbers, major and minor.
 # See http://bugzilla.remotesensing.org/show_bug.cgi?id=838 for details.
-case "$target_os" in
-    openbsd* | mirbsd*)
-	LIBTIFF_VERSION_INFO=$LIBTIFF_MAJOR_VERSION$LIBTIFF_MINOR_VERSION:$LIBTIFF_MICRO_VERSION:0
-	;;
-    *)
-	LIBTIFF_VERSION_INFO=$LIBTIFF_MAJOR_VERSION:$LIBTIFF_MINOR_VERSION:$LIBTIFF_MICRO_VERSION
-	;;
-esac
+#case "$host_os" in
+#    openbsd* | mirbsd*)
+#	LIBTIFF_VERSION_INFO=$LIBTIFF_MAJOR_VERSION$LIBTIFF_MINOR_VERSION:$LIBTIFF_MICRO_VERSION:0
+#	;;
+#    *)
+#	LIBTIFF_VERSION_INFO=$LIBTIFF_MAJOR_VERSION:$LIBTIFF_MINOR_VERSION:$LIBTIFF_MICRO_VERSION
+#	;;
+#esac
 
 AC_SUBST(LIBTIFF_MAJOR_VERSION)
 AC_SUBST(LIBTIFF_MINOR_VERSION)
@@ -68,23 +103,49 @@ AC_SUBST(LIBTIFF_VERSION)
 AC_SUBST(LIBTIFF_VERSION_INFO)
 AC_SUBST(LIBTIFF_RELEASE_DATE)
 
-# Ensure that make can run correctly
-AM_SANITY_CHECK
-
 dnl Checks for programs.
-AC_PROG_CC
-AC_PROG_CC_STDC
-AC_PROG_CPP
-LT_PATH_LD
-
+AC_PROG_CC_C99
 AM_PROG_CC_C_O
-LT_PATH_LD
 
 dnl We want warnings. As many warnings as possible.
 VL_PROG_CC_WARNINGS()
+
+dnl Checks for programs
 AC_PROG_INSTALL
-AC_PROG_MAKE_SET
 AC_PROG_LN_S
+# Used only for validating the source distribution during distcheck
+AC_PATH_PROG(CMAKE, cmake)
+
+
+# Check if LD supports linker scripts, and define automake conditional
+# HAVE_LD_VERSION_SCRIPT if so.  This functionality is currently
+# constrained to compilers using GNU ld on ELF systems or systems
+# which provide an adequate emulation thereof.
+AC_ARG_ENABLE([ld-version-script],
+  AS_HELP_STRING([--disable-ld-version-script],
+    [disable linker version script (default is enabled if supported)]),
+    [have_ld_version_script=$enableval], [have_ld_version_script=yes])
+if test "$have_ld_version_script" != no; then
+  AC_MSG_CHECKING([if LD -Wl,--version-script works])
+  save_LDFLAGS="$LDFLAGS"
+  LDFLAGS="$LDFLAGS -Wl,--version-script=conftest.map"
+  cat > conftest.map <<EOF
+VERS_1 {
+        global: sym;
+};
+
+VERS_2 {
+        global: sym;
+} VERS_1;
+EOF
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])],
+                 [have_ld_version_script=yes], [have_ld_version_script=no])
+  rm -f conftest.map
+  LDFLAGS="$save_LDFLAGS"
+  AC_MSG_RESULT($have_ld_version_script)
+fi
+AM_CONDITIONAL(HAVE_LD_VERSION_SCRIPT, test "$have_ld_version_script" = "yes")
+
 
 dnl Tests for Windows
 AC_EXEEXT
@@ -97,110 +158,102 @@ LT_LANG([C++])
 # Enable support for silent build rules
 AM_SILENT_RULES
 
-dnl Checks for libraries.
-AC_CHECK_LIB([c], [main])
+tiff_libs_private=
+AC_SUBST(tiff_libs_private)
+
+tiff_requires_private=
+AC_SUBST(tiff_requires_private)
+
+AM_CONDITIONAL(BUILD_STATIC, test "$enable_static" = "yes")
 
 dnl We don't need to add math library to all targets
 case "${host_os}" in
     cygwin* | mingw32* | beos* | darwin*)
         ;;
     *)
-	AC_CHECK_LIB(m,sin,,,)
+	AC_CHECK_LIB(m,sin,[libm_lib=yes], [libm_lib=no],)
+	if test "x$libm_lib" = "xyes" ; then
+	  LIBS="-lm $LIBS"
+	  tiff_libs_private="-lm ${tiff_libs_private}"
+	fi
         ;;
 esac
 
 dnl Checks for header files.
-AC_CHECK_HEADERS([assert.h fcntl.h io.h limits.h malloc.h search.h sys/time.h unistd.h])
+AC_CHECK_HEADERS([assert.h fcntl.h io.h search.h unistd.h])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
-AC_C_INLINE
 AC_C_BIGENDIAN
 AC_TYPE_OFF_T
 AC_TYPE_SIZE_T
-AC_CHECK_SIZEOF(int)
-AC_CHECK_SIZEOF(long)
 AC_HEADER_TIME
 AC_STRUCT_TM
-dnl Some compilers (IBM VisualAge) has these types defined, so check it here:
-AC_CHECK_TYPES([int8, int16, int32],,,
-[
-#if HAVE_INTTYPES_H
-# include <inttypes.h>
-#endif
-])
 
-# Obtain size of a 'signed long' and define as SIZEOF_SIGNED_LONG
-AC_CHECK_SIZEOF(signed long)
+dnl If the `fseeko' function is available, define `HAVE_FSEEKO'. Define
+dnl `_LARGEFILE_SOURCE' if necessary.
+AC_FUNC_FSEEKO
 
-# Obtain size of a 'unsigned long' and define as SIZEOF_UNSIGNED_LONG
-AC_CHECK_SIZEOF(unsigned long)
+dnl Check if optarg (and presumably related externs) already declared in headers
+AC_CHECK_DECLS([optarg])
 
-# Obtain size of a 'long long' and define as SIZEOF_SIGNED_LONG_LONG.
-# If 'long long' is not supported then the value defined is zero.
-AC_CHECK_SIZEOF(signed long long)
+dnl ---------------------------------------------------------------------------
+dnl Deprecated features and backward compatibilty
+dnl ---------------------------------------------------------------------------
 
-# Obtain size of a 'unsigned long long' and define as
-# SIZEOF_UNSIGNED_LONG_LONG.  If 'unsigned long long' is not
-# supported then the value defined is zero.
-AC_CHECK_SIZEOF(unsigned long long)
+AC_ARG_ENABLE([deprecated],
+  AS_HELP_STRING([--enable-deprecated],
+      [enable deprecated features (default is disabled)]),
+      [enable_deprecated=$enableval], [enable_deprecated=no])
 
-AC_MSG_CHECKING(for signed 64-bit type)
-INT64_T='none'
-INT64_FORMAT='none'
-if test $ac_cv_sizeof_signed_long -eq 8
-then
-  INT64_T='signed long'
-  INT64_FORMAT='"%ld"'
-elif test $ac_cv_sizeof_signed_long_long -eq 8
-then
-  INT64_FORMAT='"%lld"'
-  INT64_T='signed long long'
+if test "$enable_deprecated" = "yes"; then
+  # Disable deprecated features to ensure clean build
+  CPPFLAGS="-DTIFF_DISABLE_DEPRECATED $CPPFLAGS"
 fi
-AC_MSG_RESULT($INT64_T)
-AC_DEFINE_UNQUOTED(TIFF_INT64_T,$INT64_T,[Signed 64-bit type])
-AC_DEFINE_UNQUOTED(TIFF_INT64_FORMAT,$INT64_FORMAT,[Signed 64-bit type formatter])
 
-AC_MSG_CHECKING(for unsigned 64-bit type)
-UINT64_T='none'
-UINT64_FORMAT='none'
-if test $ac_cv_sizeof_unsigned_long -eq 8
+dnl ---------------------------------------------------------------------------
+dnl Compute sized types for current CPU and compiler options
+dnl ---------------------------------------------------------------------------
+
+# Obtain the size of 'size_t' and define as SIZEOF_SIZE_T.  Result is
+# available in ac_cv_sizeof_size_t
+AC_CHECK_SIZEOF([size_t])
+
+
+# C99 fixed-size integer types
+INT8_T='int8_t'
+UINT8_T='uint8_t'
+
+INT16_T='int16_t'
+UINT16_T='uint16_t'
+
+INT32_T='int32_t'
+UINT32_T='uint32_t'
+
+INT64_T='int64_t'
+UINT64_T='uint64_t'
+
+if test $ac_cv_sizeof_size_t -eq 4
 then
-  UINT64_T='unsigned long'
-  UINT64_FORMAT='"%lu"'
-elif test $ac_cv_sizeof_unsigned_long_long -eq 8
+  SSIZE_T='int32_t'
+elif test $ac_cv_sizeof_size_t -eq 8
 then
-  UINT64_T='unsigned long long'
-  UINT64_FORMAT='"%llu"'
+  SSIZE_T='int64_t'
+else
+  AC_MSG_ERROR([Unsupported size_t size ${ac_cv_sizeof_size_t}; please add support])
 fi
-AC_MSG_RESULT($UINT64_T)
-AC_DEFINE_UNQUOTED(TIFF_UINT64_T,$UINT64_T,[Unsigned 64-bit type])
-AC_DEFINE_UNQUOTED(TIFF_UINT64_FORMAT,$UINT64_FORMAT,[Unsigned 64-bit type formatter])
+
+
+# Determine TIFF equivalent of ssize_t
+AC_MSG_CHECKING(for signed size type)
+AC_MSG_RESULT($SSIZE_T)
+AC_DEFINE_UNQUOTED(TIFF_SSIZE_T,$SSIZE_T,[Signed size type])
 
 dnl Checks for library functions.
-AC_CHECK_FUNCS([floor isascii memmove memset mmap pow setmode sqrt strchr strrchr strstr strtol])
+AC_CHECK_FUNCS([mmap setmode])
 
 dnl Will use local replacements for unavailable functions
 AC_REPLACE_FUNCS(getopt)
-AC_REPLACE_FUNCS(strcasecmp)
-AC_REPLACE_FUNCS(strtoul)
-AC_REPLACE_FUNCS(lfind)
-
-dnl ---------------------------------------------------------------------------
-dnl Check the native cpu bit order.
-dnl ---------------------------------------------------------------------------
-AC_MSG_CHECKING([native cpu bit order])
-case "$target_cpu" in
-    i*86*|x86_64*)
-        HOST_FILLORDER=FILLORDER_LSB2MSB
-	AC_MSG_RESULT([lsb2msb])
-	;;
-    *)
-	HOST_FILLORDER=FILLORDER_MSB2LSB
-	AC_MSG_RESULT([msb2lsb])
-        ;;
-esac
-AC_DEFINE_UNQUOTED(HOST_FILLORDER, $HOST_FILLORDER, [Set the native cpu bit order (FILLORDER_LSB2MSB or FILLORDER_MSB2LSB)])
 
 dnl ---------------------------------------------------------------------------
 dnl Configure legacy tifconf.h HOST_BIGENDIAN.
@@ -223,7 +276,7 @@ dnl Set the floating point format.
 dnl FIXME: write appropriate test.
 dnl ---------------------------------------------------------------------------
 HAVE_IEEEFP=1
-AC_DEFINE_UNQUOTED(HAVE_IEEEFP, $HAVE_IEEEFP, [Define as 0 or 1 according to the floating point format suported by the machine])
+AC_DEFINE_UNQUOTED(HAVE_IEEEFP, $HAVE_IEEEFP, [Define as 0 or 1 according to the floating point format supported by the machine])
 
 dnl ---------------------------------------------------------------------------
 dnl Enable run-time paths to libraries usage.
@@ -255,6 +308,36 @@ if test "x$with_docdir" != "x" ; then
 fi
  
 AC_SUBST(LIBTIFF_DOCDIR)
+
+
+dnl ---------------------------------------------------------------------------
+dnl Enable or disable parts of the build
+dnl ---------------------------------------------------------------------------
+
+AC_ARG_ENABLE(tools,
+              AS_HELP_STRING([--disable-tools],
+                             [Disable building of tools]),
+                             [TIFF_TOOLS=$enableval], [TIFF_TOOLS=yes])
+AM_CONDITIONAL(TIFF_TOOLS, test "$TIFF_TOOLS" = "yes")
+
+AC_ARG_ENABLE(tests,
+              AS_HELP_STRING([--disable-tests],
+                             [Disable building of tests]),
+                             [TIFF_TESTS=$enableval], [TIFF_TESTS=yes])
+AM_CONDITIONAL(TIFF_TESTS, test "$TIFF_TESTS" = "yes")
+
+AC_ARG_ENABLE(contrib,
+              AS_HELP_STRING([--disable-contrib],
+                             [Disable building of contrib]),
+                             [TIFF_CONTRIB=$enableval], [TIFF_CONTRIB=yes])
+AM_CONDITIONAL(TIFF_CONTRIB, test "$TIFF_CONTRIB" = "yes")
+
+AC_ARG_ENABLE(docs,
+              AS_HELP_STRING([--disable-docs],
+                             [Disable building of docs]),
+                             [TIFF_DOCS=$enableval], [TIFF_DOCS=yes])
+AM_CONDITIONAL(TIFF_DOCS, test "$TIFF_DOCS" = "yes")
+
 
 dnl ---------------------------------------------------------------------------
 dnl Switch on/off internal codecs.
@@ -373,9 +456,69 @@ fi
 if test "$HAVE_ZLIB" = "yes" ; then
   AC_DEFINE(ZIP_SUPPORT,1,[Support Deflate compression])
   LIBS="-lz $LIBS"
+  tiff_libs_private="-lz ${tiff_libs_private}"
+  tiff_requires_private="zlib ${tiff_requires_private}"
 
   if test "$HAVE_RPATH" = "yes" -a "x$with_zlib_lib_dir" != "x" ; then
     LIBDIR="-R $with_zlib_lib_dir $LIBDIR"
+  fi
+
+fi
+
+dnl ---------------------------------------------------------------------------
+dnl Check for libdeflate.
+dnl ---------------------------------------------------------------------------
+
+HAVE_LIBDEFLATE=no
+
+AC_ARG_ENABLE(libdeflate,
+	      AS_HELP_STRING([--disable-libdeflate],
+			     [disable libdeflate usage (optional for faster Deflate support (still requires zlib), enabled by default)]),,)
+AC_ARG_WITH(libdeflate-include-dir,
+	    AS_HELP_STRING([--with-libdeflate-include-dir=DIR],
+			   [location of libdeflate headers]),,)
+AC_ARG_WITH(libdeflate-lib-dir,
+	    AS_HELP_STRING([--with-libdeflate-lib-dir=DIR],
+			   [location of libdeflate library binary]),,)
+
+if test "x$enable_libdeflate" != "xno" ; then
+
+  if test "x$with_libdeflate_lib_dir" != "x" ; then
+    LDFLAGS="-L$with_libdeflate_lib_dir $LDFLAGS"
+  fi
+
+  AC_CHECK_LIB(deflate, libdeflate_zlib_decompress, [libdeflate_lib=yes], [libdeflate_lib=no],)
+  if test "$libdeflate_lib" = "no" -a "x$with_libdeflate_lib_dir" != "x"; then
+    AC_MSG_ERROR([libdeflate library not found at $with_libdeflate_lib_dir])
+  fi
+
+  if test "x$with_libdeflate_include_dir" != "x" ; then
+    CPPFLAGS="-I$with_libdeflate_include_dir $CPPFLAGS"
+  fi
+  AC_CHECK_HEADER(libdeflate.h, [libdeflate_h=yes], [libdeflate_h=no])
+  if test "$libdeflate_h" = "no" -a "x$with_libdeflate_include_dir" != "x" ; then
+    AC_MSG_ERROR([libdeflate headers not found at $with_libdeflate_include_dir])
+  fi
+
+  if test "$libdeflate_lib" = "yes" -a "$libdeflate_h" = "yes" ; then
+    HAVE_LIBDEFLATE=yes
+  fi
+
+fi
+
+if test "$HAVE_LIBDEFLATE" = "yes" -a "$HAVE_ZLIB" = "no" ; then
+  AC_MSG_WARN([libdeflate available but zlib is not. libdeflate cannot be used])
+  HAVE_LIBDEFLATE=no
+fi  
+
+if test "$HAVE_LIBDEFLATE" = "yes" ; then
+  AC_DEFINE(LIBDEFLATE_SUPPORT,1,[Support libdeflate enhanced compression])
+  LIBS="-ldeflate $LIBS"
+  tiff_libs_private="-ldeflate ${tiff_libs_private}"
+  tiff_requires_private="libdeflate ${tiff_requires_private}"
+
+  if test "$HAVE_RPATH" = "yes" -a "x$with_libdeflate_lib_dir" != "x" ; then
+    LIBDIR="-R $with_libdeflate_lib_dir $LIBDIR"
   fi
 
 fi
@@ -401,6 +544,7 @@ dnl Check for JPEG.
 dnl ---------------------------------------------------------------------------
 
 HAVE_JPEG=no
+HAVE_JPEGTURBO_DUAL_MODE_8_12=no
 
 AC_ARG_ENABLE(jpeg,
 	      AS_HELP_STRING([--disable-jpeg],
@@ -433,6 +577,9 @@ if test "x$enable_jpeg" != "xno" ; then
   fi
 
   if test "$jpeg_lib" = "yes" -a "$jpeg_h" = "yes" ; then
+    dnl Check for jpeg12_read_scanlines which has been added in libjpeg-turbo 2.2
+    dnl for dual 8/12 bit mode.
+    AC_CHECK_LIB(jpeg, jpeg12_read_scanlines, [HAVE_JPEGTURBO_DUAL_MODE_8_12=yes], [HAVE_JPEGTURBO_DUAL_MODE_8_12=no],)
     HAVE_JPEG=yes
   fi
 
@@ -441,12 +588,20 @@ fi
 if test "$HAVE_JPEG" = "yes" ; then
   AC_DEFINE(JPEG_SUPPORT,1,[Support JPEG compression (requires IJG JPEG library)])
   LIBS="-ljpeg $LIBS"
+  tiff_libs_private="-ljpeg ${tiff_libs_private}"
+  tiff_requires_private="libjpeg ${tiff_requires_private}"
 
   if test "$HAVE_RPATH" = "yes" -a "x$with_jpeg_lib_dir" != "x" ; then
     LIBDIR="-R $with_jpeg_lib_dir $LIBDIR"
   fi
 
+  if test "$HAVE_JPEGTURBO_DUAL_MODE_8_12" = "yes"; then
+      AC_DEFINE(HAVE_JPEGTURBO_DUAL_MODE_8_12,1,[libjpeg-turbo >= 2.2 dual mode enabled])
+  fi
 fi
+
+AM_CONDITIONAL(HAVE_JPEG, test "$HAVE_JPEG" = 'yes')
+AM_CONDITIONAL(HAVE_JPEGTURBO_DUAL_MODE_8_12, test "$HAVE_JPEGTURBO_DUAL_MODE_8_12" = 'yes')
 
 dnl ---------------------------------------------------------------------------
 dnl Check for Old JPEG.
@@ -509,6 +664,7 @@ fi
 if test "$HAVE_JBIG" = "yes" ; then
   AC_DEFINE(JBIG_SUPPORT,1,[Support ISO JBIG compression (requires JBIG-KIT library)])
   LIBS="-ljbig $LIBS"
+  tiff_libs_private="-ljbig ${tiff_libs_private}"
 
   if test "$HAVE_RPATH" = "yes" -a "x$with_jbig_lib_dir" != "x" ; then
     LIBDIR="-R $with_jbig_lib_dir $LIBDIR"
@@ -517,6 +673,274 @@ if test "$HAVE_JBIG" = "yes" ; then
   # Older versions of jbigkit lack jbg_newlen
   AC_CHECK_FUNCS([jbg_newlen])
 
+fi
+
+AM_CONDITIONAL(HAVE_JBIG, test "$HAVE_JBIG" = 'yes')
+
+dnl ---------------------------------------------------------------------------
+dnl Check for liblerc.
+dnl ---------------------------------------------------------------------------
+
+HAVE_LERC=no
+STATIC_LERC=no
+
+if test "$enable_static" = "no"; then
+    static_lerc=no
+else
+    static_lerc=yes
+fi
+AM_CONDITIONAL([STATIC_LERC], [ test "$static_lerc" = yes ])
+
+AC_ARG_ENABLE(lerc,
+      AS_HELP_STRING([--disable-lerc],
+         [disable liblerc usage (required for lerc compression, enabled by default)]),,)
+AC_ARG_WITH(lerc-include-dir,
+      AS_HELP_STRING([--with-lerc-include-dir=DIR],
+         [location of liblerc headers]),,)
+AC_ARG_WITH(lerc-lib-dir,
+	    AS_HELP_STRING([--with-lerc-lib-dir=DIR],
+			   [location of liblerc library binary]),,)
+
+if test "x$enable_lerc" != "xno" ; then
+
+  if test "x$with_lerc_lib_dir" != "x" ; then
+    LDFLAGS="-L$with_lerc_lib_dir $LDFLAGS"
+  fi
+
+  lerc_lib_name="LercLib"
+  AC_CHECK_LIB("$lerc_lib_name", lerc_decode, [lerc_lib=yes], [lerc_lib=no],)
+  if test "$lerc_lib" = "no" ; then
+    lerc_lib_name="Lerc"
+    AC_CHECK_LIB("$lerc_lib_name", lerc_decode, [lerc_lib=yes], [lerc_lib=no],)
+  fi
+  if test "$lerc_lib" = "no" -a "x$with_lerc_lib_dir" != "x"; then
+    AC_MSG_ERROR([lerc library not found at $with_lerc_lib_dir])
+  fi
+
+  if test "x$with_lerc_include_dir" != "x" ; then
+    CPPFLAGS="-I$with_lerc_include_dir $CPPFLAGS"
+  fi
+  AC_CHECK_HEADER(Lerc_c_api.h, [lerc_c_api_h=yes], [lerc_c_api_h=no])
+  if test "$lerc_c_api_h" = "no" -a "x$with_lerc_include_dir" != "x" ; then
+    AC_MSG_ERROR([Liblerc headers not found at $with_lerc_include_dir])
+  fi
+
+  if test "$lerc_lib" = "yes" -a "$lerc_c_api_h" = "yes" ; then
+    HAVE_LERC=yes
+  fi
+
+fi
+
+if test "$HAVE_LERC" = "yes" ; then
+  AC_DEFINE(LERC_SUPPORT,1,[Support lerc compression])
+  LIBS="-l${lerc_lib_name} $LIBS"
+  tiff_libs_private="-l${lerc_lib_name} ${tiff_libs_private}"
+
+  if test "$HAVE_RPATH" = "yes" -a "x$with_lerc_lib_dir" != "x" ; then
+    LIBDIR="-R $with_lerc_lib_dir $LIBDIR"
+  fi
+
+fi
+
+AM_CONDITIONAL(HAVE_LERC, test "$HAVE_LERC" = 'yes')
+
+dnl ---------------------------------------------------------------------------
+dnl Check for liblzma2.
+dnl ---------------------------------------------------------------------------
+
+HAVE_LZMA=no
+
+AC_ARG_ENABLE(lzma,
+	      AS_HELP_STRING([--disable-lzma],
+			     [disable liblzma usage (required for LZMA2 compression, enabled by default)]),,)
+AC_ARG_WITH(lzma-include-dir,
+	    AS_HELP_STRING([--with-lzma-include-dir=DIR],
+			   [location of liblzma headers]),,)
+AC_ARG_WITH(lzma-lib-dir,
+	    AS_HELP_STRING([--with-lzma-lib-dir=DIR],
+			   [location of liblzma library binary]),,)
+
+if test "x$enable_lzma" != "xno" ; then
+
+  if test "x$with_lzma_lib_dir" != "x" ; then
+    LDFLAGS="-L$with_lzma_lib_dir $LDFLAGS"
+  fi
+  
+  AC_CHECK_LIB(lzma, lzma_code, [lzma_lib=yes], [lzma_lib=no],)
+  if test "$lzma_lib" = "no" -a "x$with_lzma_lib_dir" != "x"; then
+    AC_MSG_ERROR([lzma library not found at $with_lzma_lib_dir])
+  fi
+    
+  if test "x$with_lzma_include_dir" != "x" ; then
+    CPPFLAGS="-I$with_lzma_include_dir $CPPFLAGS"
+  fi
+  AC_CHECK_HEADER(lzma.h, [lzma_h=yes], [lzma_h=no])
+  if test "$lzma_h" = "no" -a "x$with_lzma_include_dir" != "x" ; then
+    AC_MSG_ERROR([Liblzma headers not found at $with_lzma_include_dir])
+  fi
+
+  if test "$lzma_lib" = "yes" -a "$lzma_h" = "yes" ; then
+    HAVE_LZMA=yes
+  fi
+
+fi
+
+if test "$HAVE_LZMA" = "yes" ; then
+  AC_DEFINE(LZMA_SUPPORT,1,[Support LZMA2 compression])
+  LIBS="-llzma $LIBS"
+  tiff_libs_private="-llzma ${tiff_libs_private}"
+  tiff_requires_private="liblzma ${tiff_requires_private}"
+
+  if test "$HAVE_RPATH" = "yes" -a "x$with_lzma_lib_dir" != "x" ; then
+    LIBDIR="-R $with_lzma_lib_dir $LIBDIR"
+  fi
+
+fi
+
+AM_CONDITIONAL(HAVE_LZMA, test "$HAVE_LZMA" = 'yes')
+
+dnl ---------------------------------------------------------------------------
+dnl Check for libzstd.
+dnl ---------------------------------------------------------------------------
+
+HAVE_ZSTD=no
+
+AC_ARG_ENABLE(zstd,
+	      AS_HELP_STRING([--disable-zstd],
+			     [disable libzstd usage (required for zstd compression, enabled by default)]),,)
+AC_ARG_WITH(zstd-include-dir,
+	    AS_HELP_STRING([--with-zstd-include-dir=DIR],
+			   [location of libzstd headers]),,)
+AC_ARG_WITH(zstd-lib-dir,
+	    AS_HELP_STRING([--with-zstd-lib-dir=DIR],
+			   [location of libzstd library binary]),,)
+
+if test "x$enable_zstd" != "xno" ; then
+
+  if test "x$with_zstd_lib_dir" != "x" ; then
+    LDFLAGS="-L$with_zstd_lib_dir $LDFLAGS"
+  fi
+  
+  AC_CHECK_LIB(zstd, ZSTD_decompressStream, [zstd_lib=yes], [zstd_lib=no],)
+  if test "$zstd_lib" = "no" -a "x$with_zstd_lib_dir" != "x"; then
+    AC_MSG_ERROR([zstd library not found at $with_zstd_lib_dir])
+  fi
+    
+  if test "x$with_zstd_include_dir" != "x" ; then
+    CPPFLAGS="-I$with_zstd_include_dir $CPPFLAGS"
+  fi
+  AC_CHECK_HEADER(zstd.h, [zstd_h=yes], [zstd_h=no])
+  if test "$zstd_h" = "no" -a "x$with_zstd_include_dir" != "x" ; then
+    AC_MSG_ERROR([Libzstd headers not found at $with_zstd_include_dir])
+  fi
+
+  if test "$zstd_lib" = "yes" -a "$zstd_h" = "yes" ; then
+    HAVE_ZSTD=yes
+  fi
+
+fi
+
+if test "$HAVE_ZSTD" = "yes" ; then
+  AC_DEFINE(ZSTD_SUPPORT,1,[Support zstd compression])
+  LIBS="-lzstd $LIBS"
+  tiff_libs_private="-lzstd ${tiff_libs_private}"
+  tiff_requires_private="libzstd ${tiff_requires_private}"
+
+  if test "$HAVE_RPATH" = "yes" -a "x$with_zstd_lib_dir" != "x" ; then
+    LIBDIR="-R $with_zstd_lib_dir $LIBDIR"
+  fi
+
+fi
+
+AM_CONDITIONAL(HAVE_ZSTD, test "$HAVE_ZSTD" = 'yes')
+
+dnl ---------------------------------------------------------------------------
+dnl Check for libwebp.
+dnl ---------------------------------------------------------------------------
+
+HAVE_WEBP=no
+
+AC_ARG_ENABLE(webp,
+	      AS_HELP_STRING([--disable-webp],
+			     [disable libwebp usage (required for webp compression, enabled by default)]),,)
+AC_ARG_WITH(webp-include-dir,
+	    AS_HELP_STRING([--with-webp-include-dir=DIR],
+			   [location of libwebp headers]),,)
+AC_ARG_WITH(webp-lib-dir,
+	    AS_HELP_STRING([--with-webp-lib-dir=DIR],
+			   [location of libwebp library binary]),,)
+
+if test "x$enable_webp" != "xno" ; then
+
+  if test "x$with_webp_lib_dir" != "x" ; then
+    LDFLAGS="-L$with_webp_lib_dir $LDFLAGS"
+  fi
+  
+  AC_CHECK_LIB(webp, WebPDecode, [webp_lib=yes], [webp_lib=no],)
+  if test "$webp_lib" = "no" -a "x$with_webp_lib_dir" != "x"; then
+    AC_MSG_ERROR([webp library not found at $with_webp_lib_dir])
+  fi
+    
+  if test "x$with_webp_include_dir" != "x" ; then
+    CPPFLAGS="-I$with_webp_include_dir $CPPFLAGS"
+  fi
+  AC_CHECK_HEADER(webp/decode.h, [webp_h=yes], [webp_h=no])
+  if test "$webp_h" = "no" -a "x$with_webp_include_dir" != "x" ; then
+    AC_MSG_ERROR([Libwebp headers not found at $with_webp_include_dir])
+  fi
+
+  if test "$webp_lib" = "yes" -a "$webp_h" = "yes" ; then
+    HAVE_WEBP=yes
+  fi
+
+fi
+
+if test "$HAVE_WEBP" = "yes" ; then
+  AC_DEFINE(WEBP_SUPPORT,1,[Support webp compression])
+  LIBS="-lwebp $LIBS"
+  tiff_libs_private="-lwebp ${tiff_libs_private}"
+  tiff_requires_private="libwebp ${tiff_requires_private}"
+
+  if test "$HAVE_RPATH" = "yes" -a "x$with_webp_lib_dir" != "x" ; then
+    LIBDIR="-R $with_webp_lib_dir $LIBDIR"
+  fi
+
+fi
+
+AM_CONDITIONAL(HAVE_WEBP, test "$HAVE_WEBP" = 'yes')
+
+dnl ---------------------------------------------------------------------------
+dnl Should 8/12 bit jpeg mode be enabled?
+dnl This should not be used starting with libjpeg-turbo >= 2.2 that has
+dnl built-in support for dual mode.
+dnl ---------------------------------------------------------------------------
+
+if test "$HAVE_JPEGTURBO_DUAL_MODE_8_12" = "no"; then
+    HAVE_JPEG12=no
+
+    AC_ARG_ENABLE(jpeg12,
+              AS_HELP_STRING([--enable-jpeg12],
+                     [enable libjpeg 8/12bit dual mode (not to be used with libjpeg-turbo >= 2.2)]),,)
+    AC_ARG_WITH(jpeg12-include-dir,
+            AS_HELP_STRING([--with-jpeg12-include-dir=DIR],
+                   [location of libjpeg 12bit headers]),,)
+    AC_ARG_WITH(jpeg12-lib,
+            AS_HELP_STRING([--with-jpeg12-lib=LIBRARY],
+                   [path to libjpeg 12bit library]),,)
+
+    if test "x$enable_jpeg12" = "xyes" ; then
+
+      if test "x$with_jpeg12_lib" != "x" ; then
+        LIBS="$with_jpeg12_lib $LIBS"
+      fi
+      
+      HAVE_JPEG12=yes
+
+      AC_DEFINE(JPEG_DUAL_MODE_8_12,1,[8/12 bit libjpeg dual mode enabled])
+      if test "x$with_jpeg12_include_dir" != "x" ; then
+        AC_DEFINE_UNQUOTED(LIBJPEG_12_PATH,"$with_jpeg12_include_dir/jpeglib.h",[12bit libjpeg primary include file with path])
+      fi
+    fi
 fi
 
 dnl ---------------------------------------------------------------------------
@@ -542,18 +966,61 @@ dnl ---------------------------------------------------------------------------
 
 HAVE_OPENGL=no
 
-AC_PATH_XTRA
+AC_ARG_ENABLE(opengl,
+	     AS_HELP_STRING([--disable-opengl],
+			    [disable OpenGL usage (required by tiffgt, enabled by default)]),,)
 
-AX_CHECK_GL
-AX_CHECK_GLU
-AX_CHECK_GLUT
+if test "x$enable_opengl" != "xno" ; then
 
-if test "$no_x" != "yes" -a "$no_gl" != "yes" \
-	-a "$no_glu" != "yes" -a "$no_glut" != "yes" ; then
-  HAVE_OPENGL=yes
+  AC_PATH_XTRA
+
+  dnl AX_CHECK_GL sets GL_CFLAGS & GL_LIBS.  Also PTHREAD_LIBS,
+  dnl PTHREAD_CFLAGS, & PTHREAD_CC as a side-effect
+  AX_CHECK_GL
+
+  dnl AX_CHECK_GLU sets GLU_CFLAGS & GLU_LIBS
+  AX_CHECK_GLU
+
+  dnl AX_CHECK_GLUT sets GLUT_CFLAGS & GLUT_LIBS
+  AX_CHECK_GLUT
+
+  if test "$no_x" != "yes" -a "$no_gl" != "yes" \
+      -a "$no_glu" != "yes" -a "$no_glut" != "yes" ; then
+    HAVE_OPENGL=yes
+  fi
 fi
 
 AM_CONDITIONAL(HAVE_OPENGL, test "$HAVE_OPENGL" = "yes")
+
+dnl ---------------------------------------------------------------------------
+dnl Check for Win32 IO: make sure we have windows.h but not cygwin
+dnl ---------------------------------------------------------------------------
+
+AC_ARG_ENABLE(win32-io,
+	      AS_HELP_STRING([--disable-win32-io],
+			     [disable Win32 I/O (Windows only, enabled by default except for Cygwin)]),,)
+
+AC_CHECK_HEADER(windows.h)
+
+win32_io_ok=no
+case "${host_os}" in
+    cygwin*)
+        if test x"$ac_cv_header_windows_h" = xyes -a "x$enable_win32_io" = xyes ; then 
+            win32_io_ok=yes
+	fi
+        ;;
+    *)
+        if test x"$ac_cv_header_windows_h" = xyes -a ! "x$enable_win32_io" = xno ; then 
+            win32_io_ok=yes
+	fi
+        ;;
+esac
+
+if test "$win32_io_ok" = "yes" ; then
+    AC_DEFINE(USE_WIN32_FILEIO,1,[define to use win32 IO system])
+fi
+
+AM_CONDITIONAL([WIN32_IO], [test "$win32_io_ok" = yes])
 
 dnl ---------------------------------------------------------------------------
 dnl Check for X Athena Widgets
@@ -579,7 +1046,7 @@ dnl ---------------------------------------------------------------------------
 
 AC_ARG_ENABLE(strip-chopping,
 	      AS_HELP_STRING([--disable-strip-chopping],
-			     [disable support for strip chopping (whether or not to convert single-strip uncompressed images to mutiple strips of specified size to reduce memory usage)]),
+			     [disable support for strip chopping (whether or not to convert single-strip uncompressed images to multiple strips of specified size to reduce memory usage)]),
 	      [HAVE_STRIPCHOP=$enableval], [HAVE_STRIPCHOP=yes])
 AC_ARG_WITH(default-strip-size,
 	    AS_HELP_STRING([--with-default-strip-size=SIZE],
@@ -587,7 +1054,7 @@ AC_ARG_WITH(default-strip-size,
 
 if test "$HAVE_STRIPCHOP" = "yes" \
 	-a "x$with_default_strip_size" != "xno"; then
-  AC_DEFINE(STRIPCHOP_DEFAULT,TIFF_STRIPCHOP,[Support strip chopping (whether or not to convert single-strip uncompressed images to mutiple strips of specified size to reduce memory usage)])
+  AC_DEFINE(STRIPCHOP_DEFAULT,TIFF_STRIPCHOP,[Support strip chopping (whether or not to convert single-strip uncompressed images to multiple strips of specified size to reduce memory usage)])
 
   if test "x$with_default_strip_size" = "x" \
 	  -o "x$with_default_strip_size" = "xyes"; then
@@ -595,6 +1062,51 @@ if test "$HAVE_STRIPCHOP" = "yes" \
   fi
 
   AC_DEFINE_UNQUOTED(STRIP_SIZE_DEFAULT,$with_default_strip_size,[Default size of the strip in bytes (when strip chopping enabled)])
+
+fi
+
+dnl ---------------------------------------------------------------------------
+dnl Maximum number of TIFF directories that libtiff can browse through
+dnl ---------------------------------------------------------------------------
+
+AC_ARG_WITH(max-dir-count,
+    AS_HELP_STRING([--with-max-dir-count=SIZE],
+       [Maximum number of TIFF directories that libtiff can browse through [[default=1048576]]]),,)
+
+if test "x$with_max_dir_count" = "x" -o "x$with_max_dir_count" = "xyes"; then
+    with_max_dir_count="1048576"
+fi
+
+AC_DEFINE_UNQUOTED(TIFF_MAX_DIR_COUNT,$with_max_dir_count,[Maximum number of TIFF directories that libtiff can browse through])
+
+dnl ---------------------------------------------------------------------------
+dnl Should we try to defer loading of strip/tile offsets and sizes to 
+dnl optimize directory scanning?
+dnl ---------------------------------------------------------------------------
+
+AC_ARG_ENABLE(defer-strile-load,
+	      AS_HELP_STRING([--enable-defer-strile-load],
+			     [enable deferred strip/tile offset/size loading (also available at runtime with the 'D' flag of TIFFOpen()]),
+	      [HAVE_DEFER_STRILE_LOAD=$enableval], [HAVE_DEFER_STRILE_LOAD=no])
+
+if test "$HAVE_DEFER_STRILE_LOAD" = "yes" ; then
+  AC_DEFINE(DEFER_STRILE_LOAD,1,[enable deferred strip/tile offset/size loading])
+
+fi
+
+dnl ---------------------------------------------------------------------------
+dnl Check for support of CHUNKY_STRIP_READ_SUPPORT, a mechanism to allowing
+dnl reading large strips (usually one strip files) in chunks when using
+dnl TIFFReadScanline().  This is an experimental feature in libtiff 4.0.
+dnl ---------------------------------------------------------------------------
+
+AC_ARG_ENABLE(chunky-strip-read,
+	      AS_HELP_STRING([--enable-chunky-strip-read],
+			     [enable reading large strips in chunks for TIFFReadScanline() (experimental)]),
+	      [HAVE_CHUNKY_STRIP_READ=$enableval], [HAVE_CHUNKY_STRIP_READ=no])
+
+if test "$HAVE_CHUNKY_STRIP_READ" = "yes" ; then
+  AC_DEFINE(CHUNKY_STRIP_READ_SUPPORT,1,[enable partial strip reading for large strips (experimental)])
 
 fi
 
@@ -634,36 +1146,74 @@ if test "$CHECK_JPEG_YCBCR_SUBSAMPLING" = "yes" ; then
 	    [Pick up YCbCr subsampling info from the JPEG data stream to support files lacking the tag (default enabled).])
 fi
 
+
+for python in python3.9 python3.8 python3.7 python3.6 python3.5 python3.4 python3.3 python3.2 python3.1 python3.0 python3 python; do
+  AC_CHECK_PROGS(PYTHON_BIN, [$python])
+  if test "x$PYTHON_BIN" != "x"; then
+    break
+  fi
+done
+
+AC_ARG_ENABLE(sphinx,
+              AS_HELP_STRING([--disable-sphinx],
+                             [disable building of the sphinx documentation]),
+              [BUILD_SPHINX=$enableval],
+              [BUILD_SPHINX=yes])
+
+
+
+AC_PATH_PROG(SPHINX_BUILD, [sphinx-build], [no])
+
+AM_CONDITIONAL([SPHINX], [test "$BUILD_SPHINX" = yes -a "$SPHINX_BUILD" != no -a "x$PYTHON_BIN" != "x"])
+
+if test "x$PYTHON_BIN" != "x"; then
+  AC_MSG_CHECKING([generated manual pages])
+  TIFF_MAN1_GEN=$(echo $("$PYTHON_BIN" "${srcdir}/cmake/list-manpages.py" "${srcdir}/doc" man | grep "\.1$"))
+  TIFF_MAN3_GEN=$(echo $("$PYTHON_BIN" "${srcdir}/cmake/list-manpages.py" "${srcdir}/doc" man | grep "\.3tiff$"))
+  TIFF_MAN_RULES=$("$PYTHON_BIN" "${srcdir}/cmake/list-manpages.py" "${srcdir}/doc" man | sed -e 's;$;: all-local;')
+  AC_SUBST([TIFF_MAN1_GEN])
+  AC_SUBST([TIFF_MAN3_GEN])
+  AC_SUBST([TIFF_MAN_RULES])
+  AM_SUBST_NOTMAKE([TIFF_MAN_RULES])
+  AC_MSG_RESULT([done])
+fi
+
+if test -d "${srcdir}/doc/man-prebuilt"; then
+  AC_MSG_CHECKING([prebuilt manual pages])
+  TIFF_MAN1_PREBUILT=$(echo $(cd "${srcdir}/doc" && ls -1 man-prebuilt/*.1))
+  TIFF_MAN3_PREBUILT=$(echo $(cd "${srcdir}/doc" && ls -1 man-prebuilt/*.3tiff))
+  AC_SUBST([TIFF_MAN1_PREBUILT])
+  AC_SUBST([TIFF_MAN3_PREBUILT])
+  AC_MSG_RESULT([done])
+fi
+
 dnl ---------------------------------------------------------------------------
+
 
 AC_SUBST(LIBDIR)
 
-AC_CONFIG_HEADERS([libtiff/tif_config.h libtiff/tiffconf.h])
+AC_CONFIG_HEADERS([config/config.h libtiff/tif_config.h libtiff/tiffconf.h port/libport_config.h])
 
 AC_CONFIG_FILES([Makefile \
 		 build/Makefile \
 		 contrib/Makefile \
-		 contrib/acorn/Makefile \
 		 contrib/addtiffo/Makefile \
 		 contrib/dbs/Makefile \
 		 contrib/dbs/xtiff/Makefile \
 		 contrib/iptcutil/Makefile \
-		 contrib/mac-cw/Makefile \
-		 contrib/mac-mpw/Makefile \
 		 contrib/mfs/Makefile \
 		 contrib/pds/Makefile \
 		 contrib/ras/Makefile \
 		 contrib/stream/Makefile \
 		 contrib/tags/Makefile \
 		 contrib/win_dib/Makefile \
-                 html/Makefile \
-		 html/images/Makefile \
-		 html/man/Makefile \
-                 libtiff/Makefile \
-                 man/Makefile \
+		 doc/Makefile \
+		 libtiff-4.pc \
+		 libtiff/Makefile \
+		 libtiff/tiffvers.h \
 		 port/Makefile \
 		 test/Makefile \
-                 tools/Makefile])
+		 tools/Makefile])
 AC_OUTPUT
 
 dnl ---------------------------------------------------------------------------
@@ -673,12 +1223,23 @@ dnl ---------------------------------------------------------------------------
 LOC_MSG()
 LOC_MSG([Libtiff is now configured for ${host}])
 LOC_MSG()
+LOC_MSG([  Libtiff build version:              ${LIBTIFF_VERSION}])
+LOC_MSG([  Libtiff library version:            ${LIBTIFF_VERSION_INFO}])
+LOC_MSG([  Libtiff release date:               ${LIBTIFF_RELEASE_DATE}])
+LOC_MSG()
 LOC_MSG([  Installation directory:             ${prefix}])
 LOC_MSG([  Documentation directory:            ${LIBTIFF_DOCDIR}])
 LOC_MSG([  C compiler:                         ${CC} ${CFLAGS}])
 LOC_MSG([  C++ compiler:                       ${CXX} ${CXXFLAGS}])
+LOC_MSG([  Build tools:                        ${TIFF_TOOLS}])
+LOC_MSG([  Build tests:                        ${TIFF_TESTS}])
+LOC_MSG([  Build contrib:                      ${TIFF_CONTRIB}])
+LOC_MSG([  Build docs:                         ${TIFF_DOCS}])
+LOC_MSG([  Build deprecated features:          ${enable_deprecated}])
 LOC_MSG([  Enable runtime linker paths:        ${HAVE_RPATH}])
+LOC_MSG([  Enable linker symbol versioning:    ${have_ld_version_script}])
 LOC_MSG([  Support Microsoft Document Imaging: ${HAVE_MDI}])
+LOC_MSG([  Use Win32 IO:                       ${win32_io_ok}])
 LOC_MSG()
 LOC_MSG([ Support for internal codecs:])
 LOC_MSG([  CCITT Group 3 & 4 algorithms:       ${HAVE_CCITT}])
@@ -690,10 +1251,20 @@ LOC_MSG([  LogLuv high dynamic range encoding: ${HAVE_LOGLUV}])
 LOC_MSG()
 LOC_MSG([ Support for external codecs:])
 LOC_MSG([  ZLIB support:                       ${HAVE_ZLIB}])
+LOC_MSG([  libdeflate support:                 ${HAVE_LIBDEFLATE}])
 LOC_MSG([  Pixar log-format algorithm:         ${HAVE_PIXARLOG}])
 LOC_MSG([  JPEG support:                       ${HAVE_JPEG}])
 LOC_MSG([  Old JPEG support:                   ${HAVE_OJPEG}])
+if test "$HAVE_JPEGTURBO_DUAL_MODE_8_12" = "yes"; then
+    LOC_MSG([  JPEG 8/12 bit dual mode:            ${HAVE_JPEGTURBO_DUAL_MODE_8_12} (libjpeg turbo >= 2.2 dual mode)])
+else
+    LOC_MSG([  JPEG 8/12 bit dual mode:            ${HAVE_JPEG12}])
+fi
 LOC_MSG([  ISO JBIG support:                   ${HAVE_JBIG}])
+LOC_MSG([  LERC support:                       ${HAVE_LERC}])
+LOC_MSG([  LZMA2 support:                      ${HAVE_LZMA}])
+LOC_MSG([  ZSTD support:                       ${HAVE_ZSTD}])
+LOC_MSG([  WEBP support:                       ${HAVE_WEBP}])
 LOC_MSG()
 LOC_MSG([  C++ support:                        ${HAVE_CXX}])
 LOC_MSG()

@@ -50,7 +50,7 @@ JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nat
  * Method:    nativeCloseFd
  * Signature: (Ljava/lang/String;I)Landroid/graphics/Bitmap;
  */
-JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeCloseFd
+JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_closeFd
         (JNIEnv *, jclass, jint);
 
 

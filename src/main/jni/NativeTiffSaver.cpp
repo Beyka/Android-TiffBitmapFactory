@@ -498,7 +498,7 @@ __android_log_write(ANDROID_LOG_ERROR, "NativeTiffSaver", "Test Error here");
     }
 
 JNIEXPORT jobject
-JNICALL Java_org_beyka_tiffbitmapfactory_TiffSaver_nativeCloseFd
+JNICALL Java_org_beyka_tiffbitmapfactory_TiffSaver_closeFd
         (JNIEnv *env, jclass clazz, jint fd) {
     close(fd);
 }

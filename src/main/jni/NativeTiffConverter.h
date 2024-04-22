@@ -96,7 +96,7 @@ JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImag
 JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImageTypeFd
   (JNIEnv *, jclass, jint);
 
-JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeCloseFd
+JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_closeFd
         (JNIEnv *, jclass, jint);
 
 //constants for check files

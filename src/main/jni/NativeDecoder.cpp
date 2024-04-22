@@ -196,12 +196,12 @@ jobject NativeDecoder::getBitmap()
         if (inDirectoryNumber < 0) inDirectoryNumber = 0;
 
         //Open tiff file
-        LOGIS("nativeTiffOpen", strPath);
         const char *strPath = NULL;
         if (decodingMode == DECODE_MODE_FILE_DESCRIPTOR) {
             image = TIFFFdOpen(jFd, "", "r");
         } else if (decodingMode == DECODE_MODE_FILE_PATH) {
             strPath = env->GetStringUTFChars(jPath, 0);
+            LOGIS("nativeTiffOpen", strPath);
             image = TIFFOpen(strPath, "r");
         }
 
@@ -483,6 +483,7 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
 jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwidth, int *bitmapheight) {
 
     //init signal handler for catch SIGSEGV error that could be raised in libtiff
+    LOGI("getSampledRasterFromStrip");
     struct sigaction act;
     memset(&act, 0, sizeof(act));
     sigemptyset(&act.sa_mask);
@@ -1510,6 +1511,7 @@ void NativeDecoder::rotateTileLinesHorizontal(uint32 tileHeight, uint32 tileWidt
 jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidth, int *bitmapheight) {
 
         //init signal handler for catch SIGSEGV error that could be raised in libtiff
+        LOGI("getSampledRasterFromTile");
         struct sigaction act;
         memset(&act, 0, sizeof(act));
         sigemptyset(&act.sa_mask);
@@ -2570,6 +2572,7 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
 jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwidth, int *bitmapheight)
 {
     //init signal handler for catch SIGSEGV error that could be raised in libtiff
+    LOGI("getSampledRasterFromImage");
     struct sigaction act;
     memset(&act, 0, sizeof(act));
     sigemptyset(&act.sa_mask);
@@ -2608,6 +2611,7 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
         LOGE("Can\'t allocate memory for origBuffer");
         return NULL;
     }
+    LOGI("TIFFMaloc called");
 
     jint *pixels = NULL;
 
@@ -2631,6 +2635,7 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
         return NULL;
     }
 
+    LOGI("Before TIFFReadRGBAImageOriented");
 
 	if (0 ==
         TIFFReadRGBAImageOriented(image, origwidth, origheight, origBuffer, ORIENTATION_TOPLEFT, 0)) {
@@ -2642,6 +2647,8 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
         }
         return NULL;
     }
+
+    LOGI("TIFFReadRGBAImageOriented");
 
     if (inSampleSize == 1) {
         // Use buffer as is.
@@ -2848,6 +2855,7 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
         }
         return NULL;
     }
+    LOGI("Mem available");
 
     unsigned int *origBuffer = NULL;
     jint *pixels = NULL;
@@ -2877,6 +2885,8 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
         LOGE("Can\'t allocate memory for origBuffer");
         return NULL;
     }
+
+    LOGI("Buffer allocated");
 
 	if (0 ==
         TIFFReadRGBAImageOriented(image, origwidth, origheight, origBuffer, ORIENTATION_TOPLEFT, 0)) {

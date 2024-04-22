@@ -382,7 +382,7 @@ JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImag
   }
 
 JNIEXPORT jobject
-JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeCloseFd
+JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_closeFd
         (JNIEnv *env, jclass clazz, jint fd) {
     close(fd);
 }
