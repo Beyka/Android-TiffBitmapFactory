@@ -243,6 +243,12 @@ public class TiffBitmapFactory {
     private static native Bitmap nativeDecodeFD(int fd, Options options, IProgressListener listener);
 
     /**
+     * Close detached file descriptor
+     * @param fd
+     */
+    public static native void closeFd(int fd);
+
+    /**
      * Options class to specify decoding parameterMs
      */
     public static final class Options {

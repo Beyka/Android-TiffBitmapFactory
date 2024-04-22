@@ -243,6 +243,12 @@ public class TiffConverter {
      */
     public static native ImageFormat getImageTypeFd(int fd);
 
+    /**
+     * Close detached file descriptor
+     * @param fd
+     */
+    public static native void closeFd(int fd);
+
     public static final class ConverterOptions {
 
         public ConverterOptions() {
