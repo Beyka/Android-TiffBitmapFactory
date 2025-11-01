@@ -3,8 +3,13 @@ plugins {
 }
 
 android {
+    namespace 'org.beyka.tiffbitmapfactory'
     compileSdkVersion 30
     buildToolsVersion '30.0.3'
+
+    buildFeatures {
+        buildConfig true
+    }
 
     def softwareName
 
@@ -52,4 +57,5 @@ ext {
     PUBLISH_VERSION = '0.9.9.0'
     PUBLISH_ARTIFACT_ID = 'Android-TiffBitmapFactory'
 }
-apply from: "${rootProject.projectDir}/publish-module.gradle"
+// Commented out for standalone AAR build
+// apply from: "${rootProject.projectDir}/publish-module.gradle"

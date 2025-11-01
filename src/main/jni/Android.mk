@@ -57,6 +57,7 @@ LOCAL_CFLAGS += -DAVOID_TABLES
 LOCAL_CFLAGS += -O3 -fstrict-aliasing -fprefetch-loop-arrays
 LOCAL_MODULE:= libtiff
 LOCAL_LDLIBS := -lz
+LOCAL_LDFLAGS += -Wl,-z,max-page-size=16384
 
 LOCAL_LDLIBS += $(LOCAL_PATH)/libs/$(TARGET_ARCH_ABI)/libjpeg.a
 
@@ -81,6 +82,7 @@ LOCAL_SRC_FILES := \
 	NativeDecoder.cpp
 LOCAL_LDLIBS := -ldl -llog -ljnigraphics
 LOCAL_LDFLAGS +=-ljnigraphics
+LOCAL_LDFLAGS += -Wl,-z,max-page-size=16384
 LOCAL_SHARED_LIBRARIES := tiff
 include $(BUILD_SHARED_LIBRARY)
 
@@ -93,6 +95,7 @@ LOCAL_SRC_FILES := \
 	NativeTiffSaver.cpp
 LOCAL_LDLIBS := -ldl -llog -ljnigraphics
 LOCAL_LDFLAGS +=-ljnigraphics
+LOCAL_LDFLAGS += -Wl,-z,max-page-size=16384
 LOCAL_SHARED_LIBRARIES := tiff
 include $(BUILD_SHARED_LIBRARY)
 
@@ -119,6 +122,7 @@ LOCAL_C_INCLUDES := \
 
 LOCAL_LDLIBS := -lz -ldl -llog -ljnigraphics
 LOCAL_LDFLAGS +=-ljnigraphics
+LOCAL_LDFLAGS += -Wl,-z,max-page-size=16384
 LOCAL_STATIC_LIBRARIES := png
 LOCAL_STATIC_LIBRARIES += jpeg
 LOCAL_SHARED_LIBRARIES := tiff
