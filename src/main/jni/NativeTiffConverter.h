@@ -8,6 +8,7 @@
 
 #include "jpeglib.h"
 #include <setjmp.h>
+#include <unistd.h>
 
 #include "TiffToPngConverter.h"
 #include "TiffToJpgConverter.h"
@@ -94,6 +95,9 @@ JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImag
 
 JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImageTypeFd
   (JNIEnv *, jclass, jint);
+
+JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeCloseFd
+        (JNIEnv *, jclass, jint);
 
 //constants for check files
 const jint IMAGE_FILE_INVALID = 0;

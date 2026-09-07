@@ -199,6 +199,11 @@ public class TiffSaver {
 
     private static synchronized native boolean save(String filePath, int fileDescriptor, Bitmap bmp, SaveOptions options, boolean append);
 
+    /**
+     * Close detached file descriptor
+     * @param fd
+     */
+    public static native void closeFd(int fd);
 
     /**
      * Options class to specify saving parameters

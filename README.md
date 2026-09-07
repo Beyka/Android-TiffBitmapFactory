@@ -13,7 +13,7 @@ Supported architectures: all
 ### Installation
 Just add to your gradle dependencies :
 ```
-implementation 'io.github.beyka:Android-TiffBitmapFactory:0.9.9.0'
+implementation 'io.github.beyka:Android-TiffBitmapFactory:0.9.9.1'
 ```
 And do not forget to add WRITE_EXTERNAL_STORAGE permission to main project manifest
 
@@ -208,6 +208,6 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 Special thanks to [dennis508](https://github.com/dennis508)    for providing of incremental reading of TIFF file
 
 
-### Applications that uses library:
-[B Tiff Viewer](https://play.google.com/store/apps/details?id=com.beyka.btiffviewer)
-
+### Applications that use library:
+* [B Tiff Viewer](https://play.google.com/store/apps/details?id=com.beyka.btiffviewer)
+* Image Converter [[GitHub](https://github.com/vbresan/Image_Converter)] [[Google Play](https://play.google.com/store/apps/details?id=biz.binarysolutions.imageconverter.ggl)]
