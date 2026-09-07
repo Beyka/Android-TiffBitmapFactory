@@ -24,6 +24,10 @@ TiffToPngConverter::~TiffToPngConverter()
     if (tiffImage) {
         TIFFClose(tiffImage);
         tiffImage = NULL;
+        inFd = -1;
+    } else if (inFd >= 0) {
+        close(inFd);
+        inFd = -1;
     }
     LOGI("tiff free");
 
@@ -40,6 +44,11 @@ TiffToPngConverter::~TiffToPngConverter()
     if (pngFile) {
         LOGI("pngFile != NULL");
         fclose(pngFile);
+        pngFile = NULL;
+        outFd = -1;
+    } else if (outFd >= 0) {
+        close(outFd);
+        outFd = -1;
     }
     LOGI("png file free");
 }

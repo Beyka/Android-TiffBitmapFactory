@@ -22,6 +22,10 @@ TiffToJpgConverter::~TiffToJpgConverter()
     if (tiffImage) {
         TIFFClose(tiffImage);
         tiffImage = NULL;
+        inFd = -1;
+    } else if (inFd >= 0) {
+        close(inFd);
+        inFd = -1;
     }
         LOGI("tiff");
 
@@ -33,6 +37,11 @@ TiffToJpgConverter::~TiffToJpgConverter()
             env->ReleaseStringUTFChars(outPath, strPngPath);
         }*/
         fclose(jpegFile);
+        jpegFile = NULL;
+        outFd = -1;
+    } else if (outFd >= 0) {
+        close(outFd);
+        outFd = -1;
     }
     LOGI("file");
     if (jpeg_struct_init) {

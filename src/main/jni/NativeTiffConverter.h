@@ -41,40 +41,40 @@
 extern "C" {
 #endif
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffPng
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertTiffPng
   (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffPngFd
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertTiffPngFd
   (JNIEnv *, jclass, jint, jint, jobject, jobject);
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffJpg
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertTiffJpg
   (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffJpgFd
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertTiffJpgFd
   (JNIEnv *, jclass, jint, jint, jobject, jobject);
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffbmp
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertTiffBmp
   (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffbmpFd
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertTiffBmpFd
   (JNIEnv *, jclass, jint, jint, jobject, jobject);
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertPngTiff
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertPngTiff
   (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertPngTiffFd
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertPngTiffFd
   (JNIEnv *, jclass, jint, jint, jobject, jobject);
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertJpgTiff
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertJpgTiff
   (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertJpgTiffFd
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertJpgTiffFd
   (JNIEnv *, jclass, jint, jint, jobject, jobject);
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertBmpTiff
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertBmpTiff
   (JNIEnv *, jclass, jstring, jstring, jobject, jobject);
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertBmpTiffFd
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertBmpTiffFd
   (JNIEnv *, jclass, jint, jint, jobject, jobject);
 
 JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_readBmp
@@ -90,13 +90,13 @@ JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_readBmp
    // .webp: RIFF ???? WEBP
    // .ico   00 00 01 00
    //        00 00 02 00 ( cursor files )
-JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImageType
+JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeGetImageType
   (JNIEnv *, jclass, jstring);
 
-JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImageTypeFd
+JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeGetImageTypeFd
   (JNIEnv *, jclass, jint);
 
-JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeCloseFd
+JNIEXPORT void JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeCloseFd
         (JNIEnv *, jclass, jint);
 
 //constants for check files

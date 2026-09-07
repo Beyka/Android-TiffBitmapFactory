@@ -5,20 +5,20 @@ package org.beyka.tiffbitmapfactory.exceptions;
  */
 public class NotEnoughtMemoryException extends RuntimeException {
 
-    private int availableMemory;
-    private int needMemory;
+    private final long availableMemory;
+    private final long needMemory;
 
-    public NotEnoughtMemoryException(int availableMemory, int needMemory){
+    public NotEnoughtMemoryException(long availableMemory, long needMemory){
         super("Available memory is not enought to decode image. Available " + availableMemory + " bytes. Need " + needMemory + " bytes.");
         this.availableMemory = availableMemory;
         this.needMemory = needMemory;
     }
 
-    public int getAvailableMemory() {
+    public long getAvailableMemory() {
         return availableMemory;
     }
 
-    public int getNeedMemory() {
+    public long getNeedMemory() {
         return needMemory;
     }
 }

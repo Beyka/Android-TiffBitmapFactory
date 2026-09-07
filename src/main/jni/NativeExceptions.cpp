@@ -1,15 +1,13 @@
 //
 // Created by alexeyba on 09.11.15.
 //
-using namespace std;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include "NativeExceptions.h"
 
-void throw_not_enought_memory_exception(JNIEnv *env, int available, int need)
+void throw_not_enought_memory_exception(JNIEnv *env, jlong available, jlong need)
 {
     jclass exClass;
     jmethodID exConstructorID;
@@ -18,7 +16,7 @@ void throw_not_enought_memory_exception(JNIEnv *env, int available, int need)
 
     exClass = env->FindClass(className);
 
-    exConstructorID = env->GetMethodID(exClass, "<init>", "(II)V");
+    exConstructorID = env->GetMethodID(exClass, "<init>", "(JJ)V");
 
     exObj = env->NewObject(exClass, exConstructorID, available, need);
 
@@ -92,4 +90,3 @@ void throw_cant_open_file_exception_fd(JNIEnv *env, jint fd)
 #ifdef __cplusplus
 }
 #endif
-

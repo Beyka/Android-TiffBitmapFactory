@@ -1,4 +1,5 @@
 /build
+AGENTS.md
 *.o
 *.o.d
 *.so

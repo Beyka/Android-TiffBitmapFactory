@@ -1,7 +1,6 @@
 //
 // Created by beyka on 9/21/17.
 //
-using namespace std;
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -187,4 +186,3 @@ free(pixels);
 #ifdef __cplusplus
 }
 #endif
-

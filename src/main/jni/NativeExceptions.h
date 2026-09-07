@@ -24,7 +24,7 @@ extern "C" {
     #define LOGIS(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeDecoder", "%s %s", x, y)
 #endif
 
-void throw_not_enought_memory_exception(JNIEnv *, int, int);
+void throw_not_enought_memory_exception(JNIEnv *, jlong, jlong);
 void throw_decode_file_exception(JNIEnv *, jstring, jstring);
 void throw_decode_file_exception_fd(JNIEnv *, jint, jstring);
 void throw_cant_open_file_exception(JNIEnv *, jstring);
@@ -35,6 +35,5 @@ void throw_cant_open_file_exception_fd(JNIEnv *, jint);
 #ifdef __cplusplus
 }
 #endif
-
 
 

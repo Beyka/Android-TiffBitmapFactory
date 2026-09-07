@@ -13,6 +13,7 @@
 #include <tiffio.h>
 #include <signal.h>
 #include <setjmp.h>
+#include <unistd.h>
 #include "NativeExceptions.h"
 
 #ifdef NDEBUG

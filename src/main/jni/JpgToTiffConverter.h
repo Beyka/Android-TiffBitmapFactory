@@ -21,7 +21,7 @@
     #define LOGIS(x, y)
     #define LOGE(x)
     #define LOGES(x, y)
-    #define LOGEI(x, y);
+    #define LOGEI(x, y)
 #else
     #define LOGI(x) __android_log_print(ANDROID_LOG_DEBUG, "JpgToTiffConverter", "%s", x)
     #define LOGII(x, y) __android_log_print(ANDROID_LOG_DEBUG, "JpgToTiffConverter", "%s %d", x, y)

@@ -19,6 +19,10 @@ BmpToTiffConverter::~BmpToTiffConverter()
     if (tiffImage) {
         TIFFClose(tiffImage);
         tiffImage = NULL;
+        outFd = -1;
+    } else if (outFd >= 0) {
+        close(outFd);
+        outFd = -1;
     }
     LOGI("Tiff removed");
 
@@ -31,6 +35,11 @@ BmpToTiffConverter::~BmpToTiffConverter()
         delete bmp;
     }
     LOGI("header deleted");
+
+    if (inFd >= 0) {
+        close(inFd);
+        inFd = -1;
+    }
 }
 
 jboolean BmpToTiffConverter::convert()
@@ -560,6 +569,5 @@ unsigned char * BmpToTiffConverter::convertArgbToBilevel(uint32 *data, uint32 wi
     }
     return dest;
 }
-
 
 

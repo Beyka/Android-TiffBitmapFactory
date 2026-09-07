@@ -26,6 +26,10 @@ PngToTiffConverter::~PngToTiffConverter() {
     if (tiffImage) {
         TIFFClose(tiffImage);
         tiffImage = NULL;
+        outFd = -1;
+    } else if (outFd >= 0) {
+        close(outFd);
+        outFd = -1;
     }
 
     if (png_info_init) {
@@ -38,6 +42,11 @@ PngToTiffConverter::~PngToTiffConverter() {
 
     if (inFile) {
         fclose(inFile);
+        inFile = NULL;
+        inFd = -1;
+    } else if (inFd >= 0) {
+        close(inFd);
+        inFd = -1;
     }
 }
 

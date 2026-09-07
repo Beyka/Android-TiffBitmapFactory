@@ -26,6 +26,10 @@ JpgToTiffConverter::~JpgToTiffConverter()
     if (tiffImage) {
         TIFFClose(tiffImage);
         tiffImage = NULL;
+        outFd = -1;
+    } else if (outFd >= 0) {
+        close(outFd);
+        outFd = -1;
     }
     LOGI("Tiff removed");
 
@@ -36,6 +40,11 @@ JpgToTiffConverter::~JpgToTiffConverter()
 
     if (inFile) {
         fclose(inFile);
+        inFile = NULL;
+        inFd = -1;
+    } else if (inFd >= 0) {
+        close(inFd);
+        inFd = -1;
     }
     LOGI("IN file closed");
 }
@@ -380,4 +389,3 @@ unsigned char * JpgToTiffConverter::convertArgbToBilevel(unsigned char *data, in
     }
     return dest;
 }
-

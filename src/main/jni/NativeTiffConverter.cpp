@@ -1,7 +1,6 @@
 //
 // Created by beyka on 5/9/17.
 //
-using namespace std;
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -9,7 +8,35 @@ extern "C" {
 #include "NativeTiffConverter.h"
 #include "png.h"
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffPng
+static int detectImageFormat(const unsigned char *data, size_t size)
+{
+    if (size >= 3 && memcmp(data, "\xFF\xD8\xFF", 3) == 0) {
+        return IMAGE_FILE_JPG;
+    }
+    if (size >= 8 && memcmp(data, "\x89\x50\x4E\x47\x0D\x0A\x1A\x0A", 8) == 0) {
+        return IMAGE_FILE_PNG;
+    }
+    if (size >= 6 && (memcmp(data, "GIF87a", 6) == 0 || memcmp(data, "GIF89a", 6) == 0)) {
+        return IMAGE_FILE_GIF;
+    }
+    if (size >= 4 && (memcmp(data, "\x49\x49\x2A\x00", 4) == 0
+            || memcmp(data, "\x4D\x4D\x00\x2A", 4) == 0)) {
+        return IMAGE_FILE_TIFF;
+    }
+    if (size >= 2 && data[0] == 'B' && data[1] == 'M') {
+        return IMAGE_FILE_BMP;
+    }
+    if (size >= 12 && memcmp(data, "RIFF", 4) == 0 && memcmp(data + 8, "WEBP", 4) == 0) {
+        return IMAGE_FILE_WEBP;
+    }
+    if (size >= 4 && (memcmp(data, "\x00\x00\x01\x00", 4) == 0
+            || memcmp(data, "\x00\x00\x02\x00", 4) == 0)) {
+        return IMAGE_FILE_ICO;
+    }
+    return IMAGE_FILE_INVALID;
+}
+
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertTiffPng
   (JNIEnv *env, jclass clazz, jstring tiffPath, jstring pngPath, jobject options, jobject listener)
   {
 
@@ -19,7 +46,7 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
     return result;
   }
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffPngFd
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertTiffPngFd
   (JNIEnv *env, jclass clazz, jint tiffFd, jint pngFd, jobject options, jobject listener)
   {
 
@@ -29,7 +56,7 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
     return result;
   }
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffJpg
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertTiffJpg
   (JNIEnv *env, jclass clazz, jstring tiffPath, jstring jpgPath, jobject options, jobject listener)
   {
 
@@ -39,7 +66,7 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
     return result;
   }
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffJpgFd
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertTiffJpgFd
   (JNIEnv *env, jclass clazz, jint tiffFd, jint jpgFd, jobject options, jobject listener)
   {
 
@@ -49,7 +76,7 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
     return result;
   }
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffBmp
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertTiffBmp
   (JNIEnv *env, jclass clazz, jstring tiffPath, jstring outPath, jobject options, jobject listener)
   {
 
@@ -59,7 +86,7 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
     return result;
   }
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertTiffBmpFd
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertTiffBmpFd
   (JNIEnv *env, jclass clazz, jint tiffFd, jint bmpFd, jobject options, jobject listener)
   {
 
@@ -69,7 +96,7 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
     return result;
   }
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertPngTiff
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertPngTiff
   (JNIEnv *env, jclass clazz, jstring pngPath, jstring tiffPath, jobject options, jobject listener)
   {
     PngToTiffConverter *converter = new PngToTiffConverter(env, clazz, pngPath, tiffPath, options, listener);
@@ -78,7 +105,7 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
     return result;
   }
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertPngTiffFd
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertPngTiffFd
   (JNIEnv *env, jclass clazz, jint pngFd, jint tiffFd, jobject options, jobject listener)
   {
     PngToTiffConverter *converter = new PngToTiffConverter(env, clazz, pngFd, tiffFd, options, listener);
@@ -87,7 +114,7 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
     return result;
   }
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertJpgTiff
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertJpgTiff
   (JNIEnv *env, jclass clazz, jstring pngPath, jstring tiffPath, jobject options, jobject listener)
   {
     JpgToTiffConverter *converter = new JpgToTiffConverter(env, clazz, pngPath, tiffPath, options, listener);
@@ -96,7 +123,7 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
     return result;
   }
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertJpgTiffFd
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertJpgTiffFd
   (JNIEnv *env, jclass clazz, jint jpgFd, jint tiffFd, jobject options, jobject listener)
   {
     JpgToTiffConverter *converter = new JpgToTiffConverter(env, clazz, jpgFd, tiffFd, options, listener);
@@ -105,7 +132,7 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
     return result;
   }
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertBmpTiff
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertBmpTiff
   (JNIEnv *env, jclass clazz, jstring bmpPath, jstring tiffPath, jobject options, jobject listener)
   {
     BmpToTiffConverter *converter = new BmpToTiffConverter(env, clazz, bmpPath, tiffPath, options, listener);
@@ -114,7 +141,7 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
     return result;
   }
 
-JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_convertBmpTiffFd
+JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeConvertBmpTiffFd
   (JNIEnv *env, jclass clazz, jint bmpFd, jint tiffFd, jobject options, jobject listener)
   {
     BmpToTiffConverter *converter = new BmpToTiffConverter(env, clazz, bmpFd, tiffFd, options, listener);
@@ -129,7 +156,7 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_conver
       return readBmp(env, clazz, tiffPath, bmpPath, options, listener);
     }
 
-JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImageType
+JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeGetImageType
   (JNIEnv *env, jclass clazz, jstring path)
   {
 
@@ -138,80 +165,14 @@ JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImag
     strPath = env->GetStringUTFChars(path, 0);
     LOGIS("path", strPath);
 
-    int imageformat;
+    int imageformat = IMAGE_FILE_INVALID;
 
     FILE *inFile = fopen(strPath, "rb");
     if (inFile) {
-        //read file header
-        size_t byte_count = 8;
-        unsigned char *data = (unsigned char *)malloc(sizeof(unsigned char) * byte_count);
-        fread(data, 1, byte_count, inFile);
-
-        LOGIS("header", data);
-
-        switch(data[0]) {
-            case (unsigned char)'\xFF':
-                 imageformat =  ( !strncmp( (const char*)data, "\xFF\xD8\xFF", 3 )) ?
-                    IMAGE_FILE_JPG : IMAGE_FILE_INVALID;
-                 break;
-
-              case (unsigned char)'\x89':
-                 imageformat = ( !strncmp( (const char*)data,
-                                    "\x89\x50\x4E\x47\x0D\x0A\x1A\x0A", 8 )) ?
-                    IMAGE_FILE_PNG : IMAGE_FILE_INVALID;
-                 break;
-
-              case 'G':
-                 imageformat = ( !strncmp( (const char*)data, "GIF87a", 6 ) ||
-                          !strncmp( (const char*)data, "GIF89a", 6 ) ) ?
-                    IMAGE_FILE_GIF : IMAGE_FILE_INVALID;
-                 break;
-
-              case 'I':
-                 imageformat = ( !strncmp( (const char*)data, "\x49\x49\x2A\x00", 4 )) ?
-                    IMAGE_FILE_TIFF : IMAGE_FILE_INVALID;
-                 break;
-
-              case 'M':
-                 imageformat = ( !strncmp( (const char*)data, "\x4D\x4D\x00\x2A", 4 )) ?
-                     IMAGE_FILE_TIFF : IMAGE_FILE_INVALID;
-                     break;
-
-              case 'B':
-                 imageformat = (( data[1] == 'M' )) ?
-                     IMAGE_FILE_BMP : IMAGE_FILE_INVALID;
-                 break;
-
-              case 'R':
-                 if ( strncmp( (const char*)data,     "RIFF", 4 )) {
-                        imageformat = IMAGE_FILE_INVALID;
-                        break;
-                    }
-                 if ( strncmp( (const char*)(data+8), "WEBP", 4 )) {
-                        imageformat = IMAGE_FILE_INVALID;
-                        break;
-                    }
-                 imageformat = IMAGE_FILE_WEBP;
-                 break;
-
-              case '\0':
-                 if ( !strncmp( (const char*)data, "\x00\x00\x01\x00", 4 )) {
-                        imageformat = IMAGE_FILE_ICO;
-                        break;
-                    }
-                 if ( !strncmp( (const char*)data, "\x00\x00\x02\x00", 4 )) {
-                        imageformat = IMAGE_FILE_ICO;
-                        break;
-                    }
-                 imageformat =  IMAGE_FILE_INVALID;
-                    break;
-              default:
-                 imageformat = IMAGE_FILE_INVALID;
-        }
-
+        unsigned char data[12] = {0};
+        size_t bytesRead = fread(data, 1, sizeof(data), inFile);
+        imageformat = detectImageFormat(data, bytesRead);
         fclose(inFile);
-    } else {
-        imageformat = IMAGE_FILE_INVALID;
     }
     
     jclass imageFormatClass = env->FindClass(
@@ -252,95 +213,25 @@ JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImag
 
   }
 
-JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImageTypeFd
+JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeGetImageTypeFd
   (JNIEnv *env, jclass clazz, jint fd)
   {
 
-    int imageformat;
+    int imageformat = IMAGE_FILE_INVALID;
 
     LOGII("fd ", fd);
 
     if (fd != -1) {
         LOGI("Start check");
-        //read file header
-        int i= 0;
-        size_t byte_count = 8;
-        /*while( i < byte_count) {
-            char c;
-            read(fd, &c, 1);
-            LOGII("Read ", c);
-            i++;
-        }*/
-        unsigned char *data = (unsigned char *)malloc(sizeof(unsigned char) * byte_count);
-        int b = read(fd, data, byte_count);
-        LOGII("Read bytes: ", b);
-
-        LOGIS("header", data);
-
-        lseek(fd, 0, SEEK_SET);
-
-        switch(data[0]) {
-            case (unsigned char)'\xFF':
-                 imageformat =  ( !strncmp( (const char*)data, "\xFF\xD8\xFF", 3 )) ?
-                    IMAGE_FILE_JPG : IMAGE_FILE_INVALID;
-                 break;
-
-              case (unsigned char)'\x89':
-                 imageformat = ( !strncmp( (const char*)data,
-                                    "\x89\x50\x4E\x47\x0D\x0A\x1A\x0A", 8 )) ?
-                    IMAGE_FILE_PNG : IMAGE_FILE_INVALID;
-                 break;
-
-              case 'G':
-                 imageformat = ( !strncmp( (const char*)data, "GIF87a", 6 ) ||
-                          !strncmp( (const char*)data, "GIF89a", 6 ) ) ?
-                    IMAGE_FILE_GIF : IMAGE_FILE_INVALID;
-                 break;
-
-              case 'I':
-                 imageformat = ( !strncmp( (const char*)data, "\x49\x49\x2A\x00", 4 )) ?
-                    IMAGE_FILE_TIFF : IMAGE_FILE_INVALID;
-                 break;
-
-              case 'M':
-                 imageformat = ( !strncmp( (const char*)data, "\x4D\x4D\x00\x2A", 4 )) ?
-                     IMAGE_FILE_TIFF : IMAGE_FILE_INVALID;
-                     break;
-
-              case 'B':
-                 imageformat = (( data[1] == 'M' )) ?
-                     IMAGE_FILE_BMP : IMAGE_FILE_INVALID;
-                 break;
-
-              case 'R':
-                 if ( strncmp( (const char*)data,     "RIFF", 4 )) {
-                        imageformat = IMAGE_FILE_INVALID;
-                        break;
-                    }
-                 if ( strncmp( (const char*)(data+8), "WEBP", 4 )) {
-                        imageformat = IMAGE_FILE_INVALID;
-                        break;
-                    }
-                 imageformat = IMAGE_FILE_WEBP;
-                 break;
-
-              case '\0':
-                 if ( !strncmp( (const char*)data, "\x00\x00\x01\x00", 4 )) {
-                        imageformat = IMAGE_FILE_ICO;
-                        break;
-                    }
-                 if ( !strncmp( (const char*)data, "\x00\x00\x02\x00", 4 )) {
-                        imageformat = IMAGE_FILE_ICO;
-                        break;
-                    }
-                 imageformat =  IMAGE_FILE_INVALID;
-                    break;
-              default:
-                 imageformat = IMAGE_FILE_INVALID;
+        unsigned char data[12] = {0};
+        ssize_t bytesRead = pread(fd, data, sizeof(data), 0);
+        if (bytesRead > 0) {
+            imageformat = detectImageFormat(data, static_cast<size_t>(bytesRead));
         }
-
-    } else {
-        imageformat = IMAGE_FILE_INVALID;
+        // Keep the historical contract: callers commonly detect the format
+        // immediately before passing the same descriptor to a decoder or
+        // converter, which expects to start at the beginning of the file.
+        lseek(fd, 0, SEEK_SET);
     }
 
     jclass imageFormatClass = env->FindClass(
@@ -381,7 +272,7 @@ JNIEXPORT jobject JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_getImag
 
   }
 
-JNIEXPORT jobject
+JNIEXPORT void
 JNICALL Java_org_beyka_tiffbitmapfactory_TiffConverter_nativeCloseFd
         (JNIEnv *env, jclass clazz, jint fd) {
     close(fd);

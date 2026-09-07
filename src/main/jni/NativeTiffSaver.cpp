@@ -1,8 +1,6 @@
 //
 // Created by beyka on 18.2.16.
 //
-using namespace std;
-
 #ifdef __cplusplus
 extern "C" {
     #endif
@@ -294,6 +292,14 @@ __android_log_write(ANDROID_LOG_ERROR, "NativeTiffSaver", "Test Error here");
         LOGII("Check file descripor", fileDescriptor);
 
         const char *strPath = NULL;
+        if (fileDescriptor >= 0) {
+            // Java retains ownership. TIFFClose will close this duplicate.
+            fileDescriptor = dup(fileDescriptor);
+            if (fileDescriptor < 0) {
+                AndroidBitmap_unlockPixels(env, bitmap);
+                return JNI_FALSE;
+            }
+        }
         if (fileDescriptor == -1) {
             strPath = env->GetStringUTFChars(filePath, 0);
             LOGIS("nativeTiffOpenForSave", strPath);
@@ -311,23 +317,27 @@ __android_log_write(ANDROID_LOG_ERROR, "NativeTiffSaver", "Test Error here");
         // Open the TIFF file
         if (!append) {
             if ((output_image = TIFFFdOpen(fileDescriptor, "", "w")) == NULL) {
+                close(fileDescriptor);
                 LOGE("Unable to write tif file");
                 if (strPath) {
                     throw_cant_open_file_exception(env, filePath);
                 } else {
                     throw_cant_open_file_exception_fd(env, fileDescriptor);
                 }
+                AndroidBitmap_unlockPixels(env, bitmap);
                 return JNI_FALSE;
             }
         } else {
             if ((output_image = TIFFFdOpen(fileDescriptor, "", "a")) == NULL) {
+                close(fileDescriptor);
                 LOGE("Unable to write tif file");
                 if (strPath) {
                     throw_cant_open_file_exception(env, filePath);
                 } else {
                     throw_cant_open_file_exception_fd(env, fileDescriptor);
-                return JNI_FALSE;
                 }
+                AndroidBitmap_unlockPixels(env, bitmap);
+                return JNI_FALSE;
             }
         }
 
@@ -497,7 +507,7 @@ __android_log_write(ANDROID_LOG_ERROR, "NativeTiffSaver", "Test Error here");
         return result;
     }
 
-JNIEXPORT jobject
+JNIEXPORT void
 JNICALL Java_org_beyka_tiffbitmapfactory_TiffSaver_nativeCloseFd
         (JNIEnv *env, jclass clazz, jint fd) {
     close(fd);

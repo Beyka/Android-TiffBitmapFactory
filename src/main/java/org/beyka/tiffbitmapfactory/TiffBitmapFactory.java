@@ -1,7 +1,6 @@
 package org.beyka.tiffbitmapfactory;
 
 import android.graphics.Bitmap;
-import android.util.Log;
 
 import org.beyka.tiffbitmapfactory.exceptions.CantOpenFileException;
 import org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException;
@@ -73,6 +72,7 @@ public class TiffBitmapFactory {
      * @throws org.beyka.tiffbitmapfactory.exceptions.CantOpenFileException when {@code file} not exist or {@code file} is not tiff image
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
      */
+    @Deprecated
     public static Bitmap decodeFile(File file) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
         return decodeFile(file, new Options(), null);
     }
@@ -92,6 +92,7 @@ public class TiffBitmapFactory {
      * @throws org.beyka.tiffbitmapfactory.exceptions.CantOpenFileException when {@code file} not exist or {@code file} is not tiff image
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when {@link Options#inAvailableMemory} not enought to decode image
      */
+    @Deprecated
     public static Bitmap decodeFile(File file, Options options) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
         return decodeFile(file, options, null);
     }
@@ -112,12 +113,18 @@ public class TiffBitmapFactory {
      * @throws org.beyka.tiffbitmapfactory.exceptions.CantOpenFileException when {@code file} not exist or {@code file} is not tiff image
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when {@link Options#inAvailableMemory} not enought to decode image
      */
+    @Deprecated
     public static Bitmap decodeFile(File file, Options options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
-        long time = System.currentTimeMillis();
-        Log.i("THREAD", "Starting decode " + file.getAbsolutePath());
-        Bitmap mbp = nativeDecodePath(file.getAbsolutePath(), options, listener);
-        Log.w("THREAD", "elapsed ms: " + (System.currentTimeMillis() - time) + " for " + file.getAbsolutePath());
-        return mbp;
+        if (options == null) {
+            options = new Options();
+        }
+        if (file == null) {
+            if (options.inThrowException) {
+                throw new CantOpenFileException((String) null);
+            }
+            return null;
+        }
+        return nativeDecodePath(file.getAbsolutePath(), options, listener);
     }
 
     /**
@@ -134,6 +141,7 @@ public class TiffBitmapFactory {
      * @throws org.beyka.tiffbitmapfactory.exceptions.CantOpenFileException when {@code file} not exist or {@code file} is not tiff image
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
      */
+    @Deprecated
     public static Bitmap decodePath(String path) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
         return decodePath(path, new Options(), null);
     }
@@ -154,8 +162,9 @@ public class TiffBitmapFactory {
      * @throws org.beyka.tiffbitmapfactory.exceptions.CantOpenFileException when {@code file} not exist or {@code file} is not tiff image
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
      */
+    @Deprecated
     public static Bitmap decodePath(String path, Options options) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
-        return decodePath(path, options);
+        return decodePath(path, options, null);
     }
 
     /**
@@ -175,12 +184,18 @@ public class TiffBitmapFactory {
      * @throws org.beyka.tiffbitmapfactory.exceptions.CantOpenFileException when {@code file} not exist or {@code file} is not tiff image
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
      */
+    @Deprecated
     public static Bitmap decodePath(String path, Options options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
-        long time = System.currentTimeMillis();
-        Log.i("THREAD", "Starting decode " + path);
-        Bitmap mbp = nativeDecodePath(path, options, listener);
-        Log.w("THREAD", "elapsed ms: " + (System.currentTimeMillis() - time) + " for " + path);
-        return mbp;
+        if (options == null) {
+            options = new Options();
+        }
+        if (path == null) {
+            if (options.inThrowException) {
+                throw new CantOpenFileException((String) null);
+            }
+            return null;
+        }
+        return nativeDecodePath(path, options, listener);
     }
 
     /**
@@ -231,11 +246,16 @@ public class TiffBitmapFactory {
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when for decoding of image system need more memory than {@link Options#inAvailableMemory} or default value
      */
     public static Bitmap decodeFileDescriptor(int fileDescriptor, Options options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
-        long time = System.currentTimeMillis();
-        Log.i("THREAD", "Starting decode descriptor " + fileDescriptor);
-        Bitmap mbp = nativeDecodeFD(fileDescriptor, options, listener);
-        Log.w("THREAD", "elapsed ms: " + (System.currentTimeMillis() - time) + " for descriptor " + fileDescriptor);
-        return mbp;
+        if (options == null) {
+            options = new Options();
+        }
+        if (fileDescriptor < 0) {
+            if (options.inThrowException) {
+                throw new CantOpenFileException(fileDescriptor);
+            }
+            return null;
+        }
+        return nativeDecodeFD(fileDescriptor, options, listener);
     }
 
     private static native Bitmap nativeDecodePath(String path, Options options, IProgressListener listener);
@@ -243,10 +263,20 @@ public class TiffBitmapFactory {
     private static native Bitmap nativeDecodeFD(int fd, Options options, IProgressListener listener);
 
     /**
-     * Close detached file descriptor
-     * @param fd
+     * Close a detached file descriptor.
+     *
+     * @deprecated File descriptors passed to this library remain owned by the
+     * caller. Prefer closing the owning {@code ParcelFileDescriptor}. This
+     * method remains for descriptors explicitly transferred with
+     * {@code ParcelFileDescriptor.detachFd()}.
+     * @param fd detached file descriptor owned by the caller
      */
-    public static native void closeFd(int fd);
+    @Deprecated
+    public static void closeFd(int fd) {
+        nativeCloseFd(fd);
+    }
+
+    private static native void nativeCloseFd(int fd);
 
     /**
      * Options class to specify decoding parameterMs
@@ -285,6 +315,7 @@ public class TiffBitmapFactory {
          * If decoding is started in any thread except main, calling of this method will cause force stop of decoding and returning of null object.
          * @deprecated As of release 0.9.8.4, replaced by {@link Thread#interrupt()}
          */
+        @Deprecated
         public void stop() {
             isStoped = true;
         }

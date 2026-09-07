@@ -1,5 +1,3 @@
-using namespace std;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -21,14 +19,14 @@ JNIEXPORT jobject
 JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeDecodeFD
         (JNIEnv *env, jclass clazz, jint fd, jobject options, jobject listener) {
 
-    NativeDecoder *decoder = new NativeDecoder(env, clazz, fd, options, listener);
+    NativeDecoder *decoder = new NativeDecoder(env, clazz, dup(fd), options, listener);
     jobject java_bitmap = decoder->getBitmap();
     delete(decoder);
 
     return java_bitmap;
 }
 
-JNIEXPORT jobject
+JNIEXPORT void
 JNICALL Java_org_beyka_tiffbitmapfactory_TiffBitmapFactory_nativeCloseFd
         (JNIEnv *env, jclass clazz, jint fd) {
     close(fd);

@@ -28,7 +28,7 @@ public class TiffSaver {
      * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while saving image
      */
     public static boolean saveBitmap(File destination, Bitmap bmp) throws CantOpenFileException, NotEnoughtMemoryException {
-        return saveBitmap(destination.getAbsolutePath(), bmp, new SaveOptions());
+        return saveBitmap(destination == null ? null : destination.getAbsolutePath(), bmp, new SaveOptions());
     }
 
     /**
@@ -43,7 +43,7 @@ public class TiffSaver {
      * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while saving image
      */
     public static boolean saveBitmap(File destination, Bitmap bmp, SaveOptions options) throws CantOpenFileException {
-        return saveBitmap(destination.getAbsolutePath(), bmp, options);
+        return saveBitmap(destination == null ? null : destination.getAbsolutePath(), bmp, options);
     }
 
     /**
@@ -75,6 +75,15 @@ public class TiffSaver {
 //        int pixels[] = new int[bmp.getWidth() * bmp.getHeight()];
 //        bmp.getPixels(pixels, 0, bmp.getWidth(), 0, 0, bmp.getWidth(), bmp.getHeight());
 
+        if (options == null) {
+            options = new SaveOptions();
+        }
+        if (destinationPath == null) {
+            if (options.inThrowException) {
+                throw new CantOpenFileException((String) null);
+            }
+            return false;
+        }
         return save(destinationPath, -1, bmp, options, false);
     }
 
@@ -89,7 +98,7 @@ public class TiffSaver {
      * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while saving image
      */
     public static boolean appendBitmap(File destination, Bitmap bmp) throws CantOpenFileException, NotEnoughtMemoryException {
-        return appendBitmap(destination.getAbsolutePath(), bmp, new SaveOptions());
+        return appendBitmap(destination == null ? null : destination.getAbsolutePath(), bmp, new SaveOptions());
     }
 
     /**
@@ -104,11 +113,31 @@ public class TiffSaver {
      * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while saving image
      */
     public static boolean appendBitmap(File destination, Bitmap bmp, SaveOptions options) throws CantOpenFileException {
-        return appendBitmap(destination.getAbsolutePath(), bmp, options);
+        return appendBitmap(destination == null ? null : destination.getAbsolutePath(), bmp, options);
     }
 
     /**
-     * append bitmap to the end of existing file or create new file with default {@link TiffSaver.SaveOptions options}.
+     * Append bitmap to the end of an existing file or create a new file with
+     * default {@link TiffSaver.SaveOptions options}.
+     *
+     * @param destinationPath - file path to write bitmap
+     * @param page            - ignored; pages are always appended to the end
+     * @param bmp             - Bitmap for saving
+     * @return true if bitmap was saved successful or false otherwise
+     * @throws CantOpenFileException when {@code destinationPath} not exist or can't be opened for writing
+     * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
+     * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while saving image
+     * @deprecated The {@code page} parameter has never affected the append
+     * position. Use {@link #appendBitmap(String, Bitmap)} instead.
+     */
+    @Deprecated
+    public static boolean appendBitmap(String destinationPath, int page, Bitmap bmp) throws CantOpenFileException {
+        return appendBitmap(destinationPath, bmp);
+    }
+
+    /**
+     * Append bitmap to the end of an existing file or create a new file with
+     * default {@link TiffSaver.SaveOptions options}.
      *
      * @param destinationPath - file path to write bitmap
      * @param bmp             - Bitmap for saving
@@ -117,7 +146,7 @@ public class TiffSaver {
      * @throws org.beyka.tiffbitmapfactory.exceptions.NotEnoughtMemoryException when there is no avalable memory for processing bitmap
      * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while saving image
      */
-    public static boolean appendBitmap(String destinationPath, int page, Bitmap bmp) throws CantOpenFileException {
+    public static boolean appendBitmap(String destinationPath, Bitmap bmp) throws CantOpenFileException {
         return appendBitmap(destinationPath, bmp, new SaveOptions());
     }
 
@@ -136,6 +165,15 @@ public class TiffSaver {
 //        int pixels[] = new int[bmp.getWidth() * bmp.getHeight()];
 //        bmp.getPixels(pixels, 0, bmp.getWidth(), 0, 0, bmp.getWidth(), bmp.getHeight());
 
+        if (options == null) {
+            options = new SaveOptions();
+        }
+        if (destinationPath == null) {
+            if (options.inThrowException) {
+                throw new CantOpenFileException((String) null);
+            }
+            return false;
+        }
         return save(destinationPath, -1, bmp, options, true);
     }
 
@@ -165,6 +203,15 @@ public class TiffSaver {
      * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while saving image
      */
     public static boolean saveBitmap(int fileDescriptor, Bitmap bmp, SaveOptions options) throws CantOpenFileException, NotEnoughtMemoryException {
+        if (options == null) {
+            options = new SaveOptions();
+        }
+        if (fileDescriptor < 0) {
+            if (options.inThrowException) {
+                throw new CantOpenFileException(fileDescriptor);
+            }
+            return false;
+        }
         return save(null, fileDescriptor, bmp, options, false);
     }
 
@@ -194,16 +241,35 @@ public class TiffSaver {
      * @throws org.beyka.tiffbitmapfactory.exceptions.DecodeTiffException when error occure while saving image
      */
     public static boolean appendBitmap(int fileDescriptor, Bitmap bmp, SaveOptions options) throws CantOpenFileException, NotEnoughtMemoryException {
+        if (options == null) {
+            options = new SaveOptions();
+        }
+        if (fileDescriptor < 0) {
+            if (options.inThrowException) {
+                throw new CantOpenFileException(fileDescriptor);
+            }
+            return false;
+        }
         return save(null, fileDescriptor, bmp, options, true);
     }
 
     private static synchronized native boolean save(String filePath, int fileDescriptor, Bitmap bmp, SaveOptions options, boolean append);
 
     /**
-     * Close detached file descriptor
-     * @param fd
+     * Close a detached file descriptor.
+     *
+     * @deprecated File descriptors passed to this library remain owned by the
+     * caller. Prefer closing the owning {@code ParcelFileDescriptor}. This
+     * method remains for descriptors explicitly transferred with
+     * {@code ParcelFileDescriptor.detachFd()}.
+     * @param fd detached file descriptor owned by the caller
      */
-    public static native void closeFd(int fd);
+    @Deprecated
+    public static void closeFd(int fd) {
+        nativeCloseFd(fd);
+    }
+
+    private static native void nativeCloseFd(int fd);
 
     /**
      * Options class to specify saving parameters

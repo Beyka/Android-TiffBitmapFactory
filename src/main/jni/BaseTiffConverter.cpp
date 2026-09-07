@@ -33,8 +33,9 @@ BaseTiffConverter::BaseTiffConverter(JNIEnv *e, jclass clazz, jint in, jint out,
     hasBounds = 0;
     availableMemory = 8000 * 8000 * 4;
     env = e;
-    inFd = in;
-    outFd = out;
+    // Java retains ownership; concrete converters clean up these duplicates.
+    inFd = dup(in);
+    outFd = dup(out);
     optionsObj = opts;
     this->listener = listener;
     throwException = JNI_FALSE;

@@ -28,8 +28,13 @@ public class TiffConverter {
      *
      * @return true if convert process have been successful
      */
+    @Deprecated
     public static boolean convertToTiff(File inFile, File outFile, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
-        return convertToTiff(inFile.getAbsolutePath(), outFile.getAbsolutePath(), options, listener);
+        return convertToTiff(
+                inFile == null ? null : inFile.getAbsolutePath(),
+                outFile == null ? null : outFile.getAbsolutePath(),
+                options,
+                listener);
     }
 
     /**
@@ -44,7 +49,14 @@ public class TiffConverter {
      *
      * @return true if convert process have been successful
      */
+    @Deprecated
     public static boolean convertToTiff(String inPath, String outPath, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
+        if (inPath == null || outPath == null) {
+            if (options != null && options.throwExceptions) {
+                throw new CantOpenFileException((String) null);
+            }
+            return false;
+        }
         switch (getImageType(inPath)) {
             case JPEG:
                 return convertJpgTiff(inPath, outPath, options, listener);
@@ -70,6 +82,12 @@ public class TiffConverter {
      * @return true if convert process have been successful
      */
     public static boolean convertToTiff(int inFd, int outFd, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
+        if (inFd < 0 || outFd < 0) {
+            if (options != null && options.throwExceptions) {
+                throw new CantOpenFileException(inFd < 0 ? inFd : outFd);
+            }
+            return false;
+        }
         switch (getImageTypeFd(inFd)) {
             case JPEG:
                 return convertJpgTiffFd(inFd, outFd, options, listener);
@@ -96,7 +114,11 @@ public class TiffConverter {
      * @param listener listener which will receive converting progress
      * @return true if convert process have been successful
      */
-    public static native boolean convertTiffPng(String tiff, String png, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
+    @Deprecated
+    public static boolean convertTiffPng(String tiff, String png, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
+        return hasValidPaths(tiff, png, options)
+                && nativeConvertTiffPng(tiff, png, options, listener);
+    }
 
     /**
      * Convert tiff to png file. Uses direct data read method, that decrease memory usage
@@ -106,7 +128,10 @@ public class TiffConverter {
      * @param listener listener which will receive converting progress
      * @return true if convert process have been successful
      */
-    public static native boolean convertTiffPngFd(int tiff, int png, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
+    public static boolean convertTiffPngFd(int tiff, int png, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
+        return hasValidFileDescriptors(tiff, png, options)
+                && nativeConvertTiffPngFd(tiff, png, options, listener);
+    }
 
     /**
      * @deprecated Since Android Q is released. You can use this method with scoped storage.
@@ -119,7 +144,11 @@ public class TiffConverter {
      * @param listener listener which will receive converting progress
      * @return true if convert process have been successful
      */
-    public static native boolean convertPngTiff(String png, String tiff, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
+    @Deprecated
+    public static boolean convertPngTiff(String png, String tiff, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
+        return hasValidPaths(png, tiff, options)
+                && nativeConvertPngTiff(png, tiff, options, listener);
+    }
 
     /**
      * Convert png to tiff file. Uses direct data read method, that decrease memory usage.
@@ -130,7 +159,10 @@ public class TiffConverter {
      * @param listener listener which will receive converting progress
      * @return true if convert process have been successful
      */
-    public static native boolean convertPngTiffFd(int png, int tiff, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
+    public static boolean convertPngTiffFd(int png, int tiff, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
+        return hasValidFileDescriptors(png, tiff, options)
+                && nativeConvertPngTiffFd(png, tiff, options, listener);
+    }
 
     /**
      * @deprecated Since Android Q is released. You can use this method with scoped storage.
@@ -143,7 +175,11 @@ public class TiffConverter {
      * @param listener listener which will receive converting progress
      * @return true if convert process have been successful
      */
-    public static native boolean convertTiffJpg(String tiff, String jpg, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
+    @Deprecated
+    public static boolean convertTiffJpg(String tiff, String jpg, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
+        return hasValidPaths(tiff, jpg, options)
+                && nativeConvertTiffJpg(tiff, jpg, options, listener);
+    }
 
     /**
      * Convert tiff to jpg file. Uses direct data read method, that decrease memory usage
@@ -153,7 +189,10 @@ public class TiffConverter {
      * @param listener listener which will receive converting progress
      * @return true if convert process have been successful
      */
-    public static native boolean convertTiffJpgFd(int tiff, int jpg, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
+    public static boolean convertTiffJpgFd(int tiff, int jpg, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
+        return hasValidFileDescriptors(tiff, jpg, options)
+                && nativeConvertTiffJpgFd(tiff, jpg, options, listener);
+    }
 
     /**
      * @deprecated Since Android Q is released. You can use this method with scoped storage.
@@ -166,7 +205,11 @@ public class TiffConverter {
      * @param listener listener which will receive converting progress
      * @return true if convert process have been successful
      */
-    public static native boolean convertJpgTiff(String jpg, String tiff, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
+    @Deprecated
+    public static boolean convertJpgTiff(String jpg, String tiff, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
+        return hasValidPaths(jpg, tiff, options)
+                && nativeConvertJpgTiff(jpg, tiff, options, listener);
+    }
 
     /**
      * Convert jpeg to tiff file. Uses direct data read method, that decrease memory usage.
@@ -177,7 +220,10 @@ public class TiffConverter {
      * @param listener listener which will receive converting progress
      * @return true if convert process have been successful
      */
-    public static native boolean convertJpgTiffFd(int jpg, int tiff, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
+    public static boolean convertJpgTiffFd(int jpg, int tiff, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
+        return hasValidFileDescriptors(jpg, tiff, options)
+                && nativeConvertJpgTiffFd(jpg, tiff, options, listener);
+    }
 
     /**
      * @deprecated Since Android Q is released. You can use this method with scoped storage.
@@ -190,7 +236,11 @@ public class TiffConverter {
      * @param listener listener which will receive converting progress
      * @return true if convert process have been successful
      */
-    public static native boolean convertTiffBmp(String tiff, String bmp, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
+    @Deprecated
+    public static boolean convertTiffBmp(String tiff, String bmp, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
+        return hasValidPaths(tiff, bmp, options)
+                && nativeConvertTiffBmp(tiff, bmp, options, listener);
+    }
 
     /**
      * Convert tiff to bmp file. Uses direct data read method, that decrease memory usage
@@ -200,7 +250,10 @@ public class TiffConverter {
      * @param listener listener which will receive converting progress
      * @return true if convert process have been successful
      */
-    public static native boolean convertTiffBmpFd(int tiff, int bmp, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
+    public static boolean convertTiffBmpFd(int tiff, int bmp, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
+        return hasValidFileDescriptors(tiff, bmp, options)
+                && nativeConvertTiffBmpFd(tiff, bmp, options, listener);
+    }
 
     /**
      * @deprecated Since Android Q is released. You can use this method with scoped storage.
@@ -213,7 +266,11 @@ public class TiffConverter {
      * @param listener listener which will receive converting progress
      * @return true if convert process have been successful
      */
-    public static native boolean convertBmpTiff(String bmp, String tiff, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
+    @Deprecated
+    public static boolean convertBmpTiff(String bmp, String tiff, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
+        return hasValidPaths(bmp, tiff, options)
+                && nativeConvertBmpTiff(bmp, tiff, options, listener);
+    }
 
     /**
      * Convert bmp to tiff file. Uses direct data read method, that decrease memory usage.
@@ -224,7 +281,10 @@ public class TiffConverter {
      * @param listener listener which will receive converting progress
      * @return true if convert process have been successful
      */
-    public static native boolean convertBmpTiffFd(int bmp, int tiff, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException;
+    public static boolean convertBmpTiffFd(int bmp, int tiff, ConverterOptions options, IProgressListener listener) throws CantOpenFileException, DecodeTiffException, NotEnoughtMemoryException {
+        return hasValidFileDescriptors(bmp, tiff, options)
+                && nativeConvertBmpTiffFd(bmp, tiff, options, listener);
+    }
 
     /**
      * @deprecated Since Android Q is released. You can use this method with scoped storage.
@@ -234,20 +294,70 @@ public class TiffConverter {
      * @param path - file path
      * @return one of {@link ImageFormat} or {@link ImageFormat#UNKNOWN}
      */
-    public static native ImageFormat getImageType(String path);
+    @Deprecated
+    public static ImageFormat getImageType(String path) {
+        return path == null ? ImageFormat.UNKNOWN : nativeGetImageType(path);
+    }
 
     /**
      * Return type of file. This method don't close file descriptor
      * @param fd - file descriptor for file
      * @return one of {@link ImageFormat} or {@link ImageFormat#UNKNOWN}
      */
-    public static native ImageFormat getImageTypeFd(int fd);
+    public static ImageFormat getImageTypeFd(int fd) {
+        return fd < 0 ? ImageFormat.UNKNOWN : nativeGetImageTypeFd(fd);
+    }
 
     /**
-     * Close detached file descriptor
-     * @param fd
+     * Close a detached file descriptor.
+     *
+     * @deprecated File descriptors passed to this library remain owned by the
+     * caller. Prefer closing the owning {@code ParcelFileDescriptor}. This
+     * method remains for descriptors explicitly transferred with
+     * {@code ParcelFileDescriptor.detachFd()}.
+     * @param fd detached file descriptor owned by the caller
      */
-    public static native void closeFd(int fd);
+    @Deprecated
+    public static void closeFd(int fd) {
+        nativeCloseFd(fd);
+    }
+
+    private static native void nativeCloseFd(int fd);
+    private static native ImageFormat nativeGetImageType(String path);
+    private static native ImageFormat nativeGetImageTypeFd(int fd);
+
+    private static native boolean nativeConvertTiffPng(String tiff, String png, ConverterOptions options, IProgressListener listener);
+    private static native boolean nativeConvertTiffPngFd(int tiff, int png, ConverterOptions options, IProgressListener listener);
+    private static native boolean nativeConvertPngTiff(String png, String tiff, ConverterOptions options, IProgressListener listener);
+    private static native boolean nativeConvertPngTiffFd(int png, int tiff, ConverterOptions options, IProgressListener listener);
+    private static native boolean nativeConvertTiffJpg(String tiff, String jpg, ConverterOptions options, IProgressListener listener);
+    private static native boolean nativeConvertTiffJpgFd(int tiff, int jpg, ConverterOptions options, IProgressListener listener);
+    private static native boolean nativeConvertJpgTiff(String jpg, String tiff, ConverterOptions options, IProgressListener listener);
+    private static native boolean nativeConvertJpgTiffFd(int jpg, int tiff, ConverterOptions options, IProgressListener listener);
+    private static native boolean nativeConvertTiffBmp(String tiff, String bmp, ConverterOptions options, IProgressListener listener);
+    private static native boolean nativeConvertTiffBmpFd(int tiff, int bmp, ConverterOptions options, IProgressListener listener);
+    private static native boolean nativeConvertBmpTiff(String bmp, String tiff, ConverterOptions options, IProgressListener listener);
+    private static native boolean nativeConvertBmpTiffFd(int bmp, int tiff, ConverterOptions options, IProgressListener listener);
+
+    private static boolean hasValidPaths(String inputPath, String outputPath, ConverterOptions options) {
+        if (inputPath != null && outputPath != null) {
+            return true;
+        }
+        if (options != null && options.throwExceptions) {
+            throw new CantOpenFileException((String) null);
+        }
+        return false;
+    }
+
+    private static boolean hasValidFileDescriptors(int inputFd, int outputFd, ConverterOptions options) {
+        if (inputFd >= 0 && outputFd >= 0) {
+            return true;
+        }
+        if (options != null && options.throwExceptions) {
+            throw new CantOpenFileException(inputFd < 0 ? inputFd : outputFd);
+        }
+        return false;
+    }
 
     public static final class ConverterOptions {
 
@@ -272,6 +382,7 @@ public class TiffConverter {
          * If converting is started in any thread except main, calling of this method will cause force stop of converting and returning of false.
          * @deprecated As of release 0.9.8.4, replaced by {@link Thread#interrupt()}
          */
+        @Deprecated
         public void stop() {
             isStoped = true;
         }

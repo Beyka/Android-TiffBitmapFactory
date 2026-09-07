@@ -20,6 +20,22 @@ TiffToBmpConverter::TiffToBmpConverter(JNIEnv *e, jclass clazz, jint in, jint ou
 
 TiffToBmpConverter::~TiffToBmpConverter()
 {
+    if (tiffImage) {
+        TIFFClose(tiffImage);
+        tiffImage = NULL;
+        inFd = -1;
+    } else if (inFd >= 0) {
+        close(inFd);
+        inFd = -1;
+    }
+    if (outFIle) {
+        fclose(outFIle);
+        outFIle = NULL;
+        outFd = -1;
+    } else if (outFd >= 0) {
+        close(outFd);
+        outFd = -1;
+    }
     if (bmpHeader)
         free(bmpHeader);
     if (bmpInfo)
@@ -103,6 +119,8 @@ jboolean TiffToBmpConverter::convert()
 
     if (!normalizeDecodeArea()) {
         fclose(outFIle);
+        outFIle = NULL;
+        outFd = -1;
         return JNI_FALSE;
     }
 
@@ -168,6 +186,8 @@ jboolean TiffToBmpConverter::convert()
     }
 
     fclose(outFIle);
+    outFIle = NULL;
+    outFd = -1;
     if (!result) {
         //maybe shold delete file?
     }

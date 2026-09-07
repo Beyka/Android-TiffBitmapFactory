@@ -79,10 +79,11 @@ NativeDecoder::~NativeDecoder()
 {
     LOGI("Destructor");
     if (image) {
-        if (jFd == 0) {
-            TIFFClose(image);
-            image = NULL;
-        }
+        TIFFClose(image);
+        image = NULL;
+    } else if (decodingMode == DECODE_MODE_FILE_DESCRIPTOR && jFd >= 0) {
+        close(jFd);
+        jFd = -1;
     }
 
     //Release global reference for Bitmap.Config
@@ -3885,7 +3886,6 @@ void NativeDecoder::throwCantOpenFileException() {
         throw_cant_open_file_exception_fd(env, jFd);
     }
 }
-
 
 
 
