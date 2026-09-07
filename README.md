@@ -6,14 +6,14 @@ For decoding and encoding *.tif files it uses the native library [libtiff](https
 Just now it has possibility to open tif image as mutable bitmap, read count of directory in file, apply sample rate for bitmap decoding and choose directory to decode.
 While saving there is available few(most popular) compression mods and some additiona fields that can be writen to file, like author or copyright.
 
-Minimum Android API level 16
+Minimum Android API level 21
 
 Supported architectures: all
 
 ### Installation
 Just add to your gradle dependencies :
 ```
-implementation 'io.github.beyka:Android-TiffBitmapFactory:0.9.9.1'
+implementation 'com.github.beyka:Android-TiffBitmapFactory:0.9.9.2'
 ```
 And do not forget to add WRITE_EXTERNAL_STORAGE permission to main project manifest
 
@@ -206,8 +206,3 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 Special thanks to [dennis508](https://github.com/dennis508)    for providing of incremental reading of TIFF file
-
-
-### Applications that use library:
-* [B Tiff Viewer](https://play.google.com/store/apps/details?id=com.beyka.btiffviewer)
-* Image Converter [[GitHub](https://github.com/vbresan/Image_Converter)] [[Google Play](https://play.google.com/store/apps/details?id=biz.binarysolutions.imageconverter.ggl)]

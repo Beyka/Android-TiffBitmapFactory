@@ -1,33 +1,45 @@
+// Top-level and library build file.
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle:8.7.3"
+    }
+
+    ext["ossrhUsername"] = ''
+    ext["ossrhPassword"] = ''
+}
+
 plugins {
     id "com.android.library"
     id "maven-publish"
+    id "signing"
+    id "com.gradleup.nmcp" version "0.0.9"
 }
 
-    publishing {
-        publications {
-            maven(MavenPublication) {
-                groupId = 'io.github.beyka'
-                artifactId = 'Android-TiffBitmapFactory'
-                version = '0.9.9.1'
-            }
-        }
-
-    }
-
+group = 'com.github.beyka'
+version = '0.9.9.2'
 
 android {
-    compileSdkVersion 30
-    buildToolsVersion '30.0.3'
+    namespace 'org.beyka.tiffbitmapfactory'
+    compileSdk 36
 
     def softwareName
 
     defaultConfig {
-        minSdkVersion 16
-        targetSdkVersion 30
-        versionCode 987
-        versionName "0.9.9.1"
+        minSdk 21
+        targetSdk 34
+        versionCode 988
+        versionName "0.9.9.2"
 
         softwareName = "\"" + project.name + "-" + versionName + "\""
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     buildTypes {
@@ -43,27 +55,91 @@ android {
         }
     }
 
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
     ndkVersion "21.3.6528147"
 
     sourceSets.main {
         jni.srcDirs = []
         jniLibs.srcDir 'src/main/libs'
     }
-}
 
-android {
-    lintOptions {
+    lint {
         abortOnError false
+    }
+
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+            withJavadocJar()
+        }
     }
 }
 
 dependencies {
 }
 
-ext {
-    PUBLISH_GROUP_ID = 'io.github.beyka'
-    PUBLISH_VERSION = '0.9.9.1'
-    PUBLISH_ARTIFACT_ID = 'Android-TiffBitmapFactory'
+publishing {
+    publications {
+        release(MavenPublication) {
+            groupId = 'com.github.beyka'
+            artifactId = 'Android-TiffBitmapFactory'
+            version = '0.9.9.2'
+            pom {
+                name = 'Android-TiffBitmapFactory'
+                description = 'Библиотека декодирования TIFF файлов для Android'
+                url = 'https://github.com'
+                licenses {
+                    license {
+                        name = 'The Apache Software License, Version 2.0'
+                        url = 'http://apache.org'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'Beyka'
+                        name = 'Aleksey Bey'
+                        email = 'leshabey@gmail.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:://github.com'
+                    developerConnection = 'scm:git:ssh://://github.com'
+                    url = 'https://github.com'
+                }
+            }
+        }
+    }
+}
+def secretProps = new Properties()
+def secretPropsFile = rootProject.file("local.properties")
+if (!secretPropsFile.exists()) {
+    secretPropsFile = file("local.properties")
+}
+if (secretPropsFile.exists()) {
+    secretPropsFile.withInputStream { secretProps.load(it) }
 }
 
-apply from: "${rootProject.projectDir}/publish-module.gradle"
+signing {
+    useInMemoryPgpKeys(
+            secretProps.getProperty("signing.keyId"),
+            secretProps.getProperty("signing.key"),
+            secretProps.getProperty("signing.password")
+    )
+}
+
+afterEvaluate {
+    publishing.publications.release.from(components.release)
+    signing.sign publishing.publications.release
+}
+
+nmcp {
+    publish("release") {
+        username = secretProps.getProperty("ossrhUsername")
+        password = secretProps.getProperty("ossrhPassword")
+        publicationType = "USER_MANAGED"
+    }
+}
