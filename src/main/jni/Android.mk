@@ -74,6 +74,7 @@ include $(PREBUILT_STATIC_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_MODULE := tifffactory
 LOCAL_CFLAGS := -DANDROID_NDK
+LOCAL_CPPFLAGS += -O3
 LOCAL_SRC_FILES := \
 	NativeExceptions.cpp \
 	NativeTiffBitmapFactory.cpp \

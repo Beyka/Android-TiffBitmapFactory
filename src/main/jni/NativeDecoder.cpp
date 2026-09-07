@@ -40,6 +40,12 @@ NativeDecoder::NativeDecoder(JNIEnv *e, jclass c, jint fd, jobject opts, jobject
                         "org/beyka/tiffbitmapfactory/TiffBitmapFactory$Options");
     jIProgressListenerClass = env->FindClass("org/beyka/tiffbitmapfactory/IProgressListener");
     jThreadClass = env->FindClass("java/lang/Thread");
+    threadInterruptedMethodId = env->GetStaticMethodID(jThreadClass, "interrupted", "()Z");
+    stoppedFieldId = env->GetFieldID(jBitmapOptionsClass, "isStoped", "Z");
+    progressReportMethodId = listenerObject == NULL ? NULL :
+            env->GetMethodID(jIProgressListenerClass, "reportProgress", "(JJ)V");
+    lastProgressCurrent = -1;
+    lastProgressTotal = -1;
 }
 
 //Constructor for decoding from file path
@@ -73,6 +79,12 @@ NativeDecoder::NativeDecoder(JNIEnv *e, jclass c, jstring path, jobject opts, jo
                         "org/beyka/tiffbitmapfactory/TiffBitmapFactory$Options");
     jIProgressListenerClass = env->FindClass("org/beyka/tiffbitmapfactory/IProgressListener");
     jThreadClass = env->FindClass("java/lang/Thread");
+    threadInterruptedMethodId = env->GetStaticMethodID(jThreadClass, "interrupted", "()Z");
+    stoppedFieldId = env->GetFieldID(jBitmapOptionsClass, "isStoped", "Z");
+    progressReportMethodId = listenerObject == NULL ? NULL :
+            env->GetMethodID(jIProgressListenerClass, "reportProgress", "(JJ)V");
+    lastProgressCurrent = -1;
+    lastProgressTotal = -1;
 }
 
 NativeDecoder::~NativeDecoder()
@@ -334,13 +346,20 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
         return NULL;
     }
 
+    const int decodeMethod = getDecodeMethod();
+    if (!hasBounds && inSampleSize == 1 && configInt == ARGB_8888 &&
+        !invertRedAndBlue && origorientation == ORIENTATION_TOPLEFT &&
+        decodeMethod == DECODE_METHOD_IMAGE) {
+        return createDirectArgbBitmap(origwidth, origheight);
+    }
+
     int newBitmapWidth = 0;
     int newBitmapHeight = 0;
 
     jint *raster = NULL;
 
     if (!hasBounds) {
-        switch(getDecodeMethod()) {
+        switch(decodeMethod) {
             case DECODE_METHOD_IMAGE:
                 raster = getSampledRasterFromImage(inSampleSize, &newBitmapWidth, &newBitmapHeight);
                 break;
@@ -352,7 +371,7 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
                 break;
         }
     } else {
-        switch(getDecodeMethod()) {
+        switch(decodeMethod) {
             case DECODE_METHOD_IMAGE:
                 raster = getSampledRasterFromImageWithBounds(inSampleSize, &newBitmapWidth, &newBitmapHeight);
                 break;
@@ -484,6 +503,59 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
     return java_bitmap;
 }
 
+jobject NativeDecoder::createDirectArgbBitmap(int width, int height) {
+    jclass bitmapConfigClass = env->FindClass("android/graphics/Bitmap$Config");
+    jfieldID argbField = env->GetStaticFieldID(bitmapConfigClass, "ARGB_8888",
+            "Landroid/graphics/Bitmap$Config;");
+    jobject config = env->GetStaticObjectField(bitmapConfigClass, argbField);
+    jclass bitmapClass = env->FindClass("android/graphics/Bitmap");
+    jmethodID createMethod = env->GetStaticMethodID(bitmapClass, "createBitmap",
+            "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
+    jobject bitmap = env->CallStaticObjectMethod(bitmapClass, createMethod, width, height, config);
+
+    env->DeleteLocalRef(config);
+    env->DeleteLocalRef(bitmapConfigClass);
+    env->DeleteLocalRef(bitmapClass);
+
+    if (bitmap == NULL || env->ExceptionCheck()) {
+        return NULL;
+    }
+
+    AndroidBitmapInfo info;
+    if (AndroidBitmap_getInfo(env, bitmap, &info) < 0 ||
+        info.format != ANDROID_BITMAP_FORMAT_RGBA_8888 ||
+        info.stride != static_cast<uint32_t>(width * sizeof(uint32_t))) {
+        env->DeleteLocalRef(bitmap);
+        return NULL;
+    }
+
+    void *bitmapPixels = NULL;
+    if (AndroidBitmap_lockPixels(env, bitmap, &bitmapPixels) < 0) {
+        env->DeleteLocalRef(bitmap);
+        return NULL;
+    }
+
+    sendProgress(0, progressTotal);
+    const int readResult = TIFFReadRGBAImageOriented(image, width, height,
+            static_cast<uint32 *>(bitmapPixels), ORIENTATION_TOPLEFT, 0);
+    AndroidBitmap_unlockPixels(env, bitmap);
+
+    if (readResult == 0) {
+        const char *message = "Error reading image";
+        env->DeleteLocalRef(bitmap);
+        if (throwException) {
+            throwDecodeFileException(message);
+        }
+        return NULL;
+    }
+    if (checkStop()) {
+        env->DeleteLocalRef(bitmap);
+        return NULL;
+    }
+    sendProgress(progressTotal, progressTotal);
+    return bitmap;
+}
+
 jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwidth, int *bitmapheight) {
 
     //init signal handler for catch SIGSEGV error that could be raised in libtiff
@@ -595,7 +667,9 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
 
             //if second raster is exist - copy it to work raster end decode next strip
             if (isSecondRasterExist) {
-                _TIFFmemcpy(raster, rasterForBottomLine, origwidth * rowPerStrip * sizeof (uint32));
+                uint32 *previousRaster = raster;
+                raster = rasterForBottomLine;
+                rasterForBottomLine = previousRaster;
 
                 //If next strip is exist - decode it, invert lines
                 if (i + rowPerStrip < stripMax*rowPerStrip) {
@@ -1061,7 +1135,8 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
         return NULL;
     }
 
-    for (int i = 0; (i < stripMax*rowPerStrip || i > boundY + boundHeight) ; i += rowPerStrip) {
+    for (int i = 0; i < stripMax * rowPerStrip && i <= boundY + boundHeight;
+         i += rowPerStrip) {
 
             if (i + rowPerStrip <= boundY) {
                 continue;
@@ -1075,10 +1150,13 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
 
             //if second raster is exist - copy it to work raster end decode next strip
             if (isSecondRasterExist) {
-                _TIFFmemcpy(raster, rasterForBottomLine, origwidth * rowPerStrip * sizeof (uint32));
+                uint32 *previousRaster = raster;
+                raster = rasterForBottomLine;
+                rasterForBottomLine = previousRaster;
 
                 //If next strip is exist - decode it, invert lines
-                if (i + rowPerStrip < stripMax*rowPerStrip) {
+                if (i + rowPerStrip < stripMax * rowPerStrip &&
+                    i + rowPerStrip <= boundY + boundHeight) {
                     TIFFReadRGBAStrip(image, i+rowPerStrip, rasterForBottomLine);
                     isSecondRasterExist = 1;
 
@@ -1127,7 +1205,8 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
                  }
 
                  //if next strip is exist - read it and invert lines
-                 if (i + rowPerStrip < origheight) {
+                 if (i + rowPerStrip < origheight &&
+                     i + rowPerStrip <= boundY + boundHeight) {
                     TIFFReadRGBAStrip(image, i+rowPerStrip, rasterForBottomLine);
                     isSecondRasterExist = 1;
 
@@ -1511,6 +1590,25 @@ void NativeDecoder::rotateTileLinesHorizontal(uint32 tileHeight, uint32 tileWidt
     }
 }
 
+void NativeDecoder::orientDecodedTile(uint32 tileHeight, uint32 tileWidth,
+                                      uint32 *tile, uint32 *bufferLine) {
+    switch (origorientation) {
+        case 1:
+        case 5:
+            rotateTileLinesVertical(tileHeight, tileWidth, tile, bufferLine);
+            break;
+        case 2:
+        case 6:
+            rotateTileLinesVertical(tileHeight, tileWidth, tile, bufferLine);
+            rotateTileLinesHorizontal(tileHeight, tileWidth, tile, bufferLine);
+            break;
+        case 3:
+        case 7:
+            rotateTileLinesHorizontal(tileHeight, tileWidth, tile, bufferLine);
+            break;
+    }
+}
+
 jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidth, int *bitmapheight) {
 
         //init signal handler for catch SIGSEGV error that could be raised in libtiff
@@ -1530,7 +1628,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
 
         uint32 tileWidth = 0, tileHeight = 0;
         TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileWidth);
-        TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileHeight);
+        TIFFGetField(image, TIFFTAG_TILELENGTH, &tileHeight);
 
         unsigned long estimateMem = 0;
         estimateMem += (sizeof(jint) * pixelsBufferSize); //buffer for decoded pixels
@@ -1544,7 +1642,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
             return NULL;
         }
 
-        pixels = (jint *) malloc(sizeof(jint) * pixelsBufferSize);
+        pixels = (jint *) calloc(pixelsBufferSize, sizeof(jint));
         if (pixels == NULL) {
             LOGE("Can\'t allocate memory for temp buffer");
             return NULL;
@@ -1600,82 +1698,30 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
             for (column = 0; column < origwidth; column += tileWidth) {
                 sendProgress(row * origwidth + column, progressTotal);
 
-                //If not first column - we should have previous tile - copy it to left tile buffer
-                if (column != 0) {
-                    _TIFFmemcpy(rasterTileLeft, rasterTile, tileWidth * tileHeight * sizeof(uint32));
+                bool currentTileAlreadyOriented = false;
+                if (rightTileExists) {
+                    uint32 *reusableTile = rasterTileLeft;
+                    rasterTileLeft = rasterTile;
+                    rasterTile = rasterTileRight;
+                    rasterTileRight = reusableTile;
                     leftTileExists = 1;
+                    currentTileAlreadyOriented = true;
                 } else {
                     leftTileExists = 0;
+                    TIFFReadRGBATile(image, column, row, rasterTile);
                 }
 
-                //if current column + tile width is less than origin width - we have right tile - copy it to current tile and read next tile to rasterTileRight buffer
-                if (column + tileWidth < origwidth && rightTileExists) {
-                    _TIFFmemcpy(rasterTile, rasterTileRight, tileWidth * tileHeight * sizeof(uint32));
+                rightTileExists = 0;
+                if (column + tileWidth < origwidth) {
                     TIFFReadRGBATile(image, column + tileWidth, row, rasterTileRight);
                     rightTileExists = 1;
-                } else if (column + tileWidth < origwidth) {
-                    //have right tile but this is first tile in row, so need to read raster and right raster
-                    TIFFReadRGBATile(image, column + tileWidth, row, rasterTileRight);
-                    TIFFReadRGBATile(image, column, row, rasterTile);
-                    rightTileExists = 1;
-
-                    //in that case we also need to invert lines in rasterTile
-                    switch(origorientation) {
-                        case 1:
-                        case 5:
-                            rotateTileLinesVertical(tileHeight, tileWidth, rasterTile, work_line_buf);
-                            break;
-                        case 2:
-                        case 6:
-                            rotateTileLinesVertical(tileHeight, tileWidth, rasterTile, work_line_buf);
-                            rotateTileLinesHorizontal(tileHeight, tileWidth, rasterTile, work_line_buf);
-                            break;
-                        case 3:
-                        case 7:
-                            rotateTileLinesHorizontal(tileHeight, tileWidth, rasterTile, work_line_buf);
-                            break;
-                    }
-                } else {
-                    //otherwise we haven't right tile buffer, so we should read tile to current buffer
-                    TIFFReadRGBATile(image, column, row, rasterTile);
-                    rightTileExists = 0;
                 }
 
-                //if we have right tile - current tile already rotated and we need to rotate only right tile
+                if (!currentTileAlreadyOriented) {
+                    orientDecodedTile(tileHeight, tileWidth, rasterTile, work_line_buf);
+                }
                 if (rightTileExists) {
-                    switch(origorientation) {
-                        case 1:
-                        case 5:
-                            rotateTileLinesVertical(tileHeight, tileWidth, rasterTileRight, work_line_buf);
-                            break;
-                        case 2:
-                        case 6:
-                            rotateTileLinesVertical(tileHeight, tileWidth, rasterTileRight, work_line_buf);
-                            rotateTileLinesHorizontal(tileHeight, tileWidth, rasterTileRight, work_line_buf);
-                            break;
-                        case 3:
-                        case 7:
-                            rotateTileLinesHorizontal(tileHeight, tileWidth, rasterTileRight, work_line_buf);
-                            break;
-                    }
-                } else {
-                    //otherwise - current tile not rotated so rotate it
-                    //tile orig is on bottom left - should change lines
-                     switch(origorientation) {
-                        case 1:
-                        case 5:
-                            rotateTileLinesVertical(tileHeight, tileWidth, rasterTile, work_line_buf);
-                            break;
-                        case 2:
-                        case 6:
-                            rotateTileLinesVertical(tileHeight, tileWidth, rasterTile, work_line_buf);
-                            rotateTileLinesHorizontal(tileHeight, tileWidth, rasterTile, work_line_buf);
-                            break;
-                        case 3:
-                        case 7:
-                            rotateTileLinesHorizontal(tileHeight, tileWidth, rasterTile, work_line_buf);
-                            break;
-                    }
+                    orientDecodedTile(tileHeight, tileWidth, rasterTileRight, work_line_buf);
                 }
 
                 if (inSampleSize > 1 )
@@ -2031,7 +2077,7 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
 
         uint32 tileWidth = 0, tileHeight = 0;
         TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileWidth);
-        TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileHeight);
+        TIFFGetField(image, TIFFTAG_TILELENGTH, &tileHeight);
 
         //find first and last tile to process
         uint32 firstTileX = (uint32)(boundX / tileWidth);
@@ -2039,6 +2085,10 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
 
         uint32 lastTileX = (uint32)((boundX + boundWidth) / tileWidth) + 1;
         uint32 lastTileY = (uint32)((boundY + boundHeight) / tileHeight) + 1;
+        const uint32 tilesAcross = (origwidth + tileWidth - 1) / tileWidth;
+        const uint32 tilesDown = (origheight + tileHeight - 1) / tileHeight;
+        if (lastTileX > tilesAcross) lastTileX = tilesAcross;
+        if (lastTileY > tilesDown) lastTileY = tilesDown;
 
         jint *pixels = NULL;
         *bitmapwidth = /*boundWidth*/ (lastTileX - firstTileX) * tileWidth / inSampleSize;//origwidth / inSampleSize;
@@ -2057,7 +2107,7 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
             return NULL;
          }
 
-        pixels = (jint *) malloc(sizeof(jint) * pixelsBufferSize);
+        pixels = (jint *) calloc(pixelsBufferSize, sizeof(jint));
         if (pixels == NULL) {
             LOGE("Can\'t allocate memory for temp buffer");
             return NULL;
@@ -2117,87 +2167,38 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
         rowDest = columnDest = 0;
         for (row = firstTileY * tileHeight; row < lastTileY * tileHeight; row += tileHeight, progressRow += tileHeight) {
             columnDest = 0;
+            progressColumn = 0;
             short leftTileExists = 0;
             short rightTileExists = 0;
             for (column = firstTileX * tileWidth; column < lastTileX * tileWidth; column += tileWidth, progressColumn += tileWidth) {
                 processedProgress = progressRow * *bitmapwidth + progressColumn;
                 sendProgress(processedProgress, progressTotal);
 
-                //If not first column - we should have previous tile - copy it to left tile buffer
-                if (column != firstTileY) {
-                    _TIFFmemcpy(rasterTileLeft, rasterTile, tileWidth * tileHeight * sizeof(uint32));
+                bool currentTileAlreadyOriented = false;
+                if (rightTileExists) {
+                    uint32 *reusableTile = rasterTileLeft;
+                    rasterTileLeft = rasterTile;
+                    rasterTile = rasterTileRight;
+                    rasterTileRight = reusableTile;
                     leftTileExists = 1;
+                    currentTileAlreadyOriented = true;
                 } else {
                     leftTileExists = 0;
-                }
-                //if current column + tile width is less than origin width - we have right tile - copy it to current tile and read next tile to rasterTileRight buffer
-                if (column + tileWidth < origwidth && rightTileExists) {
-                    _TIFFmemcpy(rasterTile, rasterTileRight, tileWidth * tileHeight * sizeof(uint32));
-                    TIFFReadRGBATile(image, column + tileWidth, row, rasterTileRight);
-                    rightTileExists = 1;
-                } else if (column + tileWidth < origwidth) {
-                    //have right tile but this is first tile in row, so need to read raster and right raster
-                    TIFFReadRGBATile(image, column + tileWidth, row, rasterTileRight);
                     TIFFReadRGBATile(image, column, row, rasterTile);
-                    rightTileExists = 1;
-
-                    //in that case we also need to invert lines in rasterTile
-                    switch(origorientation) {
-                        case 1:
-                        case 5:
-                            rotateTileLinesVertical(tileHeight, tileWidth, rasterTile, work_line_buf);
-                            break;
-                        case 2:
-                        case 6:
-                            rotateTileLinesVertical(tileHeight, tileWidth, rasterTile, work_line_buf);
-                            rotateTileLinesHorizontal(tileHeight, tileWidth, rasterTile, work_line_buf);
-                            break;
-                        case 3:
-                        case 7:
-                            rotateTileLinesHorizontal(tileHeight, tileWidth, rasterTile, work_line_buf);
-                            break;
-                    }
-                } else {
-                    //otherwise we haven't right tile buffer, so we should read tile to current buffer
-                    TIFFReadRGBATile(image, column, row, rasterTile);
-                    rightTileExists = 0;
                 }
 
-                //if we have right tile - current tile already rotated and we need to rotate only right tile
+                rightTileExists = 0;
+                if (column + tileWidth < origwidth &&
+                    column + tileWidth < lastTileX * tileWidth) {
+                    TIFFReadRGBATile(image, column + tileWidth, row, rasterTileRight);
+                    rightTileExists = 1;
+                }
+
+                if (!currentTileAlreadyOriented) {
+                    orientDecodedTile(tileHeight, tileWidth, rasterTile, work_line_buf);
+                }
                 if (rightTileExists) {
-                    switch(origorientation) {
-                        case 1:
-                        case 5:
-                            rotateTileLinesVertical(tileHeight, tileWidth, rasterTileRight, work_line_buf);
-                            break;
-                        case 2:
-                        case 6:
-                            rotateTileLinesVertical(tileHeight, tileWidth, rasterTileRight, work_line_buf);
-                            rotateTileLinesHorizontal(tileHeight, tileWidth, rasterTileRight, work_line_buf);
-                            break;
-                        case 3:
-                        case 7:
-                            rotateTileLinesHorizontal(tileHeight, tileWidth, rasterTileRight, work_line_buf);
-                            break;
-                    }
-                } else {
-                    //otherwise - current tile not rotated so rotate it
-                    //tile orig is on bottom left - should change lines
-                     switch(origorientation) {
-                        case 1:
-                        case 5:
-                            rotateTileLinesVertical(tileHeight, tileWidth, rasterTile, work_line_buf);
-                            break;
-                        case 2:
-                        case 6:
-                            rotateTileLinesVertical(tileHeight, tileWidth, rasterTile, work_line_buf);
-                            rotateTileLinesHorizontal(tileHeight, tileWidth, rasterTile, work_line_buf);
-                            break;
-                        case 3:
-                        case 7:
-                            rotateTileLinesHorizontal(tileHeight, tileWidth, rasterTile, work_line_buf);
-                            break;
-                    }
+                    orientDecodedTile(tileHeight, tileWidth, rasterTileRight, work_line_buf);
                 }
 
                     //Tile could begin from not filled pixel(pixel[x,y] == 0). This variables allow to calculate begining of filled pixels
@@ -3824,16 +3825,12 @@ jstring NativeDecoder::charsToJString(const char *chars) {
 }
 
 jboolean NativeDecoder::checkStop() {
-    jmethodID methodID = env->GetStaticMethodID(jThreadClass, "interrupted", "()Z");
-    jboolean interupted = env->CallStaticBooleanMethod(jThreadClass, methodID);
+    jboolean interupted = env->CallStaticBooleanMethod(jThreadClass, threadInterruptedMethodId);
 
     jboolean stop;
 
     if (optionsObject) {
-        jfieldID stopFieldId = env->GetFieldID(jBitmapOptionsClass,
-                                               "isStoped",
-                                               "Z");
-        stop = env->GetBooleanField(optionsObject, stopFieldId);
+        stop = env->GetBooleanField(optionsObject, stoppedFieldId);
 
     } else {
         stop = JNI_FALSE;
@@ -3843,9 +3840,23 @@ jboolean NativeDecoder::checkStop() {
 }
 
 void NativeDecoder::sendProgress(jlong current, jlong total) {
-    if (listenerObject != NULL) {
-        jmethodID methodid = env->GetMethodID(jIProgressListenerClass, "reportProgress", "(JJ)V");
-        env->CallVoidMethod(listenerObject, methodid, current, total);
+    if (listenerObject != NULL && progressReportMethodId != NULL) {
+        if (total > 0) {
+            if (current < 0) current = 0;
+            if (current > total) current = total;
+        }
+        if (total == lastProgressTotal && current == lastProgressCurrent) {
+            return;
+        }
+        const jlong minDelta = total > 0 ? (total / 100 > 0 ? total / 100 : 1) : 1;
+        const bool newStage = total != lastProgressTotal;
+        const bool endpoint = current <= 0 || current >= total;
+        if (!newStage && !endpoint && current - lastProgressCurrent < minDelta) {
+            return;
+        }
+        env->CallVoidMethod(listenerObject, progressReportMethodId, current, total);
+        lastProgressCurrent = current;
+        lastProgressTotal = total;
     }
 }
 
@@ -3886,9 +3897,3 @@ void NativeDecoder::throwCantOpenFileException() {
         throw_cant_open_file_exception_fd(env, jFd);
     }
 }
-
-
-
-
-
-

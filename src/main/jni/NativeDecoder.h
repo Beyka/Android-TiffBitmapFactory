@@ -73,6 +73,11 @@ class NativeDecoder
         jclass jIProgressListenerClass;
         jclass jBitmapOptionsClass;
         jclass jThreadClass = NULL;
+        jmethodID threadInterruptedMethodId;
+        jmethodID progressReportMethodId;
+        jfieldID stoppedFieldId;
+        jlong lastProgressCurrent;
+        jlong lastProgressTotal;
         jint jFd;
         jstring jPath;
         jboolean throwException;
@@ -95,12 +100,14 @@ class NativeDecoder
         int getDyrectoryCount();
         void writeDataToOptions(int);
         jobject createBitmap(int, int);
+        jobject createDirectArgbBitmap(int, int);
         jint *getSampledRasterFromImage(int, int *, int *);
         jint *getSampledRasterFromImageWithBounds(int , int *, int *);
         jint *getSampledRasterFromStrip(int, int *, int *);
         jint *getSampledRasterFromStripWithBounds(int, int *, int *);
         void rotateTileLinesVertical(uint32, uint32, uint32 *, uint32 *);
         void rotateTileLinesHorizontal(uint32, uint32, uint32 *, uint32 *);
+        void orientDecodedTile(uint32, uint32, uint32 *, uint32 *);
         void flipPixelsVertical(uint32, uint32, jint *);
         void flipPixelsHorizontal(uint32, uint32, jint *);
         jint *getSampledRasterFromTile(int, int *, int *);

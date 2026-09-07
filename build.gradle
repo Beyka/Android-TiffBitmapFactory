@@ -34,6 +34,7 @@ android {
         targetSdk 34
         versionCode 988
         versionName "0.9.9.2"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
         softwareName = "\"" + project.name + "-" + versionName + "\""
     }
@@ -60,12 +61,14 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
-    ndkVersion "21.3.6528147"
+    ndkVersion "28.2.13676358"
 
     sourceSets.main {
         jni.srcDirs = []
         jniLibs.srcDir 'src/main/libs'
     }
+
+    sourceSets.androidTest.assets.srcDir 'sample_tiff'
 
     lint {
         abortOnError false
@@ -80,6 +83,8 @@ android {
 }
 
 dependencies {
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
 }
 
 publishing {

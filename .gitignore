@@ -1,4 +1,5 @@
 /build
+/benchmark_results/
 AGENTS.md
 *.o
 *.o.d
