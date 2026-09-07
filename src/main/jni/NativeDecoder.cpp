@@ -164,6 +164,12 @@ jobject NativeDecoder::getBitmap()
             return NULL;
         }
 
+        jfieldID gOptions_UseSinglePixelSampleFieldID = env->GetFieldID(jBitmapOptionsClass,
+                                                                        "inUseSinglePixelSample",
+                                                                        "Z");
+        useSinglePixelSample = env->GetBooleanField(optionsObject,
+                                                    gOptions_UseSinglePixelSampleFieldID);
+
         jfieldID gOptions_justDecodeBoundsFieldID = env->GetFieldID(jBitmapOptionsClass,
                                                                     "inJustDecodeBounds", "Z");
         jboolean inJustDecodeBounds = env->GetBooleanField(optionsObject, gOptions_justDecodeBoundsFieldID);
@@ -963,6 +969,7 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
                             int green = colorMask & crPix >> 8;
                             int blue = colorMask & crPix;
 
+                            if (!useSinglePixelSample) {
 
                             //topleft
                             if (workX - 1 >= 0 && workY - 1 >= 0) {
@@ -1084,6 +1091,7 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
                                 blue += colorMask & crPix;
                                 alpha += colorMask & crPix >> 24;
                                 sum++;
+                            }
                             }
 
                             red /= sum;
@@ -1456,6 +1464,7 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
                             int green = colorMask & crPix >> 8;
                             int blue = colorMask & crPix;
 
+                            if (!useSinglePixelSample) {
 
                             //topleft
                             if (workX - 1 >= 0 && workY - 1 >= 0) {
@@ -1577,6 +1586,7 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
                                 blue += colorMask & crPix;
                                 alpha += colorMask & crPix >> 24;
                                 sum++;
+                            }
                             }
 
                             red /= sum;
@@ -1951,6 +1961,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                         int green = colorMask & crPix >> 8;
                                         int blue = colorMask & crPix;
 
+                                        if (!useSinglePixelSample) {
                                         //using kernel 3x3
 
                                         //topleft
@@ -2101,6 +2112,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                                 alpha += colorMask & crPix >> 24;
                                                 sum++;
                                             }
+                                        }
                                         }
 
                                         red /= sum;
@@ -2429,6 +2441,7 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
                                         int green = colorMask & crPix >> 8;
                                         int blue = colorMask & crPix;
 
+                                        if (!useSinglePixelSample) {
                                         //using kernel 3x3
 
                                         //topleft
@@ -2579,6 +2592,7 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
                                                 alpha += colorMask & crPix >> 24;
                                                 sum++;
                                             }
+                                        }
                                         }
 
                                         red /= sum;
@@ -2852,6 +2866,7 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
                     int green = colorMask & crPix >> 8;
                     int blue = colorMask & crPix;
 
+                    if (!useSinglePixelSample) {
                     //using kernel 3x3
 
                     //topleft
@@ -2925,6 +2940,7 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
                         blue += colorMask & crPix;
                         alpha += colorMask & crPix >> 24;
                         sum++;
+                    }
                     }
 
                     red /= sum;
@@ -3094,6 +3110,7 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
                     int green = colorMask & crPix >> 8;
                     int blue = colorMask & crPix;
 
+                    if (!useSinglePixelSample) {
                     //using kernel 3x3
 
                     //topleft
@@ -3167,6 +3184,7 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
                         blue += colorMask & crPix;
                         alpha += colorMask & crPix >> 24;
                         sum++;
+                    }
                     }
 
                     red /= sum;

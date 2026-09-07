@@ -294,6 +294,7 @@ public class TiffBitmapFactory {
             inUseOrientationTag = false;
             inSwapRedBlueColors = false;
             inJustDecodeBounds = false;
+            inUseSinglePixelSample = false;
             inSampleSize = 1;
             inDirectoryNumber = 0;
             inAvailableMemory = 8000*8000*4;
@@ -349,6 +350,16 @@ public class TiffBitmapFactory {
          * the bitmap without having to allocate the memory for its pixels.
          */
         public boolean inJustDecodeBounds;
+
+        /**
+         * If set to true and {@link #inSampleSize} is greater than 1, the decoder
+         * uses only the target source pixel for each output pixel. This can make
+         * subsampling faster, but may produce less smooth color transitions.
+         * If false, the decoder preserves the default behavior and averages the
+         * target pixel with the surrounding pixels using a 3 x 3 kernel.
+         * <p>Default value is false.</p>
+         */
+        public boolean inUseSinglePixelSample;
 
         /**
          * If set to a value &gt; 1, requests the decoder to subsample the original

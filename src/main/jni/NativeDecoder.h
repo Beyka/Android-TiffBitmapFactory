@@ -90,6 +90,7 @@ class NativeDecoder
         int origcompressionscheme;
         jobject preferedConfig;
         jboolean invertRedAndBlue;
+        jboolean useSinglePixelSample;
         jint boundX;
         jint boundY;
         jint boundWidth;
