@@ -13,6 +13,9 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -28,6 +31,24 @@ import java.util.zip.CRC32;
 public class TiffDecoderCorpusTest {
     private final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
     private final Context targetContext = instrumentation.getTargetContext();
+
+    @Test
+    public void decodesCcittWithScanlineSizedWorkingMemory() throws IOException {
+        File file = copyToCache("fax2d.tif");
+        int[] bounds = readBounds(file);
+
+        TiffBitmapFactory.Options options = new TiffBitmapFactory.Options();
+        options.inThrowException = true;
+        options.inUseOrientationTag = true;
+        options.inAvailableMemory = (long) bounds[0] * bounds[1] * 4 +
+                (bounds[0] + 7) / 8 + 4096;
+
+        Bitmap bitmap = TiffBitmapFactory.decodeFile(file, options);
+        assertNotNull(bitmap);
+        assertEquals(bounds[0], bitmap.getWidth());
+        assertEquals(bounds[1], bitmap.getHeight());
+        bitmap.recycle();
+    }
 
     @Test
     public void benchmarkCorpus() throws IOException {

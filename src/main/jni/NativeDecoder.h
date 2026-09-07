@@ -101,6 +101,8 @@ class NativeDecoder
         void writeDataToOptions(int);
         jobject createBitmap(int, int);
         jobject createDirectArgbBitmap(int, int);
+        bool canDecodeBilevelCcittStreaming();
+        jint *getSampledBilevelRaster(int, int *, int *);
         jint *getSampledRasterFromImage(int, int *, int *);
         jint *getSampledRasterFromImageWithBounds(int , int *, int *);
         jint *getSampledRasterFromStrip(int, int *, int *);

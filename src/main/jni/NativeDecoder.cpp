@@ -347,18 +347,27 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
     }
 
     const int decodeMethod = getDecodeMethod();
+    const bool useBilevelStreaming = canDecodeBilevelCcittStreaming();
+    int newBitmapWidth = 0;
+    int newBitmapHeight = 0;
+    jint *raster = NULL;
+
+    if (useBilevelStreaming) {
+        raster = getSampledBilevelRaster(inSampleSize, &newBitmapWidth,
+                                         &newBitmapHeight);
+        if (raster == NULL) {
+            return NULL;
+        }
+    }
+
     if (!hasBounds && inSampleSize == 1 && configInt == ARGB_8888 &&
         !invertRedAndBlue && origorientation == ORIENTATION_TOPLEFT &&
-        decodeMethod == DECODE_METHOD_IMAGE) {
+        decodeMethod == DECODE_METHOD_IMAGE && raster == NULL &&
+        !useBilevelStreaming) {
         return createDirectArgbBitmap(origwidth, origheight);
     }
 
-    int newBitmapWidth = 0;
-    int newBitmapHeight = 0;
-
-    jint *raster = NULL;
-
-    if (!hasBounds) {
+    if (raster == NULL && !hasBounds) {
         switch(decodeMethod) {
             case DECODE_METHOD_IMAGE:
                 raster = getSampledRasterFromImage(inSampleSize, &newBitmapWidth, &newBitmapHeight);
@@ -370,7 +379,7 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
                 raster = getSampledRasterFromStrip(inSampleSize,  &newBitmapWidth, &newBitmapHeight);
                 break;
         }
-    } else {
+    } else if (raster == NULL) {
         switch(decodeMethod) {
             case DECODE_METHOD_IMAGE:
                 raster = getSampledRasterFromImageWithBounds(inSampleSize, &newBitmapWidth, &newBitmapHeight);
@@ -501,6 +510,161 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
     free(processedBuffer);
 
     return java_bitmap;
+}
+
+bool NativeDecoder::canDecodeBilevelCcittStreaming() {
+    if (TIFFIsTiled(image)) {
+        return false;
+    }
+
+    if (origcompressionscheme != COMPRESSION_CCITTRLE &&
+        origcompressionscheme != COMPRESSION_CCITTRLEW &&
+        origcompressionscheme != COMPRESSION_CCITTFAX3 &&
+        origcompressionscheme != COMPRESSION_CCITTFAX4) {
+        return false;
+    }
+
+    uint16_t bitsPerSample = 0;
+    uint16_t samplesPerPixel = 0;
+    uint16_t photometric = 0;
+    TIFFGetFieldDefaulted(image, TIFFTAG_BITSPERSAMPLE, &bitsPerSample);
+    TIFFGetFieldDefaulted(image, TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel);
+    TIFFGetFieldDefaulted(image, TIFFTAG_PHOTOMETRIC, &photometric);
+
+    return bitsPerSample == 1 && samplesPerPixel == 1 &&
+           (photometric == PHOTOMETRIC_MINISWHITE ||
+            photometric == PHOTOMETRIC_MINISBLACK);
+}
+
+jint *NativeDecoder::getSampledBilevelRaster(int inSampleSize, int *bitmapwidth,
+                                              int *bitmapheight) {
+    const int sourceX = hasBounds ? boundX : 0;
+    const int sourceY = hasBounds ? boundY : 0;
+    const int sourceWidth = hasBounds ? boundWidth : origwidth;
+    const int sourceHeight = hasBounds ? boundHeight : origheight;
+
+    *bitmapwidth = sourceWidth / inSampleSize;
+    *bitmapheight = sourceHeight / inSampleSize;
+    if (*bitmapwidth <= 0 || *bitmapheight <= 0) {
+        return NULL;
+    }
+
+    const tmsize_t scanlineSize = TIFFScanlineSize(image);
+    if (scanlineSize <= 0) {
+        if (throwException) {
+            throwDecodeFileException("Invalid bilevel TIFF scanline size");
+        }
+        return NULL;
+    }
+
+    const uint64_t pixelCount = static_cast<uint64_t>(*bitmapwidth) *
+                                static_cast<uint64_t>(*bitmapheight);
+    uint64_t orientationMemory = 0;
+    if (useOrientationTag && origorientation > ORIENTATION_BOTLEFT) {
+        orientationMemory = pixelCount * sizeof(bool);
+    } else if (!useOrientationTag &&
+               (origorientation == ORIENTATION_BOTRIGHT ||
+                origorientation == ORIENTATION_RIGHTBOT ||
+                origorientation == ORIENTATION_BOTLEFT ||
+                origorientation == ORIENTATION_LEFTBOT)) {
+        orientationMemory = pixelCount * sizeof(jint);
+    }
+    const uint64_t estimateMem = pixelCount * sizeof(jint) +
+                                 static_cast<uint64_t>(scanlineSize) +
+                                 orientationMemory;
+    if (estimateMem > availableMemory || pixelCount > SIZE_MAX / sizeof(jint) ||
+        pixelCount > UINT32_MAX) {
+        if (throwException) {
+            throw_not_enought_memory_exception(env, availableMemory, estimateMem);
+        }
+        return NULL;
+    }
+
+    jint *pixels = static_cast<jint *>(malloc(static_cast<size_t>(pixelCount) *
+                                               sizeof(jint)));
+    uint8_t *scanline = static_cast<uint8_t *>(_TIFFmalloc(scanlineSize));
+    if (pixels == NULL || scanline == NULL) {
+        free(pixels);
+        if (scanline != NULL) {
+            _TIFFfree(scanline);
+        }
+        if (throwException) {
+            throwDecodeFileException("Cannot allocate bilevel decode buffers");
+        }
+        return NULL;
+    }
+
+    uint16_t photometric = PHOTOMETRIC_MINISWHITE;
+    TIFFGetFieldDefaulted(image, TIFFTAG_PHOTOMETRIC, &photometric);
+    const bool msbFirst = TIFFIsMSB2LSB(image) != 0;
+    const int lastSourceY = sourceY + (*bitmapheight - 1) * inSampleSize;
+    int outputY = 0;
+
+    for (int row = 0; row <= lastSourceY; ++row) {
+        if (checkStop()) {
+            free(pixels);
+            _TIFFfree(scanline);
+            return NULL;
+        }
+
+        if (TIFFReadScanline(image, scanline, static_cast<uint32_t>(row), 0) < 0) {
+            free(pixels);
+            _TIFFfree(scanline);
+            if (throwException) {
+                throwDecodeFileException("Error reading CCITT scanline");
+            }
+            return NULL;
+        }
+
+        sendProgress(static_cast<jlong>(row) * origwidth, progressTotal);
+        if (row < sourceY || (row - sourceY) % inSampleSize != 0) {
+            continue;
+        }
+
+        for (int outputX = 0; outputX < *bitmapwidth; ++outputX) {
+            const int sourcePixelX = sourceX + outputX * inSampleSize;
+            const uint8_t packed = scanline[sourcePixelX >> 3];
+            const uint8_t mask = msbFirst
+                    ? static_cast<uint8_t>(0x80U >> (sourcePixelX & 7))
+                    : static_cast<uint8_t>(1U << (sourcePixelX & 7));
+            const bool sampleIsOne = (packed & mask) != 0;
+            const bool black = photometric == PHOTOMETRIC_MINISWHITE
+                    ? sampleIsOne
+                    : !sampleIsOne;
+            pixels[outputY * *bitmapwidth + outputX] =
+                    black ? static_cast<jint>(0xFF000000U)
+                          : static_cast<jint>(0xFFFFFFFFU);
+        }
+        ++outputY;
+    }
+
+    _TIFFfree(scanline);
+
+    if (useOrientationTag) {
+        fixOrientation(pixels, static_cast<uint32_t>(pixelCount), *bitmapwidth,
+                       *bitmapheight);
+    } else {
+        switch (origorientation) {
+            case ORIENTATION_TOPLEFT:
+            case ORIENTATION_LEFTTOP:
+                break;
+            case ORIENTATION_TOPRIGHT:
+            case ORIENTATION_RIGHTTOP:
+                flipPixelsHorizontal(*bitmapwidth, *bitmapheight, pixels);
+                break;
+            case ORIENTATION_BOTRIGHT:
+            case ORIENTATION_RIGHTBOT:
+                rotateRaster(pixels, 180, bitmapwidth, bitmapheight);
+                break;
+            case ORIENTATION_BOTLEFT:
+            case ORIENTATION_LEFTBOT:
+                rotateRaster(pixels, 180, bitmapwidth, bitmapheight);
+                flipPixelsHorizontal(*bitmapwidth, *bitmapheight, pixels);
+                break;
+        }
+    }
+
+    return pixels;
 }
 
 jobject NativeDecoder::createDirectArgbBitmap(int width, int height) {
