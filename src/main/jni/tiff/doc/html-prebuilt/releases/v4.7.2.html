@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Changes in TIFF v4.7.2 &#8212; LibTIFF 4.7.2 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=649a27d8" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinxdoc.css?v=34905f61" />
+    <script src="../_static/documentation_options.js?v=2edf0659"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Changes in TIFF v4.7.1" href="v4.7.1.html" />
+    <link rel="prev" title="Release history" href="index.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="v4.7.1.html" title="Changes in TIFF v4.7.1"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Release history"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">LibTIFF 4.7.2 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Release history</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Changes in TIFF v4.7.2</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="changes-in-tiff-v4-7-2">
+<h1>Changes in TIFF v4.7.2<a class="headerlink" href="#changes-in-tiff-v4-7-2" title="Link to this heading">¶</a></h1>
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">References</span><a class="headerlink" href="#id1" title="Link to this table">¶</a></caption>
+<tbody>
+<tr class="row-odd"><td><p>Current Version</p></td>
+<td><p>v4.7.2 (<a class="extlink-tag reference external" href="https://gitlab.com/libtiff/libtiff/-/tags/v4.7.2">tag v4.7.2</a>)</p></td>
+</tr>
+<tr class="row-even"><td><p>Previous Version</p></td>
+<td><p><a class="reference internal" href="v4.7.1.html"><span class="doc">v4.7.1</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>Primary Download Site</p></td>
+<td><p><a class="reference external" href="https://download.osgeo.org/libtiff/">https://download.osgeo.org/libtiff/</a></p></td>
+</tr>
+<tr class="row-even"><td><p>Home HTTP Site #1</p></td>
+<td><p><a class="reference external" href="https://libtiff.gitlab.io/libtiff/">https://libtiff.gitlab.io/libtiff/</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>Home HTTP Site #2</p></td>
+<td><p><a class="reference external" href="http://www.simplesystems.org/libtiff/">http://www.simplesystems.org/libtiff/</a></p></td>
+</tr>
+</tbody>
+</table>
+<p>This document provides a summary of significant changes made to the
+software between the <em>previous</em> and <em>current</em> versions (see
+above). A fully-detailed change summary is provided by the <code class="file docutils literal notranslate"><span class="pre">ChangeLog</span></code> file
+included in the release package and by the Git commit history.</p>
+<section id="major-changes">
+<h2>Major changes<a class="headerlink" href="#major-changes" title="Link to this heading">¶</a></h2>
+<p>None</p>
+</section>
+<section id="software-configuration-changes">
+<h2>Software configuration changes<a class="headerlink" href="#software-configuration-changes" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>cmake: Fix bundle identifiers to use reverse-DNS format</p></li>
+<li><p>cmake: Fix and improve Apple framework build support</p></li>
+<li><p>cmake: Use TurboJPEG CONFIG by default (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/767">issue #767</a>)</p></li>
+<li><p>cmake: changes related to 8-/12-bit modes</p></li>
+<li><p>cmake: Replace CMath::CMath with direct link to avoid export.</p></li>
+<li><p>Support for iOS-derived builds</p></li>
+<li><p>Simplify cmake byte order version check</p></li>
+<li><p>Add additional warnings, primarily floating precision conversions and integer
+arithmetic conversions</p></li>
+<li><p>configure.ac: Require bootstrap with at least Autoconf 2.71.</p></li>
+</ul>
+</section>
+<section id="library-changes">
+<h2>Library changes<a class="headerlink" href="#library-changes" title="Link to this heading">¶</a></h2>
+<p>New/improved functionalities:</p>
+<ul class="simple">
+<li><p>Add TIFFGetMaxCompressionRatio() and use it in _TIFFReadEncoded[Tile|Strip)AndAllocBuffer()
+(<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/781">issue #781</a>)</p></li>
+</ul>
+<p>API/ABI breaks:</p>
+<ul class="simple">
+<li><p>None</p></li>
+</ul>
+<p>Bug fixes:</p>
+<ul class="simple">
+<li><p>Handle negative TIFFReadFile results before state updates (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/854">issue #854</a>)</p></li>
+<li><p>tif_dirread.c: fix copy-paste bug in ChopUpSingleUncompressedStrip</p></li>
+<li><p>tif_read.c: Fixed division by zero in TIFFStartStrip() (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/777">issue #777</a>)</p></li>
+<li><p>tif_dirwrite.c: add integer overflow checks to allocation size calculations</p></li>
+<li><p>tif_print.c: add integer overflow checks to allocation size calculations</p></li>
+<li><p>tif_write.c: fix OOB read and underflow in TIFFAppendToStrip copy loop</p></li>
+<li><p>DumpModeSeek: add bounds check to prevent OOB pointer advance</p></li>
+<li><p>TIFFGrowStrips: fix use-after-free on partial realloc failure.</p></li>
+<li><p>Fix NULL dereference in _TIFFReserveLargeEnoughWriteBuffer() by validating
+the strip bytecount array before accessing it.</p></li>
+<li><p>TIFFRGBAImage: avoid int overflows in put functions (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/830">issue #830</a>)</p></li>
+<li><p>tif_getimage: fix inconsistent fromskew handling in put16bitbwtile (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/792">issue #792</a>)</p></li>
+<li><p>tif_getimage: Widen pointer-offset arithmetic in tif_getimage</p></li>
+<li><p>putcontig8bitYCbCr44tile: fix wrong fromskew computation (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/798">issue #798</a>)</p></li>
+<li><p>putcontig8bitYCbCr42tile: Reject invalid YCbCr subsampling when image dimensions
+are smaller than the subsampling block to prevent out-of-bounds writes. (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/753">issue #753</a>)</p></li>
+<li><p>TIFFReadRGBAImage(): prevent integer overflow and later heap overflow (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/787">issue #787</a>)</p></li>
+<li><p>TIFFFillStrip/Tile(): avoid excessive memory allocation (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/831">issue #831</a>)</p></li>
+<li><p>TIFFLinkDirectory() checks for IFD loops (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/788">issue #788</a>)</p></li>
+<li><p>Check result of _TIFFCheckRealloc to prevent memory leaks and segmentation fault when reallocation fails.</p></li>
+<li><p>TIFFVTileSize64(): in YCbCr contig non upsampled mode, validate td_samplesperpixel==3 (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/805">issue #805</a>)</p></li>
+<li><p>TIFFReadDirEntryPersampleShort(): be tolerant to tags like SampleFormat not
+having 1 or SamplesPerPixel values (<a class="reference external" href="https://github.com/OSGeo/gdal/issues/13465">https://github.com/OSGeo/gdal/issues/13465</a>)</p></li>
+<li><p>tif_getimage: reject tile widths that would overflow toskew (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/808">issue #808</a>)</p></li>
+<li><p>Fix integer overflow in _TIFFPartialReadStripArray on 32-bit.</p></li>
+<li><p>TIFFAppendToStrip(): add some checks to avoid null-pointer-dereferencing (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/777">issue #777</a>).</p></li>
+<li><dl class="simple">
+<dt>_TIFFGetStrileOffsetOrByteCountValue(): fix potential crash on corrupted files</dt><dd><p>when file opened in 'O' mode (<a class="reference external" href="https://issues.oss-fuzz.com/issues/471328917">https://issues.oss-fuzz.com/issues/471328917</a>)</p>
+</dd>
+</dl>
+</li>
+<li><p>TIFFReadDirectory(): re-set TIFF_LAZYSTRILELOAD if file opened in 'O' mode</p></li>
+<li><p>_TIFFMergeFields(): avoid NULL ptr dereference (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/755">issue #755</a>).</p></li>
+<li><dl class="simple">
+<dt>Check td_stripbytecount_p and td_stripoffset_p for NULL pointer before (re-)writing to file.</dt><dd><p>(<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/749">issue #749</a>)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>JPEGDecodeRaw: initialize output buffer to avoid returning uninitialized memory</dt><dd><p>(<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/892">issue #892</a>)</p>
+</dd>
+</dl>
+</li>
+<li><p>JPEG decompressor: initialize output buffer when JPEG image is smaller than
+strile dimension to avoid heap memory disclosure (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/826">issue #826</a>)</p></li>
+<li><dl class="simple">
+<dt>JPEG: fix generation of tiled 12-bit JPEG compressed files with libjpeg-turbo 3.0.3</dt><dd><p>(<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/773">issue #773</a>)</p>
+</dd>
+</dl>
+</li>
+<li><p>JPEGDecode(): fix memory leak in error code path
+(<a class="reference external" href="https://issues.oss-fuzz.com/issues/471945501">https://issues.oss-fuzz.com/issues/471945501</a>)</p></li>
+<li><p>tif_jpeg: reject mismatched JPEG data precision to avoid write overflow</p></li>
+<li><p>Fix signed left-shift UB in LogLuv RANDITHER encoding (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/850">issue #850</a>)</p></li>
+<li><p>PixarLog: error out on invalid ABGR output buffer sizes.</p></li>
+<li><p>PixarLog: complete ABGR bounds check for multi-row strip decoding.</p></li>
+<li><p>PixarLog: fix heap-buffer-overflow in 8BITABGR decode with stride 3 (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/824">issue #824</a>)</p></li>
+<li><p>PixarLog: fix undoing horizontal differencing when SamplesPerPixel != 3 and 4 (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/789">issue #789</a>).</p></li>
+<li><p>PixarLog codec: fix potential integer overflow/out-of-bounds access (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/797">issue #797</a>)</p></li>
+<li><p>TIFFAdvanceDirectory(): avoid potential read heap-buffer-overflow in mmap code path on 32 bit builds
+(<a class="reference external" href="https://issues.oss-fuzz.com/issues/506737072">https://issues.oss-fuzz.com/issues/506737072</a>)</p></li>
+<li><p>OJPEG: fix integer overflow in subsampling buffer allocation.</p></li>
+<li><p>OJPEG  fix potential integer overflow/out-of-bounds access (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/796">issue #796</a>).</p></li>
+<li><p>ojpeg: prevent EOF infinite loop (fixes commit 2a3d55b)</p></li>
+<li><p>fix null pointer deference in <a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/782">issue #782</a>.</p></li>
+<li><p>fix stack-overflow in <a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/784">issue #784</a>.</p></li>
+</ul>
+<p>Other changes:</p>
+<ul class="simple">
+<li><p>Change EXIF and GPS tag type from IFD8 to LONG8 per EXIF-specification (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/739">issue #739</a>).</p></li>
+<li><p>Harden integer size and offset calculations (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/897">issue #897</a>)</p></li>
+<li><p>TIFFComputeTile/TIFFComputeStrip: use overflow-checked multiplication</p></li>
+<li><p>Move widening casts inside multiplication scope.</p></li>
+<li><p>Lots of compiler warning fixes related to enabling more warning flags</p></li>
+<li><p>Align writing and reading of TIFF_LONG8 and TIFF_IFD8 tags (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/773">issue #773</a>)</p></li>
+<li><p>TIFFFillStrip(): prevent harmless unsigned integer overflow</p></li>
+</ul>
+</section>
+<section id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Doc: TIFFFdOpen(): clarify role of filename parameter (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/823">issue #823</a>)</p></li>
+<li><p>Add libtiff/README_for_libtiff_developpers.md</p></li>
+</ul>
+</section>
+<section id="tools-changes">
+<h2>Tools changes<a class="headerlink" href="#tools-changes" title="Link to this heading">¶</a></h2>
+<p>New/improved functionality:</p>
+<p>None</p>
+<p>Bug fixes:</p>
+<ul class="simple">
+<li><p>tools: validate numeric command-line arguments (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/799">issue #799</a>)</p></li>
+<li><p>tiff2pdf: add overflow checks to RGBA/RGBAA sample count computation</p></li>
+<li><p>tiff2pdf: Fix integer overflow in RGBA raster allocation in tiff2pdf by
+validating size computation before _TIFFrealloc() (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/804">issue #804</a>)</p></li>
+<li><p>tiffcrop: fix integer overflow in extractImageSection.</p></li>
+<li><p>tiffcrop: fix byte carry for left/right composite bit offsets.</p></li>
+<li><p>tiffcrop: recompute composite crop dimensions before allocation.</p></li>
+<li><p>tiffcrop: fix uint32 overflows in writeImageSections and getCropOffsets
+(<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/834">issue #834</a>, <a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/835">issue #835</a>, <a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/836">issue #836</a>)</p></li>
+<li><p>tiffcrop: size separated region buffers from actual dimensions</p></li>
+<li><p>tiffcrop: Fix heap-buffer-overflow in composite mode by allocating buffer based
+on final image layout instead of region-based bufftotal  (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/803">issue #803</a>)</p></li>
+<li><p>tiffcrop: fix undefined behaviour (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/790">issue #790</a>)</p></li>
+<li><p>tiffcrop: avoid dangling pointer in loadImage by clearing *read_ptr after free (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/751">issue #751</a>)</p></li>
+<li><p>tiffcrop: fix undefined behaviour in reverseSamples32bits() (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/752">issue #752</a>)</p></li>
+<li><p>Fix integer wraparound checks in raw2tiff/tiffcrop and add missing
+zero-divisor guards in tiff2rgba (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/832">issue #832</a>)</p></li>
+<li><p>tiffsplit: use 7-digit numbered output names.</p></li>
+<li><p>tiffsplit: fix global-buffer-overflow (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/790">issue #790</a>)</p></li>
+<li><p>tiffsplit: check filename length (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/769">issue #769</a>)</p></li>
+<li><p>tiffcmp: validate scanline buffer sizes in mixed planar comparison to prevent out-of-bounds reads (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/802">issue #802</a>)</p></li>
+<li><p>tiffmedian: fix use after free (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/790">issue #790</a>)</p></li>
+<li><p>tiffcp: avoid integer overflow in iskew and oskew (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/770">issue #770</a>)</p></li>
+<li><p>fax2tiff: avoid endless loop on corrupt input (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/759">issue #759</a>)</p></li>
+<li><p>tiffdump: Avoid unaligned memory access for tag field values.</p></li>
+<li><p>tiff2ps: Checking the range of double values in before converting to int32_t. (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/679">issue #679</a>)</p></li>
+</ul>
+</section>
+<section id="changes-to-contributed-and-unsupported-tools">
+<h2>Changes to contributed and unsupported tools<a class="headerlink" href="#changes-to-contributed-and-unsupported-tools" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>thumbnail: prevent integer overflow by capping row count at 256</p></li>
+<li><p>thumbnail: add/improve integer overflow check for image memory allocation.</p></li>
+<li><p>thumbnail: add error handling for missing strip and tile byte counts.</p></li>
+<li><p>thumbnail: fix Out-of-Bounds Write (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/790">issue #790</a>)</p></li>
+<li><p>rgb2ycbcr: fix integer overflow check for pixel count calculation.</p></li>
+<li><p>iptcutil: out-of-bound read fix (<a class="extlink-issue reference external" href="https://gitlab.com/libtiff/libtiff/-/issues/750">issue #750</a>)</p></li>
+</ul>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Changes in TIFF v4.7.2</a><ul>
+<li><a class="reference internal" href="#major-changes">Major changes</a></li>
+<li><a class="reference internal" href="#software-configuration-changes">Software configuration changes</a></li>
+<li><a class="reference internal" href="#library-changes">Library changes</a></li>
+<li><a class="reference internal" href="#documentation">Documentation</a></li>
+<li><a class="reference internal" href="#tools-changes">Tools changes</a></li>
+<li><a class="reference internal" href="#changes-to-contributed-and-unsupported-tools">Changes to contributed and unsupported tools</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="index.html"
+                          title="previous chapter">Release history</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="v4.7.1.html"
+                          title="next chapter">Changes in TIFF v4.7.1</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/releases/v4.7.2.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="v4.7.1.html" title="Changes in TIFF v4.7.1"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Release history"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">LibTIFF 4.7.2 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Release history</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Changes in TIFF v4.7.2</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 1988-2025, LibTIFF contributors.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

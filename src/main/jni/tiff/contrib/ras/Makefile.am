@@ -23,6 +23,7 @@
 
 # Process this file with automake to produce Makefile.in.
 
-EXTRA_DIST = README ras2tif.c tif2ras.c
-
-INCLUDES = -I../../libtiff -I$(top_srcdir)/libtiff
+EXTRA_DIST = \
+	README \
+	ras2tif.c \
+	tif2ras.c

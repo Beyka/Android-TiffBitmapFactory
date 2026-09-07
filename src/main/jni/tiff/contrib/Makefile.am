@@ -23,7 +23,9 @@
 
 # Process this file with automake to produce Makefile.in.
 
-EXTRA_DIST = README
+EXTRA_DIST = \
+	CMakeLists.txt \
+	README
 
-SUBDIRS = acorn addtiffo dbs iptcutil mac-cw mac-mpw mfs pds ras stream tags win_dib
+SUBDIRS = addtiffo dbs iptcutil mfs pds ras stream tags win_dib
 

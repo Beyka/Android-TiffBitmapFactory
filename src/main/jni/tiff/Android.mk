@@ -17,13 +17,16 @@ LOCAL_TIFF_SRC_FILES := \
 	libtiff/tif_tile.c \
 	libtiff/tif_open.c \
 	libtiff/tif_getimage.c \
+	libtiff/tif_hash_set.c \
 	libtiff/tif_pixarlog.c \
 	libtiff/tif_warning.c \
 	libtiff/tif_dumpmode.c \
 	libtiff/tif_jpeg.c \
+	libtiff/tif_jpeg_12.c \
 	libtiff/tif_jbig.c \
+	libtiff/tif_lerc.c \
+	libtiff/tif_lzma.c \
 	libtiff/tif_predict.c \
-	libtiff/mkg3states.c \
 	libtiff/tif_write.c \
 	libtiff/tif_error.c \
 	libtiff/tif_version.c \
@@ -41,9 +44,9 @@ LOCAL_TIFF_SRC_FILES := \
 	libtiff/tif_aux.c \
 	libtiff/tif_fax3sm.c \
 	libtiff/tif_swab.c \
-	libtiff/tif_strip.c
-
-LOCAL_TIFF_SRC_FILES += port/lfind.c 
+	libtiff/tif_strip.c \
+	libtiff/tif_webp.c \
+	libtiff/tif_zstd.c
 ###########################################################
 
 LOCAL_SRC_FILES:= $(LOCAL_TIFF_SRC_FILES)

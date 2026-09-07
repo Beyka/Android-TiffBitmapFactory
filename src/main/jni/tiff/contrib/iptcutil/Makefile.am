@@ -25,12 +25,18 @@
 
 LIBTIFF = $(top_builddir)/libtiff/libtiff.la
 
-EXTRA_DIST = README test.iptc test.txt
+EXTRA_DIST = \
+	CMakeLists.txt \
+	README \
+	test.iptc \
+	test.txt
 
+if TIFF_CONTRIB
 noinst_PROGRAMS = iptcutil
+endif
 
 iptcutil_SOURCES = iptcutil.c
 iptcutil_LDADD = $(LIBTIFF)
 
-INCLUDES = -I$(top_srcdir)/libtiff
+AM_CPPFLAGS = -I$(top_srcdir)/libtiff
 

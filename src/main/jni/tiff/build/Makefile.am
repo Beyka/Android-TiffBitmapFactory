@@ -1,4 +1,3 @@
-# $Id: Makefile.am,v 1.1 2007/02/24 15:03:49 dron Exp $
 #
 # Tag Image File Format (TIFF) Software
 #
@@ -25,7 +24,9 @@
 
 # Process this file with automake to produce Makefile.in.
 
-EXTRA_DIST = README
+EXTRA_DIST = \
+	CMakeLists.txt \
+	README
 
 SUBDIRS = 
 

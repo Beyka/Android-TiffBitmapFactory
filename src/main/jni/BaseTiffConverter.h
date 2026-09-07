@@ -55,12 +55,12 @@ class BaseTiffConverter {
         jclass jIProgressListenerClass = NULL;
         jclass jThreadClass = NULL;
 
-        uint32 width;
-        uint32 height;
-        uint32 outWidth;
-        uint32 outHeight;
-        uint32 outStartX;
-        uint32 outStartY;
+        uint32_t width;
+        uint32_t height;
+        uint32_t outWidth;
+        uint32_t outHeight;
+        uint32_t outStartX;
+        uint32_t outStartY;
 
         jlong availableMemory;
         jboolean throwException;
@@ -70,7 +70,7 @@ class BaseTiffConverter {
         jboolean appendTiff;
         jint compressionInt;
         jint orientationInt;
-        uint16 resUnit;
+        uint16_t resUnit;
         float xRes;
         float yRes;
         jstring description;
@@ -88,9 +88,9 @@ class BaseTiffConverter {
         char *getCreationDate();
         void sendProgress(jlong, jlong);
         jboolean checkStop();
-        void rotateTileLinesVertical(uint32, uint32, uint32*, uint32*);
-        void rotateTileLinesHorizontal(uint32, uint32, uint32*, uint32*);
-        void normalizeTile(uint32, uint32, uint32*);
+        void rotateTileLinesVertical(uint32_t, uint32_t, uint32_t*, uint32_t*);
+        void rotateTileLinesHorizontal(uint32_t, uint32_t, uint32_t*, uint32_t*);
+        void normalizeTile(uint32_t, uint32_t, uint32_t*);
 
 };
 

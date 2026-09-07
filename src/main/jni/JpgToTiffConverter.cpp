@@ -341,22 +341,22 @@ jboolean JpgToTiffConverter::convert()
     return conversion_result;
 }
 
-unsigned char * JpgToTiffConverter::convertArgbToBilevel(unsigned char *data, int components, uint32 width, uint32 height)
+unsigned char * JpgToTiffConverter::convertArgbToBilevel(unsigned char *data, int components, uint32_t width, uint32_t height)
 {
     unsigned char red;
     unsigned char green;
     unsigned char blue;
 
-    uint32 crPix;
-    uint32 grayPix;
+    uint32_t crPix;
+    uint32_t grayPix;
     int bilevelWidth = (width / 8 + 0.5);
 
     unsigned char *dest = (unsigned char *) malloc(sizeof(unsigned char) * bilevelWidth * height);
 
-    uint32 maxGrey = (components > 1) ? (0.2125 * 255 + 0.7154 * 255 + 0.0721 * 255) : 255;
-    uint32 halfGrey = maxGrey/2;
+    uint32_t maxGrey = (components > 1) ? (0.2125 * 255 + 0.7154 * 255 + 0.0721 * 255) : 255;
+    uint32_t halfGrey = maxGrey/2;
 
-    uint32 shift = 0;
+    uint32_t shift = 0;
     unsigned char charsum = 0;
     int k = 7;
     for (int y = 0; y < height; y++) {

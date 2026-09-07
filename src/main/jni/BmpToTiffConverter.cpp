@@ -189,8 +189,8 @@ jboolean BmpToTiffConverter::convert()
     unsigned long estimateMem = rowPerStrip * width * 4 * 2;//need 2 buffers for read data from bitmap. Check getPixelsFromBmp method
 
     if (compressionInt == COMPRESSION_JPEG) {
-        estimateMem += width * sizeof(uint32);//temp array for writing JPEG lines
-        estimateMem += width * sizeof(uint32);//temp array for fliping bitmap data in getPixelsFromBmp method
+        estimateMem += width * sizeof(uint32_t);//temp array for writing JPEG lines
+        estimateMem += width * sizeof(uint32_t);//temp array for fliping bitmap data in getPixelsFromBmp method
     } else if (compressionInt == COMPRESSION_CCITTRLE || compressionInt == COMPRESSION_CCITTFAX3 || compressionInt == COMPRESSION_CCITTFAX4) {
         estimateMem += (width/8 + 0.5) * rowPerStrip; // bilevel array
     } else {
@@ -225,7 +225,7 @@ jboolean BmpToTiffConverter::convert()
                 rowToRead = height - y;
             }
             sendProgress(y * width, total);
-            uint32 *pixels = getPixelsFromBmp(y, rowToRead);
+            uint32_t *pixels = getPixelsFromBmp(y, rowToRead);
             unsigned char *bilevel = convertArgbToBilevel(pixels, width, rowToRead);
             free(pixels);
             ret = TIFFWriteEncodedStrip(tiffImage, y/rowToRead, bilevel, compressedWidth * sizeof(unsigned char) * rowToRead);
@@ -241,10 +241,10 @@ jboolean BmpToTiffConverter::convert()
             rowToRead = height - ys;
         }
         sendProgress(ys * width, total);
-        uint32 *pixels = getPixelsFromBmp(ys, rowToRead);
-        uint32 *pixelsline = new uint32[width];
+        uint32_t *pixels = getPixelsFromBmp(ys, rowToRead);
+        uint32_t *pixelsline = new uint32_t[width];
         for (int k = 0; k < rowToRead; k++) {
-            memcpy(pixelsline, &pixels [k * width], width * sizeof(uint32));
+            memcpy(pixelsline, &pixels [k * width], width * sizeof(uint32_t));
             ret = TIFFWriteScanline(tiffImage, pixelsline, ys + k, 0);
         }
         delete[] pixelsline;
@@ -262,8 +262,8 @@ jboolean BmpToTiffConverter::convert()
             }
             //LOGII("rowToRead", rowToRead);
             sendProgress(y * width, total);
-            uint32 *pixels = getPixelsFromBmp(y, rowToRead);
-            TIFFWriteEncodedStrip(tiffImage, y/rowPerStrip, pixels, width * sizeof(uint32) * rowToRead);
+            uint32_t *pixels = getPixelsFromBmp(y, rowToRead);
+            TIFFWriteEncodedStrip(tiffImage, y/rowPerStrip, pixels, width * sizeof(uint32_t) * rowToRead);
             free(pixels);
         }
     }
@@ -288,7 +288,7 @@ void BmpToTiffConverter::readHeaders()
     LOGIS("inf read ", (char*)inf);
 }
 
-uint32 *BmpToTiffConverter::getPixelsFromBmp(int offset, int limit)
+uint32_t *BmpToTiffConverter::getPixelsFromBmp(int offset, int limit)
 {
     int componentPerPixel = inf->biBitCount/8;
     LOGII("componentPerPixel", inf->biBitCount);
@@ -305,7 +305,7 @@ uint32 *BmpToTiffConverter::getPixelsFromBmp(int offset, int limit)
     return NULL;
 }
 
-uint32 *BmpToTiffConverter::getPixelsFrom16Bmp(int offset, int limit)
+uint32_t *BmpToTiffConverter::getPixelsFrom16Bmp(int offset, int limit)
 {
     unsigned char *buf;
     int size;
@@ -336,12 +336,12 @@ uint32 *BmpToTiffConverter::getPixelsFrom16Bmp(int offset, int limit)
     LOGII("Read bytes", n);
 
     int temp, line, i, j, numImgBytes, ind = 0;
-    uint32 *pixels;
+    uint32_t *pixels;
 
     temp = width * 2;
     line = temp + (width * 2) % 4;//width % 4;
     numImgBytes = (4 * (width * limit));
-    pixels = (uint32*)malloc(numImgBytes);
+    pixels = (uint32_t*)malloc(numImgBytes);
 
     int pixelss = 0;
 
@@ -374,11 +374,11 @@ uint32 *BmpToTiffConverter::getPixelsFrom16Bmp(int offset, int limit)
         ind++;
     }
 
-    uint32 *tmp = new uint32[width];
+    uint32_t *tmp = new uint32_t[width];
     for (i = 0; i < limit/2 ;i++) {
-        memcpy(tmp, pixels + i * width, width * sizeof(uint32));
-        memcpy(pixels + i * width, pixels + (limit - 1- i) * width , width * sizeof(uint32));
-        memcpy(pixels + (limit - 1- i) * width , tmp, width * sizeof(uint32));
+        memcpy(tmp, pixels + i * width, width * sizeof(uint32_t));
+        memcpy(pixels + i * width, pixels + (limit - 1- i) * width , width * sizeof(uint32_t));
+        memcpy(pixels + (limit - 1- i) * width , tmp, width * sizeof(uint32_t));
     }
     free (tmp);
 
@@ -387,7 +387,7 @@ uint32 *BmpToTiffConverter::getPixelsFrom16Bmp(int offset, int limit)
     return pixels;
 }
 
-uint32 *BmpToTiffConverter::getPixelsFrom24Bmp(int offset, int limit)
+uint32_t *BmpToTiffConverter::getPixelsFrom24Bmp(int offset, int limit)
 {
     unsigned char *buf;
     int size;
@@ -417,12 +417,12 @@ uint32 *BmpToTiffConverter::getPixelsFrom24Bmp(int offset, int limit)
     LOGII("Read bytes", n);
 
     int temp, line, i, j, numImgBytes, ind = 0;
-    uint32 *pixels;
+    uint32_t *pixels;
 
     temp = width * 3;
     line = temp + width % 4;//width % 4;
     numImgBytes = (4 * (width * limit));
-    pixels = (uint32*)malloc(numImgBytes);
+    pixels = (uint32_t*)malloc(numImgBytes);
 
     numImgBytes = line * limit;
     for (i = 0; i < numImgBytes; i++) {
@@ -445,11 +445,11 @@ uint32 *BmpToTiffConverter::getPixelsFrom24Bmp(int offset, int limit)
         ind++;
     }
 
-    uint32 *tmp = new uint32[width];
+    uint32_t *tmp = new uint32_t[width];
     for (i = 0; i < limit/2 ;i++) {
-        memcpy(tmp, pixels + i * width, width * sizeof(uint32));
-        memcpy(pixels + i * width, pixels + (limit - 1- i) * width , width * sizeof(uint32));
-        memcpy(pixels + (limit - 1- i) * width , tmp, width * sizeof(uint32));
+        memcpy(tmp, pixels + i * width, width * sizeof(uint32_t));
+        memcpy(pixels + i * width, pixels + (limit - 1- i) * width , width * sizeof(uint32_t));
+        memcpy(pixels + (limit - 1- i) * width , tmp, width * sizeof(uint32_t));
     }
     free (tmp);
 
@@ -458,7 +458,7 @@ uint32 *BmpToTiffConverter::getPixelsFrom24Bmp(int offset, int limit)
     return pixels;
 }
 
-uint32 *BmpToTiffConverter::getPixelsFrom32Bmp(int offset, int limit)
+uint32_t *BmpToTiffConverter::getPixelsFrom32Bmp(int offset, int limit)
 {
     unsigned char *buf;
     int size;
@@ -489,11 +489,11 @@ uint32 *BmpToTiffConverter::getPixelsFrom32Bmp(int offset, int limit)
     LOGII("Read bytes", n);
 
     int temp, line, i, j, numImgBytes, ind = 0;
-    uint32 *pixels;
+    uint32_t *pixels;
 
     line = width * 4;//width % 4;
     numImgBytes = (4 * (width * limit));
-    pixels = (uint32*)malloc(numImgBytes);
+    pixels = (uint32_t*)malloc(numImgBytes);
 
     for (i = 0; i < numImgBytes; i++) {
         unsigned char r, g, b, a = 0b11111111;
@@ -512,11 +512,11 @@ uint32 *BmpToTiffConverter::getPixelsFrom32Bmp(int offset, int limit)
         ind++;
     }
 
-    uint32 *tmp = new uint32[width];
+    uint32_t *tmp = new uint32_t[width];
     for (i = 0; i < limit/2 ;i++) {
-        memcpy(tmp, pixels + i * width, width * sizeof(uint32));
-        memcpy(pixels + i * width, pixels + (limit - 1- i) * width , width * sizeof(uint32));
-        memcpy(pixels + (limit - 1- i) * width , tmp, width * sizeof(uint32));
+        memcpy(tmp, pixels + i * width, width * sizeof(uint32_t));
+        memcpy(pixels + i * width, pixels + (limit - 1- i) * width , width * sizeof(uint32_t));
+        memcpy(pixels + (limit - 1- i) * width , tmp, width * sizeof(uint32_t));
     }
     free (tmp);
 
@@ -525,22 +525,22 @@ uint32 *BmpToTiffConverter::getPixelsFrom32Bmp(int offset, int limit)
     return pixels;
 }
 
-unsigned char * BmpToTiffConverter::convertArgbToBilevel(uint32 *data, uint32 width, uint32 height)
+unsigned char * BmpToTiffConverter::convertArgbToBilevel(uint32_t *data, uint32_t width, uint32_t height)
 {
     unsigned char red;
     unsigned char green;
     unsigned char blue;
 
-    uint32 crPix;
-    uint32 grayPix;
+    uint32_t crPix;
+    uint32_t grayPix;
     int bilevelWidth = (width / 8 + 0.5);
 
     unsigned char *dest = (unsigned char *) malloc(sizeof(unsigned char) * bilevelWidth * height);
 
-    uint32 maxGrey = 0.2125 * 255 + 0.7154 * 255 + 0.0721 * 255;
-    uint32 halfGrey = maxGrey/2;
+    uint32_t maxGrey = 0.2125 * 255 + 0.7154 * 255 + 0.0721 * 255;
+    uint32_t halfGrey = maxGrey/2;
 
-    uint32 shift = 0;
+    uint32_t shift = 0;
     unsigned char charsum = 0;
     int k = 7;
     for (int y = 0; y < height; y++) {
@@ -548,7 +548,7 @@ unsigned char * BmpToTiffConverter::convertArgbToBilevel(uint32 *data, uint32 wi
         charsum = 0;
         k = 7;
         for (int i = 0; i < width; i++) {
-            uint32 *px = &data[y * width + i];
+            uint32_t *px = &data[y * width + i];
                 red = px[0];
                 green = px[1];
                 blue = px[2];

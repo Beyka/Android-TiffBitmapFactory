@@ -226,7 +226,7 @@ jboolean TiffToPngConverter::convert()
 }
 
 jboolean TiffToPngConverter::convertFromImage() {
-    int origBufferSize = width * height * sizeof(uint32);
+    int origBufferSize = width * height * sizeof(uint32_t);
 
     unsigned long estimateMem = origBufferSize;
     estimateMem += 4 * outWidth * sizeof(png_bytep);//working buf
@@ -239,8 +239,8 @@ jboolean TiffToPngConverter::convertFromImage() {
         return JNI_FALSE;
     }
 
-    uint32 *origBuffer = NULL;
-    origBuffer = (uint32 *) _TIFFmalloc(origBufferSize);
+    uint32_t *origBuffer = NULL;
+    origBuffer = (uint32_t *) _TIFFmalloc(origBufferSize);
     if (origBuffer == NULL) {
         const char *message = "Can\'t allocate buffer";
         LOGE(*message);
@@ -291,23 +291,23 @@ jboolean TiffToPngConverter::convertFromImage() {
 }
 
 jboolean TiffToPngConverter::convertFromTile() {
-    uint32 tileWidth = 0, tileHeight = 0;
+    uint32_t tileWidth = 0, tileHeight = 0;
     TIFFGetField(tiffImage, TIFFTAG_TILEWIDTH, &tileWidth);
     TIFFGetField(tiffImage, TIFFTAG_TILEWIDTH, &tileHeight);
     LOGII("Tile width", tileWidth);
     LOGII("Tile height", tileHeight);
 
-    //uint32 *raster = (uint32 *)_TIFFmalloc(width * tileHeight * sizeof(uint32));
-    uint32 workingWidth = (width/tileWidth + (width%tileWidth == 0 ? 0 : 1)) * tileWidth;
+    //uint32_t *raster = (uint32_t *)_TIFFmalloc(width * tileHeight * sizeof(uint32_t));
+    uint32_t workingWidth = (width/tileWidth + (width%tileWidth == 0 ? 0 : 1)) * tileWidth;
     LOGII("workingWidth ", workingWidth );
-    uint32 rasterSize =  workingWidth  * tileHeight ;
+    uint32_t rasterSize =  workingWidth  * tileHeight ;
     LOGII("rasterSize ", rasterSize );
-    //uint32 *raster = (uint32 *)_TIFFmalloc(rasterSize * sizeof(uint32));
+    //uint32_t *raster = (uint32_t *)_TIFFmalloc(rasterSize * sizeof(uint32_t));
 
 
-    unsigned long estimateMem = rasterSize * sizeof(uint32); //raster
-    estimateMem += tileWidth * tileHeight * sizeof(uint32); //tile raster
-    estimateMem += tileWidth * sizeof (uint32); //working buf
+    unsigned long estimateMem = rasterSize * sizeof(uint32_t); //raster
+    estimateMem += tileWidth * tileHeight * sizeof(uint32_t); //tile raster
+    estimateMem += tileWidth * sizeof (uint32_t); //working buf
     estimateMem += 4 * outWidth * sizeof(png_bytep); //bufer for writing to png
     LOGII("estimateMem", estimateMem);
     if (estimateMem > availableMemory && availableMemory != -1) {
@@ -318,23 +318,23 @@ jboolean TiffToPngConverter::convertFromTile() {
         return JNI_FALSE;
     }
 
-    uint32 *rasterTile = (uint32 *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32));
-    uint32 *work_line_buf = (uint32*)_TIFFmalloc(tileWidth * sizeof (uint32));
+    uint32_t *rasterTile = (uint32_t *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32_t));
+    uint32_t *work_line_buf = (uint32_t*)_TIFFmalloc(tileWidth * sizeof (uint32_t));
 
     jlong total = ((width/tileWidth + (width%tileWidth == 0 ? 0 : 1)) * tileWidth)
                 * ((height/tileHeight + (height%tileHeight == 0 ? 0 : 1)) * tileHeight);
         sendProgress(0, total);
 
-    uint32 row, column;
+    uint32_t row, column;
 
     int startx = -1, starty = -1, endx = -1, endy = -1;
-    uint32 imageWritedLines = 0;
+    uint32_t imageWritedLines = 0;
 
     for (row = 0; row < height; row += tileHeight) {
         sendProgress(row * width, total);
         endy = -1;
         starty = -1;
-        uint32 *raster = (uint32 *)_TIFFmalloc(rasterSize * sizeof(uint32));
+        uint32_t *raster = (uint32_t *)_TIFFmalloc(rasterSize * sizeof(uint32_t));
 
         for (column = 0; column < width; column += tileWidth) {
             if (checkStop()) {
@@ -392,7 +392,7 @@ jboolean TiffToPngConverter::convertFromTile() {
                         if (ty > endy)
                             endy = ty;
 
-                        uint32 rasterPos = (ty ) * workingWidth + (tx + column);
+                        uint32_t rasterPos = (ty ) * workingWidth + (tx + column);
                         //LOGII("rp", rasterPos);
                         raster[rasterPos] = rasterTile[ty * tileWidth + tx];
                     }
@@ -443,14 +443,14 @@ jboolean TiffToPngConverter::convertFromTile() {
 }
 
 jboolean TiffToPngConverter::convertFromStrip() {
-    uint32 stripSize = TIFFStripSize (tiffImage);
-    uint32 stripMax = TIFFNumberOfStrips (tiffImage);
+    uint32_t stripSize = TIFFStripSize (tiffImage);
+    uint32_t stripMax = TIFFNumberOfStrips (tiffImage);
     int rowPerStrip = -1;
     TIFFGetField(tiffImage, TIFFTAG_ROWSPERSTRIP, &rowPerStrip);
     LOGII("RPS", rowPerStrip);
 
-    unsigned long estimateMem = width * sizeof(uint32);//working buf
-    estimateMem += width * rowPerStrip * sizeof (uint32);//raster
+    unsigned long estimateMem = width * sizeof(uint32_t);//working buf
+    estimateMem += width * rowPerStrip * sizeof (uint32_t);//raster
     estimateMem += 4 * outWidth * sizeof(png_bytep); //buf for writing to png
     LOGII("estimateMem", estimateMem);
     if (estimateMem > availableMemory && availableMemory != -1) {
@@ -464,10 +464,10 @@ jboolean TiffToPngConverter::convertFromStrip() {
     jlong total = stripMax * rowPerStrip * width;
     sendProgress(0, total);
 
-    uint32* work_line_buf = (uint32 *)_TIFFmalloc(width * sizeof(uint32));
-    uint32* raster = (uint32 *)_TIFFmalloc(width * rowPerStrip * sizeof (uint32));
+    uint32_t* work_line_buf = (uint32_t *)_TIFFmalloc(width * sizeof(uint32_t));
+    uint32_t* raster = (uint32_t *)_TIFFmalloc(width * rowPerStrip * sizeof (uint32_t));
 
-    uint32 rows_to_write = 0;
+    uint32_t rows_to_write = 0;
 
     for (int i = 0; i < stripMax*rowPerStrip; i += rowPerStrip) {
         if (checkStop()) {
@@ -507,7 +507,7 @@ jboolean TiffToPngConverter::convertFromStrip() {
 
                 for (int y = 0; y < rows_to_write; y++) {
                     for (int x = 0; x < width/2; x++) {
-                        uint32 buf = raster[y * width + x];
+                        uint32_t buf = raster[y * width + x];
                         raster[y * width + x] = raster[y * width + width - 1 - x];
                         raster[y * width + width - 1 - x] = buf;
                     }
@@ -545,7 +545,7 @@ jboolean TiffToPngConverter::convertFromStrip() {
 
 int TiffToPngConverter::getDecodeMethod() {
     int method = -1;
-	uint32 tileWidth, tileHeight;
+	uint32_t tileWidth, tileHeight;
 	int readTW = 0, readTH = 0;
     readTW = TIFFGetField(tiffImage, TIFFTAG_TILEWIDTH, &tileWidth);
     readTH = TIFFGetField(tiffImage, TIFFTAG_TILELENGTH, &tileHeight);
@@ -554,8 +554,8 @@ int TiffToPngConverter::getDecodeMethod() {
     } else {
         int rowPerStrip = -1;
     	TIFFGetField(tiffImage, TIFFTAG_ROWSPERSTRIP, &rowPerStrip);
-    	uint32 stripSize = TIFFStripSize (tiffImage);
-    	uint32 stripMax = TIFFNumberOfStrips (tiffImage);
+    	uint32_t stripSize = TIFFStripSize (tiffImage);
+    	uint32_t stripMax = TIFFNumberOfStrips (tiffImage);
     	int estimate = width * 3;
     	LOGII("RPS", rowPerStrip);
     	LOGII("stripSize", stripSize);

@@ -51,7 +51,7 @@ class JpgToTiffConverter : public BaseTiffConverter
         struct jpeg_error_mgr jerr;
 
         //METHODDEF(void) JpgToTiffConverter::my_error_exit (j_common_ptr)
-        unsigned char * convertArgbToBilevel(unsigned char *, int, uint32, uint32);
+        unsigned char * convertArgbToBilevel(unsigned char *, int, uint32_t, uint32_t);
 
 };
 

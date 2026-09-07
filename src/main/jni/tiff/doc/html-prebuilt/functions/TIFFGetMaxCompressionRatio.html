@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>TIFFGetMaxCompressionRatio &#8212; LibTIFF 4.7.2 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=649a27d8" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinxdoc.css?v=34905f61" />
+    <script src="../_static/documentation_options.js?v=2edf0659"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="TIFFmemory" href="TIFFmemory.html" />
+    <link rel="prev" title="TIFFGetField" href="TIFFGetField.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="TIFFmemory.html" title="TIFFmemory"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="TIFFGetField.html" title="TIFFGetField"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">LibTIFF 4.7.2 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../functions.html" accesskey="U">TIFF Functions Overview</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">TIFFGetMaxCompressionRatio</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="tiffgetmaxcompressionratio">
+<h1>TIFFGetMaxCompressionRatio<a class="headerlink" href="#tiffgetmaxcompressionratio" title="Link to this heading">¶</a></h1>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 4.7.2.</span></p>
+</div>
+<section id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Link to this heading">¶</a></h2>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;tiffio.h&gt;</span>
+</pre></div>
+</div>
+<dl class="c function">
+<dt class="sig sig-object c" id="c.TIFFGetMaxCompressionRatio">
+<span class="n"><span class="pre">uint64_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">TIFFGetMaxCompressionRatio</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">TIFF</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">tif</span></span><span class="sig-paren">)</span><span class="p"><span class="pre">;</span></span><a class="headerlink" href="#c.TIFFGetMaxCompressionRatio" title="Link to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+</section>
+<section id="description">
+<h2>Description<a class="headerlink" href="#description" title="Link to this heading">¶</a></h2>
+<p><a class="reference internal" href="#c.TIFFGetMaxCompressionRatio" title="TIFFGetMaxCompressionRatio"><code class="xref c c-func docutils literal notranslate"><span class="pre">TIFFGetMaxCompressionRatio()</span></code></a> returns the maximum compression ratio
+for the current codec, which is typically achieved for a uncompressed buffer
+with all bytes at zero.</p>
+<p>This function can be used to determine if the compressed size of a strip or tile
+is realistic compared to the expected uncompressed size, to prevent some
+denial-of-service scenarios.</p>
+<p>Depending on the codec, it may take into account the strip or tile size,
+number of samples per pixel, etc.</p>
+<p>Some codecs don't implement that method, or only for a subset of configurations,
+and may return 0 when the maximum compression ratio is unknown.</p>
+</section>
+<section id="return-values">
+<h2>Return values<a class="headerlink" href="#return-values" title="Link to this heading">¶</a></h2>
+<p>0 is returned if no maximum compression ratio is known.
+1 is returned when there is no compression.
+Values strictly bigger than 1 are returned when a maximum compression ratio is
+known.</p>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">TIFFGetMaxCompressionRatio</a><ul>
+<li><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li><a class="reference internal" href="#description">Description</a></li>
+<li><a class="reference internal" href="#return-values">Return values</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="TIFFGetField.html"
+                          title="previous chapter">TIFFGetField</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="TIFFmemory.html"
+                          title="next chapter">TIFFmemory</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/functions/TIFFGetMaxCompressionRatio.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="TIFFmemory.html" title="TIFFmemory"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="TIFFGetField.html" title="TIFFGetField"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">LibTIFF 4.7.2 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../functions.html" >TIFF Functions Overview</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">TIFFGetMaxCompressionRatio</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 1988-2025, LibTIFF contributors.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

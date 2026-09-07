@@ -42,7 +42,7 @@ JNIEXPORT jboolean JNICALL Java_org_beyka_tiffbitmapfactory_TiffSaver_save
 JNIEXPORT void JNICALL Java_org_beyka_tiffbitmapfactory_TiffSaver_nativeCloseFd
         (JNIEnv *, jclass, jint);
 
-unsigned char *convertArgbToBilevel(uint32 *, jint, jint);
+unsigned char *convertArgbToBilevel(uint32_t *, jint, jint);
 
 char *getCreationDate();
 

@@ -296,7 +296,7 @@ jboolean BaseTiffConverter::checkStop() {
     return interupted || stop;
 }
 
-void BaseTiffConverter::rotateTileLinesVertical(uint32 tileHeight, uint32 tileWidth, uint32* whatRotate, uint32 *bufferLine) {
+void BaseTiffConverter::rotateTileLinesVertical(uint32_t tileHeight, uint32_t tileWidth, uint32_t* whatRotate, uint32_t *bufferLine) {
     for (int line = 0; line < tileHeight / 2; line++) {
         unsigned int  *top_line, *bottom_line;
         top_line = whatRotate + tileWidth * line;
@@ -307,8 +307,8 @@ void BaseTiffConverter::rotateTileLinesVertical(uint32 tileHeight, uint32 tileWi
     }
 }
 
-void BaseTiffConverter::rotateTileLinesHorizontal(uint32 tileHeight, uint32 tileWidth, uint32* whatRotate, uint32 *bufferLine) {
-    uint32 buf;
+void BaseTiffConverter::rotateTileLinesHorizontal(uint32_t tileHeight, uint32_t tileWidth, uint32_t* whatRotate, uint32_t *bufferLine) {
+    uint32_t buf;
     for (int y = 0; y < tileHeight; y++) {
         for (int x = 0; x < tileWidth / 2; x++) {
             buf = whatRotate[y * tileWidth + x];
@@ -318,7 +318,7 @@ void BaseTiffConverter::rotateTileLinesHorizontal(uint32 tileHeight, uint32 tile
     }
 }
 
-void BaseTiffConverter::normalizeTile(uint32 tileHeight, uint32 tileWidth, uint32* rasterTile) {
+void BaseTiffConverter::normalizeTile(uint32_t tileHeight, uint32_t tileWidth, uint32_t* rasterTile) {
     //normalize tile
     //find start and end pixels
     int sx = -1, ex= -1, sy= -1, ey= -1;
@@ -344,7 +344,7 @@ void BaseTiffConverter::normalizeTile(uint32 tileHeight, uint32 tileWidth, uint3
     }
     if (sy != 0) {
         for (int y = 0; y < tileHeight - sy -1; y++) {
-            memcpy(rasterTile + (y * tileWidth), rasterTile + ((y+sy)*tileWidth), tileWidth * sizeof(uint32));
+            memcpy(rasterTile + (y * tileWidth), rasterTile + ((y+sy)*tileWidth), tileWidth * sizeof(uint32_t));
         }
     }
     if (sx != 0) {

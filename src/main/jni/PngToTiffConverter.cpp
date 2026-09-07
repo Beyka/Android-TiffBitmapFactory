@@ -353,12 +353,12 @@ jboolean PngToTiffConverter::convert()
             LOGII("rowToRead", rowToRead);
             sendProgress(ys * width, total);
             png_read_rows(png_ptr, &row_pointers[0], NULL, rowToRead);
-            uint32 *pixels = new uint32[width];
+            uint32_t *pixels = new uint32_t[width];
             for (int k = 0; k < rowToRead; k++) {
-                memcpy(pixels, row_pointers[k], width * sizeof(uint32));
+                memcpy(pixels, row_pointers[k], width * sizeof(uint32_t));
                 ret = TIFFWriteScanline(tiffImage, pixels, ys + k, 0);
             }
-            //TIFFWriteEncodedStrip(tiffImage, y/rowPerStrip, pixels, width * sizeof(uint32) * rowToRead);
+            //TIFFWriteEncodedStrip(tiffImage, y/rowPerStrip, pixels, width * sizeof(uint32_t) * rowToRead);
             delete[] pixels;
 
         }
@@ -379,11 +379,11 @@ jboolean PngToTiffConverter::convert()
             LOGII("rowToRead", rowToRead);
             sendProgress(y * width, total);
             png_read_rows(png_ptr, &row_pointers[0], NULL, rowToRead);
-            uint32 *pixels = new uint32[width * rowPerStrip];
+            uint32_t *pixels = new uint32_t[width * rowPerStrip];
             for (int k = 0; k < rowToRead; k++) {
-                memcpy(pixels+k*width, row_pointers[k], width * sizeof(uint32));
+                memcpy(pixels+k*width, row_pointers[k], width * sizeof(uint32_t));
             }
-            TIFFWriteEncodedStrip(tiffImage, y/rowPerStrip, pixels, width * sizeof(uint32) * rowToRead);
+            TIFFWriteEncodedStrip(tiffImage, y/rowPerStrip, pixels, width * sizeof(uint32_t) * rowToRead);
             delete[] pixels;
         }
     }
@@ -400,23 +400,23 @@ jboolean PngToTiffConverter::convert()
     return conversion_result;
 }
 
-unsigned char * PngToTiffConverter::convertArgbToBilevel(png_bytep *data, int samplePerPixel, uint32 width, uint32 height) {
+unsigned char * PngToTiffConverter::convertArgbToBilevel(png_bytep *data, int samplePerPixel, uint32_t width, uint32_t height) {
         unsigned char red;
         unsigned char green;
         unsigned char blue;
         unsigned char alpha;
 
 
-        uint32 crPix;
-        uint32 grayPix;
+        uint32_t crPix;
+        uint32_t grayPix;
         int bilevelWidth = (width / 8 + 0.5);
 
         unsigned char *dest = (unsigned char *) malloc(sizeof(unsigned char) * bilevelWidth * height);
 
-        uint32 maxGrey = (0.2125 * 255 + 0.7154 * 255 + 0.0721 * 255);
-        uint32 halfGrey = maxGrey/2;
+        uint32_t maxGrey = (0.2125 * 255 + 0.7154 * 255 + 0.0721 * 255);
+        uint32_t halfGrey = maxGrey/2;
 
-        uint32 shift = 0;
+        uint32_t shift = 0;
         unsigned char charsum = 0;
         int k = 7;
         for (int y = 0; y < height; y++) {

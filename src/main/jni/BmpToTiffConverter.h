@@ -48,12 +48,12 @@ class BmpToTiffConverter : public BaseTiffConverter
 
         void readHeaders();
 
-        uint32 * getPixelsFromBmp(int offset, int limit);
-        uint32 * getPixelsFrom16Bmp(int offset, int limit);
-        uint32 * getPixelsFrom24Bmp(int offset, int limit);
-        uint32 * getPixelsFrom32Bmp(int offset, int limit);
+        uint32_t * getPixelsFromBmp(int offset, int limit);
+        uint32_t * getPixelsFrom16Bmp(int offset, int limit);
+        uint32_t * getPixelsFrom24Bmp(int offset, int limit);
+        uint32_t * getPixelsFrom32Bmp(int offset, int limit);
 
-        unsigned char * convertArgbToBilevel(uint32 *, uint32, uint32);
+        unsigned char * convertArgbToBilevel(uint32_t *, uint32_t, uint32_t);
 
 };
 

@@ -110,12 +110,12 @@ jobject readBmp
             LOGII("Read bytes", n);
 
              int temp, line, i, j, numImgBytes, iw, ih, ind = 0, new_ind = 0;
-                uint32 *pixels;
+                uint32_t *pixels;
 
                 temp = width * 3;
                 line = temp + width % 4;
                 numImgBytes = (4 * (width * height));
-                pixels = (uint32*)malloc(numImgBytes);
+                pixels = (uint32_t*)malloc(numImgBytes);
 
                 //memcpy(pixels, buf, numImgBytes);
                 numImgBytes = line * height;
@@ -141,10 +141,10 @@ jobject readBmp
                 }
 
                 for (i = 0; i < height/2 ;i++) {
-                    uint32 *tmp = new uint32[width];
-                    memcpy(tmp, pixels + i * width, width * sizeof(uint32));
-                    memcpy(pixels + i * width, pixels + (height - 1- i) * width , width * sizeof(uint32));
-                    memcpy(pixels + (height - 1- i) * width , tmp, width * sizeof(uint32));
+                    uint32_t *tmp = new uint32_t[width];
+                    memcpy(tmp, pixels + i * width, width * sizeof(uint32_t));
+                    memcpy(pixels + i * width, pixels + (height - 1- i) * width , width * sizeof(uint32_t));
+                    memcpy(pixels + (height - 1- i) * width , tmp, width * sizeof(uint32_t));
                     free (tmp);
                 }
 

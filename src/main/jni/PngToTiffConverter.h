@@ -51,8 +51,8 @@ class PngToTiffConverter : public BaseTiffConverter
          int bit_depth;
          int color_type;
 
-         //unsigned char * convertArgbToBilevel(png_byte *, int, uint32, uint32);
-         unsigned char * convertArgbToBilevel(png_bytep *, int, uint32, uint32);
+         //unsigned char * convertArgbToBilevel(png_byte *, int, uint32_t, uint32_t);
+         unsigned char * convertArgbToBilevel(png_bytep *, int, uint32_t, uint32_t);
 };
 
 #endif //TIFFSAMPLE_PNGTOTIFFCONVERTER_H

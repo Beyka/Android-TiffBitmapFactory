@@ -537,7 +537,7 @@ jobject NativeDecoder::createDirectArgbBitmap(int width, int height) {
 
     sendProgress(0, progressTotal);
     const int readResult = TIFFReadRGBAImageOriented(image, width, height,
-            static_cast<uint32 *>(bitmapPixels), ORIENTATION_TOPLEFT, 0);
+            static_cast<uint32_t *>(bitmapPixels), ORIENTATION_TOPLEFT, 0);
     AndroidBitmap_unlockPixels(env, bitmap);
 
     if (readResult == 0) {
@@ -574,14 +574,14 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
     jint *pixels = NULL;
     *bitmapwidth = origwidth / inSampleSize;
     *bitmapheight = origheight / inSampleSize;
-    uint32 pixelsBufferSize = *bitmapwidth * *bitmapheight;
+    uint32_t pixelsBufferSize = *bitmapwidth * *bitmapheight;
     int origImageBufferSize = origwidth * origheight;
 
     LOGII("new width", *bitmapwidth);
     LOGII("new height", *bitmapheight);
 
-    uint32 stripSize = TIFFStripSize (image);
-    uint32 stripMax = TIFFNumberOfStrips (image);
+    uint32_t stripSize = TIFFStripSize (image);
+    uint32_t stripMax = TIFFNumberOfStrips (image);
     LOGII("strip size ", stripSize);
     LOGII("stripMax  ", stripMax);
     int rowPerStrip = -1;
@@ -590,8 +590,8 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
 
     unsigned long estimateMem = 0;
     estimateMem += (sizeof(jint) * pixelsBufferSize); //buffer for decoded pixels
-    estimateMem += (origwidth * sizeof(uint32)); //work line for rotate strip
-    estimateMem += (origwidth * rowPerStrip * sizeof (uint32) * 2); //current and next strips
+    estimateMem += (origwidth * sizeof(uint32_t)); //work line for rotate strip
+    estimateMem += (origwidth * rowPerStrip * sizeof (uint32_t) * 2); //current and next strips
     estimateMem += (sizeof(jint) * origwidth * 2); //bottom and top lines for reading pixel(matrixBottomLine, matrixTopLine)
     LOGII("estimateMem", estimateMem);
     if (estimateMem > availableMemory) {
@@ -607,16 +607,16 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
         return NULL;
     }
 
-    uint32* work_line_buf = (uint32 *)_TIFFmalloc(origwidth * sizeof(uint32));
+    uint32_t* work_line_buf = (uint32_t *)_TIFFmalloc(origwidth * sizeof(uint32_t));
 
-    uint32* raster;
-    uint32* rasterForBottomLine; // in this raster copy next strip for getting bottom line in matrix color selection
+    uint32_t* raster;
+    uint32_t* rasterForBottomLine; // in this raster copy next strip for getting bottom line in matrix color selection
     if (rowPerStrip == -1 && stripMax == 1) {
-            raster = (uint32 *)_TIFFmalloc(origImageBufferSize * sizeof (uint32));
-            rasterForBottomLine = (uint32 *)_TIFFmalloc(origImageBufferSize * sizeof (uint32));
+            raster = (uint32_t *)_TIFFmalloc(origImageBufferSize * sizeof (uint32_t));
+            rasterForBottomLine = (uint32_t *)_TIFFmalloc(origImageBufferSize * sizeof (uint32_t));
     } else {
-            raster = (uint32 *)_TIFFmalloc(origwidth * rowPerStrip * sizeof (uint32));
-            rasterForBottomLine = (uint32 *)_TIFFmalloc(origwidth * rowPerStrip * sizeof (uint32));
+            raster = (uint32_t *)_TIFFmalloc(origwidth * rowPerStrip * sizeof (uint32_t));
+            rasterForBottomLine = (uint32_t *)_TIFFmalloc(origwidth * rowPerStrip * sizeof (uint32_t));
     }
     if (rowPerStrip == -1) {
             rowPerStrip = origheight;
@@ -626,12 +626,12 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
     int nextStripOffset = 0;
     int globalLineCounter = 0;
 
-    unsigned int *matrixTopLine = (uint32 *) malloc(sizeof(jint) * origwidth);
-    unsigned int *matrixBottomLine = (uint32 *) malloc(sizeof(jint) * origwidth);
+    unsigned int *matrixTopLine = (uint32_t *) malloc(sizeof(jint) * origwidth);
+    unsigned int *matrixBottomLine = (uint32_t *) malloc(sizeof(jint) * origwidth);
 
     int isSecondRasterExist = 0;
     int ok = 1;
-    uint32 rows_to_write = 0;
+    uint32_t rows_to_write = 0;
 
     //check for error
     if (setjmp(NativeDecoder::strip_buf)) {
@@ -667,7 +667,7 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
 
             //if second raster is exist - copy it to work raster end decode next strip
             if (isSecondRasterExist) {
-                uint32 *previousRaster = raster;
+                uint32_t *previousRaster = raster;
                 raster = rasterForBottomLine;
                 rasterForBottomLine = previousRaster;
 
@@ -980,7 +980,7 @@ jint * NativeDecoder::getSampledRasterFromStrip(int inSampleSize, int *bitmapwid
         }
 
         if (useOrientationTag) {
-            uint32 buf;
+            uint32_t buf;
             //fixOrientation(pixels, pixelsBufferSize, *bitmapwidth, *bitmapheight);
             switch(origorientation) {
                  case ORIENTATION_TOPLEFT:
@@ -1043,14 +1043,14 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
     jint *pixels = NULL;
     *bitmapwidth = origwidth / inSampleSize;
     *bitmapheight = boundHeight / inSampleSize;//origheight / inSampleSize;
-    uint32 pixelsBufferSize = *bitmapwidth * *bitmapheight;
+    uint32_t pixelsBufferSize = *bitmapwidth * *bitmapheight;
     int origImageBufferSize = origwidth * origheight;
 
     LOGII("new width", *bitmapwidth);
     LOGII("new height", *bitmapheight);
 
-    uint32 stripSize = TIFFStripSize (image);
-    uint32 stripMax = TIFFNumberOfStrips (image);
+    uint32_t stripSize = TIFFStripSize (image);
+    uint32_t stripMax = TIFFNumberOfStrips (image);
     LOGII("strip size ", stripSize);
     LOGII("stripMax  ", stripMax);
     int rowPerStrip = -1;
@@ -1060,8 +1060,8 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
     unsigned long estimateMem = 0;
     estimateMem += (sizeof(jint) * pixelsBufferSize); //temp buffer for decoded pixels
     estimateMem += (sizeof(jint) * (boundWidth / inSampleSize) * (boundHeight/inSampleSize)); //final buffer that will store original image
-    estimateMem += (origwidth * sizeof(uint32)); //work line for rotate strip
-    estimateMem += (origwidth * rowPerStrip * sizeof (uint32) * 2); //current and next strips
+    estimateMem += (origwidth * sizeof(uint32_t)); //work line for rotate strip
+    estimateMem += (origwidth * rowPerStrip * sizeof (uint32_t) * 2); //current and next strips
     estimateMem += (sizeof(jint) * origwidth * 2); //bottom and top lines for reading pixel(matrixBottomLine, matrixTopLine)
     LOGII("estimateMem", estimateMem);
     if (estimateMem > availableMemory) {
@@ -1081,16 +1081,16 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
         return NULL;
     }
 
-    uint32* work_line_buf = (uint32 *)_TIFFmalloc(origwidth * sizeof(uint32));
+    uint32_t* work_line_buf = (uint32_t *)_TIFFmalloc(origwidth * sizeof(uint32_t));
 
-    uint32* raster;
-    uint32* rasterForBottomLine; // in this raster copy next strip for getting bottom line in matrix color selection
+    uint32_t* raster;
+    uint32_t* rasterForBottomLine; // in this raster copy next strip for getting bottom line in matrix color selection
     if (rowPerStrip == -1 && stripMax == 1) {
-            raster = (uint32 *)_TIFFmalloc(origImageBufferSize * sizeof (uint32));
-            rasterForBottomLine = (uint32 *)_TIFFmalloc(origImageBufferSize * sizeof (uint32));
+            raster = (uint32_t *)_TIFFmalloc(origImageBufferSize * sizeof (uint32_t));
+            rasterForBottomLine = (uint32_t *)_TIFFmalloc(origImageBufferSize * sizeof (uint32_t));
     } else {
-            raster = (uint32 *)_TIFFmalloc(origwidth * rowPerStrip * sizeof (uint32));
-            rasterForBottomLine = (uint32 *)_TIFFmalloc(origwidth * rowPerStrip * sizeof (uint32));
+            raster = (uint32_t *)_TIFFmalloc(origwidth * rowPerStrip * sizeof (uint32_t));
+            rasterForBottomLine = (uint32_t *)_TIFFmalloc(origwidth * rowPerStrip * sizeof (uint32_t));
     }
     if (rowPerStrip == -1) {
             rowPerStrip = origheight;
@@ -1100,12 +1100,12 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
     int nextStripOffset = 0;
     int globalLineCounter = 0;
 
-    unsigned int *matrixTopLine = (uint32 *) malloc(sizeof(jint) * origwidth);
-    unsigned int *matrixBottomLine = (uint32 *) malloc(sizeof(jint) * origwidth);
+    unsigned int *matrixTopLine = (uint32_t *) malloc(sizeof(jint) * origwidth);
+    unsigned int *matrixBottomLine = (uint32_t *) malloc(sizeof(jint) * origwidth);
 
     int isSecondRasterExist = 0;
     int ok = 1;
-    uint32 rows_to_write = 0;
+    uint32_t rows_to_write = 0;
 
     //check for error
     if (setjmp(NativeDecoder::strip_buf)) {
@@ -1150,7 +1150,7 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
 
             //if second raster is exist - copy it to work raster end decode next strip
             if (isSecondRasterExist) {
-                uint32 *previousRaster = raster;
+                uint32_t *previousRaster = raster;
                 raster = rasterForBottomLine;
                 rasterForBottomLine = previousRaster;
 
@@ -1477,7 +1477,7 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
         processedProgress *= *bitmapwidth;
 
         if (useOrientationTag) {
-            uint32 buf;
+            uint32_t buf;
             switch(origorientation) {
                  case ORIENTATION_TOPLEFT:
                  case ORIENTATION_TOPRIGHT:
@@ -1518,7 +1518,7 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
             flipPixelsHorizontal(*bitmapwidth, *bitmapheight, pixels);
         }
 
-        uint32 tmpPixelBufferSize = (boundWidth / inSampleSize) * (boundHeight / inSampleSize);
+        uint32_t tmpPixelBufferSize = (boundWidth / inSampleSize) * (boundHeight / inSampleSize);
 
         estimateMem = (sizeof(jint) * pixelsBufferSize); //temp buffer for decoded pixels
         estimateMem += (sizeof(jint) * tmpPixelBufferSize); //final buffer that will store original image
@@ -1531,7 +1531,7 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
         }
 
         jint* tmpPixels = (jint *) malloc(sizeof(jint) * tmpPixelBufferSize);
-        uint32 startPosX = 0;
+        uint32_t startPosX = 0;
 
         if (useOrientationTag && (origorientation == ORIENTATION_TOPRIGHT || origorientation == ORIENTATION_BOTRIGHT
                                     || origorientation == ORIENTATION_LEFTBOT || origorientation == ORIENTATION_RIGHTBOT)) {
@@ -1568,7 +1568,7 @@ jint * NativeDecoder::getSampledRasterFromStripWithBounds(int inSampleSize, int 
         return pixels;
 }
 
-void NativeDecoder::rotateTileLinesVertical(uint32 tileHeight, uint32 tileWidth, uint32* whatRotate, uint32 *bufferLine) {
+void NativeDecoder::rotateTileLinesVertical(uint32_t tileHeight, uint32_t tileWidth, uint32_t* whatRotate, uint32_t *bufferLine) {
     for (int line = 0; line < tileHeight / 2; line++) {
         unsigned int  *top_line, *bottom_line;
         top_line = whatRotate + tileWidth * line;
@@ -1579,8 +1579,8 @@ void NativeDecoder::rotateTileLinesVertical(uint32 tileHeight, uint32 tileWidth,
     }
 }
 
-void NativeDecoder::rotateTileLinesHorizontal(uint32 tileHeight, uint32 tileWidth, uint32* whatRotate, uint32 *bufferLine) {
-    uint32 buf;
+void NativeDecoder::rotateTileLinesHorizontal(uint32_t tileHeight, uint32_t tileWidth, uint32_t* whatRotate, uint32_t *bufferLine) {
+    uint32_t buf;
     for (int y = 0; y < tileHeight; y++) {
         for (int x = 0; x < tileWidth / 2; x++) {
             buf = whatRotate[y * tileWidth + x];
@@ -1590,8 +1590,8 @@ void NativeDecoder::rotateTileLinesHorizontal(uint32 tileHeight, uint32 tileWidt
     }
 }
 
-void NativeDecoder::orientDecodedTile(uint32 tileHeight, uint32 tileWidth,
-                                      uint32 *tile, uint32 *bufferLine) {
+void NativeDecoder::orientDecodedTile(uint32_t tileHeight, uint32_t tileWidth,
+                                      uint32_t *tile, uint32_t *bufferLine) {
     switch (origorientation) {
         case 1:
         case 5:
@@ -1624,16 +1624,16 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
         jint *pixels = NULL;
         *bitmapwidth = origwidth / inSampleSize;
         *bitmapheight = origheight / inSampleSize;
-        uint32 pixelsBufferSize = *bitmapwidth * *bitmapheight;
+        uint32_t pixelsBufferSize = *bitmapwidth * *bitmapheight;
 
-        uint32 tileWidth = 0, tileHeight = 0;
+        uint32_t tileWidth = 0, tileHeight = 0;
         TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileWidth);
         TIFFGetField(image, TIFFTAG_TILELENGTH, &tileHeight);
 
         unsigned long estimateMem = 0;
         estimateMem += (sizeof(jint) * pixelsBufferSize); //buffer for decoded pixels
-        estimateMem += (tileWidth * tileHeight * sizeof(uint32)) * 3; //current, left and right tiles buffers
-        estimateMem += (tileWidth * sizeof(uint32)); //work line for rotate tile
+        estimateMem += (tileWidth * tileHeight * sizeof(uint32_t)) * 3; //current, left and right tiles buffers
+        estimateMem += (tileWidth * sizeof(uint32_t)); //work line for rotate tile
         LOGII("estimateMem", estimateMem);
         if (estimateMem > availableMemory) {
             if (throwException) {
@@ -1648,21 +1648,21 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
             return NULL;
         }
 
-        uint32 row, column;
+        uint32_t row, column;
 
         //main worker tile
-        uint32 *rasterTile = (uint32 *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32));
+        uint32_t *rasterTile = (uint32_t *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32_t));
         //left tile
-        uint32 *rasterTileLeft = (uint32 *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32));
+        uint32_t *rasterTileLeft = (uint32_t *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32_t));
         //right tile
-        uint32 *rasterTileRight = (uint32 *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32));
+        uint32_t *rasterTileRight = (uint32_t *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32_t));
 
-        uint32 *work_line_buf = (uint32*)_TIFFmalloc(tileWidth * sizeof (uint32));
+        uint32_t *work_line_buf = (uint32_t*)_TIFFmalloc(tileWidth * sizeof (uint32_t));
 
         //this variable calculate processed pixels for x and y direction to make right offsets at the begining of next tile
         //offset calculated from condition globalProcessed % inSampleSize should be 0
-        uint32 globalProcessedX = 0;
-        uint32 globalProcessedY = 0;
+        uint32_t globalProcessedX = 0;
+        uint32_t globalProcessedY = 0;
 
         //check for error
         if (setjmp(NativeDecoder::tile_buf)) {
@@ -1700,7 +1700,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
 
                 bool currentTileAlreadyOriented = false;
                 if (rightTileExists) {
-                    uint32 *reusableTile = rasterTileLeft;
+                    uint32_t *reusableTile = rasterTileLeft;
                     rasterTileLeft = rasterTile;
                     rasterTile = rasterTileRight;
                     rasterTileRight = reusableTile;
@@ -1769,7 +1769,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                                 }
                                 else
                                 {
-                                    uint32 srcPosition = origTileY * tileWidth + origTileX;
+                                    uint32_t srcPosition = origTileY * tileWidth + origTileX;
                                     if (rasterTile[srcPosition] != 0) {
                                         if (tileStartDataX == -1) {
                                             tileStartDataX = origTileX;
@@ -1986,7 +1986,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                     int rowHasPixels = 0;
                         for (int th = 0, bh = 0; th < tileHeight; th++) {
                             for (int tw = 0, bw = 0; tw < tileWidth; tw++) {
-                                uint32 srcPosition = th * tileWidth + tw;
+                                uint32_t srcPosition = th * tileWidth + tw;
                                 if (rasterTile[srcPosition] != 0) {
                                     int position = 0;
                                     if (origorientation <= 4) {
@@ -2049,7 +2049,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
             }
         } else {
             if (origorientation > 4) {
-                uint32 buf = *bitmapwidth;
+                uint32_t buf = *bitmapwidth;
                 *bitmapwidth = *bitmapheight;
                 *bitmapheight = buf;
                 rotateRaster(pixels, 90, bitmapwidth, bitmapheight);
@@ -2075,30 +2075,30 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
 
         //First read all tiles that are on necessary area
 
-        uint32 tileWidth = 0, tileHeight = 0;
+        uint32_t tileWidth = 0, tileHeight = 0;
         TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileWidth);
         TIFFGetField(image, TIFFTAG_TILELENGTH, &tileHeight);
 
         //find first and last tile to process
-        uint32 firstTileX = (uint32)(boundX / tileWidth);
-        uint32 firstTileY = (uint32)(boundY / tileHeight);
+        uint32_t firstTileX = (uint32_t)(boundX / tileWidth);
+        uint32_t firstTileY = (uint32_t)(boundY / tileHeight);
 
-        uint32 lastTileX = (uint32)((boundX + boundWidth) / tileWidth) + 1;
-        uint32 lastTileY = (uint32)((boundY + boundHeight) / tileHeight) + 1;
-        const uint32 tilesAcross = (origwidth + tileWidth - 1) / tileWidth;
-        const uint32 tilesDown = (origheight + tileHeight - 1) / tileHeight;
+        uint32_t lastTileX = (uint32_t)((boundX + boundWidth) / tileWidth) + 1;
+        uint32_t lastTileY = (uint32_t)((boundY + boundHeight) / tileHeight) + 1;
+        const uint32_t tilesAcross = (origwidth + tileWidth - 1) / tileWidth;
+        const uint32_t tilesDown = (origheight + tileHeight - 1) / tileHeight;
         if (lastTileX > tilesAcross) lastTileX = tilesAcross;
         if (lastTileY > tilesDown) lastTileY = tilesDown;
 
         jint *pixels = NULL;
         *bitmapwidth = /*boundWidth*/ (lastTileX - firstTileX) * tileWidth / inSampleSize;//origwidth / inSampleSize;
         *bitmapheight = /*boundHeight*/ (lastTileY - firstTileY) * tileHeight / inSampleSize;//origheight / inSampleSize;
-        uint32 pixelsBufferSize = *bitmapwidth * *bitmapheight;
+        uint32_t pixelsBufferSize = *bitmapwidth * *bitmapheight;
 
          unsigned long estimateMem = 0;
          estimateMem += (sizeof(jint) * pixelsBufferSize); //buffer for decoded pixels
-         estimateMem += (tileWidth * tileHeight * sizeof(uint32)) * 3; //current, left and right tiles buffers
-         estimateMem += (tileWidth * sizeof(uint32)); //work line for rotate tile
+         estimateMem += (tileWidth * tileHeight * sizeof(uint32_t)) * 3; //current, left and right tiles buffers
+         estimateMem += (tileWidth * sizeof(uint32_t)); //work line for rotate tile
          LOGII("estimateMem", estimateMem);
          if (estimateMem > availableMemory) {
             if (throwException) {
@@ -2117,16 +2117,16 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
         sendProgress(0, progressTotal);
         jlong processedProgress = 0;
 
-        uint32 row, column, rowDest, columnDest;
+        uint32_t row, column, rowDest, columnDest;
 
         //main worker tile
-        uint32 *rasterTile = (uint32 *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32));
+        uint32_t *rasterTile = (uint32_t *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32_t));
         //left tile
-        uint32 *rasterTileLeft = (uint32 *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32));
+        uint32_t *rasterTileLeft = (uint32_t *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32_t));
         //right tile
-        uint32 *rasterTileRight = (uint32 *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32));
+        uint32_t *rasterTileRight = (uint32_t *)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32_t));
 
-        uint32 *work_line_buf = (uint32*)_TIFFmalloc(tileWidth * sizeof (uint32));
+        uint32_t *work_line_buf = (uint32_t*)_TIFFmalloc(tileWidth * sizeof (uint32_t));
 
         //check for error
         if (setjmp(NativeDecoder::tile_buf)) {
@@ -2158,11 +2158,11 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
 
         //this variable calculate processed pixels for x and y direction to make right offsets at the begining of next tile
         //offset calculated from condition globalProcessed % inSampleSize should be 0
-        uint32 globalProcessedX = 0;
-        uint32 globalProcessedY = 0;
+        uint32_t globalProcessedX = 0;
+        uint32_t globalProcessedY = 0;
 
-        uint32 progressRow = 0;
-        uint32 progressColumn = 0;
+        uint32_t progressRow = 0;
+        uint32_t progressColumn = 0;
 
         rowDest = columnDest = 0;
         for (row = firstTileY * tileHeight; row < lastTileY * tileHeight; row += tileHeight, progressRow += tileHeight) {
@@ -2176,7 +2176,7 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
 
                 bool currentTileAlreadyOriented = false;
                 if (rightTileExists) {
-                    uint32 *reusableTile = rasterTileLeft;
+                    uint32_t *reusableTile = rasterTileLeft;
                     rasterTileLeft = rasterTile;
                     rasterTile = rasterTileRight;
                     rasterTileRight = reusableTile;
@@ -2246,7 +2246,7 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
                                 }
                                 else
                                 {
-                                    uint32 srcPosition = origTileY * tileWidth + origTileX;
+                                    uint32_t srcPosition = origTileY * tileWidth + origTileX;
                                     if (rasterTile[srcPosition] != 0) {
 
                                         if (tileStartDataX == -1) {
@@ -2483,7 +2483,7 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
         }
 
         //Copy necessary pixels to new array if orientation <=4
-        uint32 tmpPixelBufferSize = (boundWidth / inSampleSize) * (boundHeight / inSampleSize);
+        uint32_t tmpPixelBufferSize = (boundWidth / inSampleSize) * (boundHeight / inSampleSize);
 
         estimateMem = (sizeof(jint) * pixelsBufferSize); //buffer for decoded pixels
         estimateMem += (sizeof(jint) * tmpPixelBufferSize); //finall buffer
@@ -2498,8 +2498,8 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
         if (origorientation <= 4) {
 
             jint* tmpPixels = (jint *) malloc(sizeof(jint) * tmpPixelBufferSize);
-            uint32 startPosX = boundX%tileWidth /inSampleSize;//(firstTileX * tileWidth - tileWidth + boundX) / inSampleSize;
-            uint32 startPosY = boundY%tileHeight /inSampleSize;//(firstTileY * tileHeight - tileHeight + boundY) /inSampleSize;
+            uint32_t startPosX = boundX%tileWidth /inSampleSize;//(firstTileX * tileWidth - tileWidth + boundX) / inSampleSize;
+            uint32_t startPosY = boundY%tileHeight /inSampleSize;//(firstTileY * tileHeight - tileHeight + boundY) /inSampleSize;
             for (int ox = startPosX, nx = 0; nx < boundWidth/inSampleSize; ox++, nx++) {
                 sendProgress(processedProgress + nx * (boundHeight/inSampleSize), progressTotal);
                 for (int oy = startPosY, ny = 0; ny < boundHeight/inSampleSize; oy++, ny++) {
@@ -2537,7 +2537,7 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
             }
         } else {
             if (origorientation > 4) {
-                uint32 buf = *bitmapwidth;
+                uint32_t buf = *bitmapwidth;
                 *bitmapwidth = *bitmapheight;
                 *bitmapheight = buf;
                 rotateRaster(pixels, 90, bitmapwidth, bitmapheight);
@@ -2548,8 +2548,8 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
         //Copy necessary pixels to new array if orientation >4
         if (origorientation > 4) {
             jint* tmpPixels = (jint *) malloc(sizeof(jint) * tmpPixelBufferSize);
-            uint32 startPosX = boundX%tileWidth /inSampleSize;
-            uint32 startPosY = boundY%tileHeight /inSampleSize;
+            uint32_t startPosX = boundX%tileWidth /inSampleSize;
+            uint32_t startPosY = boundY%tileHeight /inSampleSize;
             for (int ox = startPosX, nx = 0; nx < boundWidth/inSampleSize; ox++, nx++) {
                 sendProgress(processedProgress + nx * (boundHeight/inSampleSize), progressTotal);
                 for (int oy = startPosY, ny = 0; ny < boundHeight/inSampleSize; oy++, ny++) {
@@ -2590,7 +2590,7 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
     *bitmapwidth = origwidth / inSampleSize;
     *bitmapheight = origheight / inSampleSize;
     //buffer size for creating scaled image;
-    uint32 pixelsBufferSize = *bitmapwidth * *bitmapheight * sizeof(jint);
+    uint32_t pixelsBufferSize = *bitmapwidth * *bitmapheight * sizeof(jint);
 
     /**Estimate usage of memory for decoding*/
     unsigned long estimateMem = origBufferSize;//origBufferSize - size of decoded RGBA image
@@ -2796,7 +2796,7 @@ jint * NativeDecoder::getSampledRasterFromImage(int inSampleSize, int *bitmapwid
     if (useOrientationTag) {
         fixOrientation(pixels, pixelsBufferSize, *bitmapwidth, *bitmapheight);
     } else {
-        uint32 buf;
+        uint32_t buf;
         switch(origorientation) {
                          case ORIENTATION_TOPLEFT:
                          case ORIENTATION_LEFTTOP:
@@ -2838,7 +2838,7 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
     *bitmapwidth = boundWidth / inSampleSize;//origwidth / inSampleSize;
     *bitmapheight = boundHeight / inSampleSize;//origheight / inSampleSize;
     //buffer size for creating scaled image;
-    uint32 pixelsBufferSize = *bitmapwidth * *bitmapheight * sizeof(jint);
+    uint32_t pixelsBufferSize = *bitmapwidth * *bitmapheight * sizeof(jint);
 
     /**Estimate usage of memory for decoding*/
     unsigned long estimateMem = origBufferSize;//origBufferSize - size of decoded RGBA image
@@ -3038,7 +3038,7 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
     if (useOrientationTag) {
         fixOrientation(pixels, pixelsBufferSize, *bitmapwidth, *bitmapheight);
     } else {
-        uint32 buf;
+        uint32_t buf;
         switch(origorientation) {
                          case ORIENTATION_TOPLEFT:
                          case ORIENTATION_LEFTTOP:
@@ -3065,7 +3065,7 @@ jint * NativeDecoder::getSampledRasterFromImageWithBounds(int inSampleSize, int 
 int NativeDecoder::getDecodeMethod()
 {
 	int method = -1;
-	uint32 tileWidth, tileHeight;
+	uint32_t tileWidth, tileHeight;
 	int readTW = 0, readTH = 0;
     readTW = TIFFGetField(image, TIFFTAG_TILEWIDTH, &tileWidth);
     readTH = TIFFGetField(image, TIFFTAG_TILELENGTH, &tileHeight);
@@ -3074,8 +3074,8 @@ int NativeDecoder::getDecodeMethod()
     } else {
         int rowPerStrip = -1;
     	TIFFGetField(image, TIFFTAG_ROWSPERSTRIP, &rowPerStrip);
-    	uint32 stripSize = TIFFStripSize (image);
-    	uint32 stripMax = TIFFNumberOfStrips (image);
+    	uint32_t stripSize = TIFFStripSize (image);
+    	uint32_t stripMax = TIFFNumberOfStrips (image);
     	int estimate = origwidth * 3;
     	LOGII("RPS", rowPerStrip);
     	LOGII("stripSize", stripSize);
@@ -3091,7 +3091,7 @@ int NativeDecoder::getDecodeMethod()
 	return method;
 }
 
-void NativeDecoder::flipPixelsVertical(uint32 width, uint32 height, jint* raster) {
+void NativeDecoder::flipPixelsVertical(uint32_t width, uint32_t height, jint* raster) {
     jint *bufferLine = (jint *) malloc(sizeof(jint) * width);
     for (int line = 0; line < height / 2; line++) {
         jint  *top_line, *bottom_line;
@@ -3104,7 +3104,7 @@ void NativeDecoder::flipPixelsVertical(uint32 width, uint32 height, jint* raster
     free(bufferLine);
 }
 
-void NativeDecoder::flipPixelsHorizontal(uint32 width, uint32 height, jint* raster) {
+void NativeDecoder::flipPixelsHorizontal(uint32_t width, uint32_t height, jint* raster) {
     jint buf;
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width / 2; x++) {
@@ -3133,7 +3133,7 @@ void NativeDecoder::rotateRaster(jint *raster, int angle, int *width, int *heigh
             {
                 for (int w = 0; w < *width; ++w)
                 {
-                    uint32 item = raster[h * *width + w];
+                    uint32_t item = raster[h * *width + w];
                     int x = 0;
                     int y = 0;
                     switch (numberOf90s % 4)
@@ -3169,7 +3169,7 @@ void NativeDecoder::rotateRaster(jint *raster, int angle, int *width, int *heigh
 
         }
 
-void NativeDecoder::fixOrientation(jint *pixels, uint32 pixelsBufferSize, int bitmapwidth, int bitmapheight)
+void NativeDecoder::fixOrientation(jint *pixels, uint32_t pixelsBufferSize, int bitmapwidth, int bitmapheight)
 {
 	if (origorientation > 4) {
         unsigned int size = bitmapheight * bitmapwidth - 1;
@@ -3256,7 +3256,7 @@ jbyte * NativeDecoder::createBitmapAlpha8(jint *raster, int bitmapwidth, int bit
             return NULL;
         }
     		for (int j = 0; j < bitmapheight; j++) {
-    			uint32 crPix = raster[j * bitmapwidth + i];
+    			uint32_t crPix = raster[j * bitmapwidth + i];
     			int alpha = colorMask & crPix >> 24;
     			pixels[j * bitmapwidth + i] = alpha;
     		}
@@ -3417,7 +3417,7 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
                 env->SetIntField(optionsObject, gOptions_outDirectoryCountFieldId, dircount);
         */
         float xresolution, yresolution;
-        uint16 resunit;
+        uint16_t resunit;
         TIFFGetField(image, TIFFTAG_XRESOLUTION, &xresolution);
         LOGIF("xres", xresolution);
         jfieldID gOptions_outXResolutionFieldID = env->GetFieldID(jBitmapOptionsClass, "outXResolution", "F");
@@ -3625,13 +3625,13 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         }
 
         //strip size
-        uint32 stripSize = TIFFStripSize (image);
+        uint32_t stripSize = TIFFStripSize (image);
         LOGII("strip size", stripSize);
         jfieldID gOptions_outStripSizeFieldID = env->GetFieldID(jBitmapOptionsClass, "outStripSize", "I");
         env->SetIntField(optionsObject, gOptions_outStripSizeFieldID, stripSize);
 
         //strip max
-        uint32 stripMax = TIFFNumberOfStrips (image);
+        uint32_t stripMax = TIFFNumberOfStrips (image);
         LOGII("number of strips", stripMax);
         jfieldID gOptions_outStripMaxFieldID = env->GetFieldID(jBitmapOptionsClass, "outNumberOfStrips", "I");
         env->SetIntField(optionsObject, gOptions_outStripMaxFieldID, stripMax);

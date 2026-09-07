@@ -1,4 +1,3 @@
-# $Id: Makefile.am,v 1.4 2007/02/24 15:03:49 dron Exp $
 #
 # Tag Image File Format (TIFF) Software
 #
@@ -27,7 +26,11 @@
 
 #LIBTIFF = $(top_builddir)/libtiff/libtiff.la
 
-EXTRA_DIST = README patchlevel.h xtiff.c xtifficon.h
+EXTRA_DIST = \
+	README \
+	patchlevel.h \
+	xtiff.c \
+	xtifficon.h
 
 #noinst_PROGRAMS =
 

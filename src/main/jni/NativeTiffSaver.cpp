@@ -79,8 +79,8 @@ __android_log_write(ANDROID_LOG_ERROR, "NativeTiffSaver", "Test Error here");
                 return JNI_FALSE;
         }
 
-        uint32 img_width = info.width;
-        uint32 img_height= info.height;
+        uint32_t img_width = info.width;
+        uint32_t img_height= info.height;
 
 /*
         //Get array of jint from jintArray
@@ -131,7 +131,7 @@ __android_log_write(ANDROID_LOG_ERROR, "NativeTiffSaver", "Test Error here");
         //Get res int from resUnitObject
         jclass resolutionUnitClass = env->FindClass("org/beyka/tiffbitmapfactory/ResolutionUnit");
         jfieldID resUnitOrdinalFieldID = env->GetFieldID(resolutionUnitClass, "ordinal", "I");
-        uint16 resUnit = env->GetIntField(resUnitObject, resUnitOrdinalFieldID);
+        uint16_t resUnit = env->GetIntField(resUnitObject, resUnitOrdinalFieldID);
         env->DeleteLocalRef(resolutionUnitClass);
 
         //Get author field if exist
@@ -185,21 +185,21 @@ __android_log_write(ANDROID_LOG_ERROR, "NativeTiffSaver", "Test Error here");
         LOGIS("Full Release: ", fullReleaseName);
 
 
-        uint32 pixelsBufferSize = img_width * img_height;
-        uint32* img = NULL;
+        uint32_t pixelsBufferSize = img_width * img_height;
+        uint32_t* img = NULL;
         int tmpImgArrayCreated = 0;
         switch (info.format) {
             case ANDROID_BITMAP_FORMAT_RGBA_8888:
             {
                 LOGI("ANDROID_BITMAP_FORMAT_RGBA_8888");
-                img = (uint32*)pixels;
+                img = (uint32_t*)pixels;
                 break;
             }
             case ANDROID_BITMAP_FORMAT_RGBA_4444:
             {
                 LOGI("ANDROID_BITMAP_FORMAT_RGBA_4444");
                 uint16_t* tmp4444 = (uint16_t*)pixels;
-                img = (uint32*) malloc(sizeof(uint32) * pixelsBufferSize);
+                img = (uint32_t*) malloc(sizeof(uint32_t) * pixelsBufferSize);
                 for (int x = 0; x < img_width; x++) {
                     for (int y = 0; y < img_height; y++) {
                         uint16_t pix = tmp4444[y * img_width + x];
@@ -207,7 +207,7 @@ __android_log_write(ANDROID_LOG_ERROR, "NativeTiffSaver", "Test Error here");
                         int red = colorMask & pix >> 8;
                         int green = colorMask & pix >> 4;
                         int blue = colorMask & pix;
-                        uint32 crPix = (alpha << 24) | (blue << 16) | (green << 8) | (red);
+                        uint32_t crPix = (alpha << 24) | (blue << 16) | (green << 8) | (red);
                         img[y * img_width + x] = crPix;
                     }
                 }
@@ -218,14 +218,14 @@ __android_log_write(ANDROID_LOG_ERROR, "NativeTiffSaver", "Test Error here");
             {
                 LOGI("ANDROID_BITMAP_FORMAT_RGB_565");
                 uint16_t* tmp565 = (uint16_t*)pixels;
-                img = (uint32*) malloc(sizeof(uint32) * pixelsBufferSize);
+                img = (uint32_t*) malloc(sizeof(uint32_t) * pixelsBufferSize);
                 for (int x = 0; x < img_width; x++) {
                     for (int y = 0; y < img_height; y++) {
                         uint16_t pix = tmp565[y * img_width + x];
                         unsigned char red = 0b11111 & pix >> 11;
                         unsigned char green = 0b111111 & pix >> 5;
                         unsigned char blue = 0b11111 & pix;
-                        uint32 crPix = (blue << 3 << 16) | (green << 2 << 8) | (red<<3);
+                        uint32_t crPix = (blue << 3 << 16) | (green << 2 << 8) | (red<<3);
                         img[y * img_width + x] = crPix;
                     }
                 }
@@ -236,7 +236,7 @@ __android_log_write(ANDROID_LOG_ERROR, "NativeTiffSaver", "Test Error here");
             {
                 LOGI("ANDROID_BITMAP_FORMAT_A_8");
                 uint8_t* tmp8 = (uint8_t*)pixels;
-                img = (uint32*) malloc(sizeof(uint32) * pixelsBufferSize);
+                img = (uint32_t*) malloc(sizeof(uint32_t) * pixelsBufferSize);
                 for (int x = 0; x < img_width; x++) {
                     for (int y = 0; y < img_height; y++) {
                         uint8_t pix = tmp8[y * img_width + x];
@@ -250,9 +250,9 @@ __android_log_write(ANDROID_LOG_ERROR, "NativeTiffSaver", "Test Error here");
 
 /*
         int pixelsBufferSize = img_width * img_height;
-        uint32 *array = (uint32 *) malloc(sizeof(uint32) * pixelsBufferSize);
+        uint32_t *array = (uint32_t *) malloc(sizeof(uint32_t) * pixelsBufferSize);
         if (!array) {
-            throw_not_enought_memory_exception(env, sizeof(uint32) * pixelsBufferSize, 0);//todo change for estimating memory
+            throw_not_enought_memory_exception(env, sizeof(uint32_t) * pixelsBufferSize, 0);//todo change for estimating memory
             return JNI_FALSE;
         }
 
@@ -264,7 +264,7 @@ __android_log_write(ANDROID_LOG_ERROR, "NativeTiffSaver", "Test Error here");
                 int red = colorMask & pix >> 16;
                 int green = colorMask & pix >> 8;
                 int blue = colorMask & pix;
-                uint32 crPix = (alpha << 24) | (blue << 16) | (green << 8) | (red);
+                uint32_t crPix = (alpha << 24) | (blue << 16) | (green << 8) | (red);
                 array[y * img_width + x] = crPix;
             }
         }
@@ -274,7 +274,7 @@ __android_log_write(ANDROID_LOG_ERROR, "NativeTiffSaver", "Test Error here");
         for (int i = 0; i < img_width; i++) {
             for (int j = 0; j < img_height; j++) {
 
-                uint32 crPix = getPixel(pixels,info,i,j);
+                uint32_t crPix = getPixel(pixels,info,i,j);
 
                 //jint crPix = c_array[j * img_width + i];
                 int alpha = colorMask & crPix >> 24;
@@ -402,7 +402,7 @@ __android_log_write(ANDROID_LOG_ERROR, "NativeTiffSaver", "Test Error here");
         } else {
             TIFFSetField(output_image, TIFFTAG_ROWSPERSTRIP, 1);
             for (int row = 0; row < img_height; row++) {
-                TIFFWriteEncodedStrip(output_image, row, &img[row * img_width], img_width * sizeof(uint32));
+                TIFFWriteEncodedStrip(output_image, row, &img[row * img_width], img_width * sizeof(uint32_t));
                 //TIFFWriteScanline(output_image, &img[row * img_width], row, 0);
             }
         }
@@ -448,18 +448,18 @@ __android_log_write(ANDROID_LOG_ERROR, "NativeTiffSaver", "Test Error here");
         return JNI_TRUE;
     }
 
-    unsigned char *convertArgbToBilevel(uint32 *source, jint width, jint height) {
+    unsigned char *convertArgbToBilevel(uint32_t *source, jint width, jint height) {
         long long threshold = 0;
-        uint32 crPix;
-        uint32 grayPix;
+        uint32_t crPix;
+        uint32_t grayPix;
         int bilevelWidth = (width / 8 + 0.5);
 
         unsigned char *dest = (unsigned char *) malloc(sizeof(unsigned char) * bilevelWidth * height);
 
-        uint32 maxGrey = (0.2125 * 255 + 0.7154 * 255 + 0.0721 * 255);
-        uint32 halfGrey = maxGrey/2;
+        uint32_t maxGrey = (0.2125 * 255 + 0.7154 * 255 + 0.0721 * 255);
+        uint32_t halfGrey = maxGrey/2;
 
-        uint32 shift = 0;
+        uint32_t shift = 0;
         unsigned char charsum = 0;
         int k = 7;
         for (int j = 0; j < height; j++) {

@@ -1,5 +1,3 @@
-/* $Id: tiff-bi.c,v 1.2 2004/05/03 16:46:36 dron Exp $ */
-
 /*
  * tiff-bi.c -- create a Class B (bilevel) TIFF file
  *
@@ -29,21 +27,23 @@
 
 #include "tiffio.h"
 
-#define WIDTH       512
-#define HEIGHT      WIDTH
+#define WIDTH 512
+#define HEIGHT WIDTH
 
 int main(int argc, char **argv)
 {
-    int             i;
-    unsigned char * scan_line;
-    TIFF *          tif;
+    int i;
+    unsigned char *scan_line;
+    TIFF *tif;
 
-    if (argc != 2) {
+    if (argc != 2)
+    {
         fprintf(stderr, "Usage: %s tiff-image\n", argv[0]);
         return 0;
     }
 
-    if ((tif = TIFFOpen(argv[1], "w")) == NULL) {
+    if ((tif = TIFFOpen(argv[1], "w")) == NULL)
+    {
         fprintf(stderr, "can't open %s as a TIFF file\n", argv[1]);
         return 0;
     }
@@ -58,7 +58,7 @@ int main(int argc, char **argv)
     TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
     TIFFSetField(tif, TIFFTAG_RESOLUTIONUNIT, RESUNIT_NONE);
 
-    scan_line = (unsigned char *) malloc(WIDTH / 8);
+    scan_line = (unsigned char *)malloc(WIDTH / 8);
 
     for (i = 0; i < (WIDTH / 8) / 2; i++)
         scan_line[i] = 0;
@@ -67,7 +67,7 @@ int main(int argc, char **argv)
         scan_line[i] = 255;
 
     for (i = 0; i < HEIGHT / 2; i++)
-        TIFFWriteScanline(tif, scan_line, i, 0);
+        TIFFWriteScanline(tif, scan_line, (uint32_t)i, 0);
 
     for (i = 0; i < (WIDTH / 8) / 2; i++)
         scan_line[i] = 255;
@@ -76,7 +76,7 @@ int main(int argc, char **argv)
         scan_line[i] = 0;
 
     for (i = HEIGHT / 2; i < HEIGHT; i++)
-        TIFFWriteScanline(tif, scan_line, i, 0);
+        TIFFWriteScanline(tif, scan_line, (uint32_t)i, 0);
 
     free(scan_line);
     TIFFClose(tif);
