@@ -1,3 +1,6 @@
+0.9.9.3
+- Fixed bugs in native and java code
+
 0.9.9.2
 - Added support for 16KB Pages. Increase minimum support level to 21. Added riscv64 ABI
 
