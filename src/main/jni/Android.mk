@@ -81,6 +81,7 @@ LOCAL_CPPFLAGS += -O3
 LOCAL_SRC_FILES := \
 	NativeExceptions.cpp \
 	NativeTiffBitmapFactory.cpp \
+	RawDecoder.cpp \
 	NativeDecoder.cpp
 LOCAL_LDLIBS := -ldl -llog -ljnigraphics
 LOCAL_LDFLAGS +=-ljnigraphics

@@ -29,12 +29,14 @@ import java.util.zip.CRC32;
 
 @RunWith(AndroidJUnit4.class)
 public class TiffDecoderCorpusTest {
+    private static final int METADATA_WARM_RUNS = 7;
+
     private final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
     private final Context targetContext = instrumentation.getTargetContext();
 
     @Test
     public void decodesCcittWithScanlineSizedWorkingMemory() throws IOException {
-        File file = copyToCache("fax2d.tif");
+        File file = copyToCache("raw/fax2d.tif");
         int[] bounds = readBounds(file);
 
         TiffBitmapFactory.Options options = new TiffBitmapFactory.Options();
@@ -59,17 +61,19 @@ public class TiffDecoderCorpusTest {
 
         for (String name : assets) {
             File file = copyToCache(name);
-            int[] bounds;
+            BoundsMeasurement boundsMeasurement;
             try {
-                bounds = readBounds(file);
+                boundsMeasurement = measureBounds(file);
+                printMetadataBenchmark(name, file, boundsMeasurement);
             } catch (Throwable error) {
                 printError(name, "phase=bounds", error);
                 continue;
             }
+            int[] bounds = boundsMeasurement.bounds;
 
             int[] samples = name.equalsIgnoreCase("HUGE.tiff")
-                    ? new int[]{4, 8}
-                    : new int[]{1, 2, 4, 8};
+                    ? new int[]{4, 5, 6, 7, 8}
+                    : new int[]{1, 2, 3, 4, 5, 6, 7, 8};
             for (int sample : samples) {
                 runCase(name, file, bounds, sample, null);
             }
@@ -112,7 +116,7 @@ public class TiffDecoderCorpusTest {
             long elapsed = SystemClock.elapsedRealtimeNanos() - started;
             long heapDelta = Debug.getNativeHeapAllocatedSize() - heapBefore;
 
-            System.out.println("TIFF_BENCH status=ok file=" + name
+            System.out.println("TIFF_BENCH status=ok phase=decode file=" + name
                     + " source=" + source[0] + "x" + source[1]
                     + " sample=" + sample + " crop=" + cropLabel
                     + " output=" + bitmap.getWidth() + "x" + bitmap.getHeight()
@@ -126,6 +130,40 @@ public class TiffDecoderCorpusTest {
         }
     }
 
+    private BoundsMeasurement measureBounds(File file) {
+        long started = SystemClock.elapsedRealtimeNanos();
+        int[] bounds = readBounds(file);
+        return new BoundsMeasurement(bounds,
+                SystemClock.elapsedRealtimeNanos() - started);
+    }
+
+    private void printMetadataBenchmark(String name, File file,
+                                        BoundsMeasurement firstMeasurement) {
+        long[] warmElapsed = new long[METADATA_WARM_RUNS];
+        for (int index = 0; index < warmElapsed.length; index++) {
+            BoundsMeasurement measurement = measureBounds(file);
+            assertEquals(firstMeasurement.bounds[0], measurement.bounds[0]);
+            assertEquals(firstMeasurement.bounds[1], measurement.bounds[1]);
+            warmElapsed[index] = measurement.elapsedNs;
+        }
+        Arrays.sort(warmElapsed);
+
+        long total = 0;
+        for (long elapsed : warmElapsed) {
+            total += elapsed;
+        }
+        System.out.println("TIFF_BENCH status=ok phase=open_metadata_close file=" + name
+                + " source=" + firstMeasurement.bounds[0] + "x"
+                + firstMeasurement.bounds[1]
+                + " fileBytes=" + file.length()
+                + " firstNs=" + firstMeasurement.elapsedNs
+                + " warmMinNs=" + warmElapsed[0]
+                + " warmMedianNs=" + warmElapsed[warmElapsed.length / 2]
+                + " warmMeanNs=" + total / warmElapsed.length
+                + " warmMaxNs=" + warmElapsed[warmElapsed.length - 1]
+                + " warmRuns=" + warmElapsed.length);
+    }
+
     private int[] readBounds(File file) {
         TiffBitmapFactory.Options options = new TiffBitmapFactory.Options();
         options.inJustDecodeBounds = true;
@@ -136,6 +174,16 @@ public class TiffDecoderCorpusTest {
                     + options.outWidth + "x" + options.outHeight);
         }
         return new int[]{options.outWidth, options.outHeight};
+    }
+
+    private static final class BoundsMeasurement {
+        private final int[] bounds;
+        private final long elapsedNs;
+
+        private BoundsMeasurement(int[] bounds, long elapsedNs) {
+            this.bounds = bounds;
+            this.elapsedNs = elapsedNs;
+        }
     }
 
     private String checksum(Bitmap bitmap) {

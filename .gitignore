@@ -5,3 +5,10 @@ AGENTS.md
 *.o.d
 *.so
 *.iml
+.gradle/
+.idea/
+.cxx/
+.DS_Store
+local.properties
+src/main/obj/
+*.bak.a

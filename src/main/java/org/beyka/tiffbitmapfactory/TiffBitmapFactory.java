@@ -367,9 +367,8 @@ public class TiffBitmapFactory {
          * the number of pixels in either dimension that correspond to a single
          * pixel in the decoded bitmap. For example, inSampleSize == 4 returns
          * an image that is 1/4 the width/height of the original, and 1/16 the
-         * number of pixels. Any value &lt;= 1 is treated the same as 1. Note: the
-         * decoder uses a final value based on powers of 2, any other value will
-         * be rounded down to the nearest power of 2.
+         * number of pixels. The value must be a positive integer. Values do not
+         * need to be powers of two.
          */
         public int inSampleSize;
 
@@ -408,6 +407,20 @@ public class TiffBitmapFactory {
          * <p>{@link DecodeArea#height height} - height of decoding area </p>
          */
         public DecodeArea inDecodeArea;
+
+        /**
+         * Opts into bounded, raw-coordinate decoding. Default false preserves
+         * the legacy decoder. In this mode bounds and output metadata use stored
+         * TIFF coordinates, with an exclusive right/bottom edge; orientation is
+         * reported but not applied, even when inUseOrientationTag is true.
+         * The caller applies the orientation when displaying the image.
+         * Output uses ARGB_8888 and nearest source-pixel sampling, with dimensions
+         * ceil(areaSize / inSampleSize). Each output pixel spans inSampleSize
+         * source pixels; clip the last cell at the source boundary when drawing.
+         * A positive integer is required. Memory includes the output bitmap
+         * and a conservative strip/tile working allowance.
+         */
+        public boolean inUseRawCoordinates;
 
         /**
          * The resulting width of the bitmap. If {@link #inJustDecodeBounds} is

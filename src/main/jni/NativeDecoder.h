@@ -31,7 +31,7 @@
     #define LOGIS(x, y) __android_log_print(ANDROID_LOG_DEBUG, "NativeDecoder", "%s %s", x, y)
     #define LOGE(x) __android_log_print(ANDROID_LOG_ERROR, "NativeDecoder", "%s", x)
     #define LOGES(x, y) __android_log_print(ANDROID_LOG_ERROR, "NativeDecoder", "%s %s", x, y)
-    #define LOGES(x, y) __android_log_print(ANDROID_LOG_ERROR, "NativeDecoder", "%s %d", x, y)
+    #define LOGEI(x, y) __android_log_print(ANDROID_LOG_ERROR, "NativeDecoder", "%s %d", x, y)
 #endif
 
 class NativeDecoder
@@ -41,6 +41,7 @@ class NativeDecoder
         explicit NativeDecoder(JNIEnv *, jclass, jstring, jobject, jobject);
         ~NativeDecoder();
         jobject getBitmap();
+        jobject getRawBitmap();
 
     private:
         //constants

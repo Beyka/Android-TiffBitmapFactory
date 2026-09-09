@@ -122,6 +122,10 @@ NativeDecoder::~NativeDecoder()
 
 jobject NativeDecoder::getBitmap()
 {
+        jfieldID rawField = env->GetFieldID(jBitmapOptionsClass, "inUseRawCoordinates", "Z");
+        if (env->GetBooleanField(optionsObject, rawField)) {
+            return getRawBitmap();
+        }
         //init signal handler for catch SIGSEGV error that could be raised in libtiff
         struct sigaction act;
         memset(&act, 0, sizeof(act));
@@ -155,8 +159,9 @@ jobject NativeDecoder::getBitmap()
 
         jfieldID gOptions_sampleSizeFieldID = env->GetFieldID(jBitmapOptionsClass, "inSampleSize", "I");
         jint inSampleSize = env->GetIntField(optionsObject, gOptions_sampleSizeFieldID);
-        if (inSampleSize != 1 && inSampleSize % 2 != 0) {
-            const char *message = "inSampleSize should be power of 2\0";
+        LOGII("inSampleSize ", inSampleSize);
+        if (inSampleSize <= 0) {
+            const char *message = "inSampleSize should be a positive integer\0";
             LOGE(message);
             if (throwException) {
                 throwDecodeFileException(message);
@@ -218,7 +223,6 @@ jobject NativeDecoder::getBitmap()
         if (inDirectoryNumber < 0) inDirectoryNumber = 0;
 
         //Open tiff file
-        LOGIS("nativeTiffOpen", strPath);
         const char *strPath = NULL;
         if (decodingMode == DECODE_MODE_FILE_DESCRIPTOR) {
             image = TIFFFdOpen(jFd, "", "r");
@@ -1872,8 +1876,25 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
             for (column = 0; column < origwidth; column += tileWidth) {
                 sendProgress(row * origwidth + column, progressTotal);
 
+                if (useSinglePixelSample && inSampleSize > 1) {
+                    const uint64_t firstSampleX = ((static_cast<uint64_t>(column) + inSampleSize - 1) / inSampleSize) * inSampleSize;
+                    const uint64_t firstSampleY = ((static_cast<uint64_t>(row) + inSampleSize - 1) / inSampleSize) * inSampleSize;
+                    const uint64_t validRight = std::min<uint64_t>(static_cast<uint64_t>(column) + tileWidth, origwidth);
+                    const uint64_t validBottom = std::min<uint64_t>(static_cast<uint64_t>(row) + tileHeight, origheight);
+                    const uint64_t sampledRight = static_cast<uint64_t>(*bitmapwidth) * inSampleSize;
+                    const uint64_t sampledBottom = static_cast<uint64_t>(*bitmapheight) * inSampleSize;
+                    if (firstSampleX >= validRight || firstSampleX >= sampledRight ||
+                        firstSampleY >= validBottom || firstSampleY >= sampledBottom) {
+                        // No output pixel addresses this tile.  Neighbour tiles are only
+                        // required by the optional 3x3 filter, which is disabled here.
+                        rightTileExists = 0;
+                        leftTileExists = 0;
+                        continue;
+                    }
+                }
+
                 bool currentTileAlreadyOriented = false;
-                if (rightTileExists) {
+                if (!useSinglePixelSample && rightTileExists) {
                     uint32_t *reusableTile = rasterTileLeft;
                     rasterTileLeft = rasterTile;
                     rasterTile = rasterTileRight;
@@ -1886,7 +1907,7 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                 }
 
                 rightTileExists = 0;
-                if (column + tileWidth < origwidth) {
+                if (!useSinglePixelSample && column + tileWidth < origwidth) {
                     TIFFReadRGBATile(image, column + tileWidth, row, rasterTileRight);
                     rightTileExists = 1;
                 }
@@ -1894,8 +1915,30 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                 if (!currentTileAlreadyOriented) {
                     orientDecodedTile(tileHeight, tileWidth, rasterTile, work_line_buf);
                 }
-                if (rightTileExists) {
+                if (!useSinglePixelSample && rightTileExists) {
                     orientDecodedTile(tileHeight, tileWidth, rasterTileRight, work_line_buf);
+                }
+
+                if (inSampleSize > 1 && useSinglePixelSample) {
+                    const uint32_t right = std::min(column + tileWidth, static_cast<uint32_t>(origwidth));
+                    const uint32_t bottom = std::min(row + tileHeight, static_cast<uint32_t>(origheight));
+                    const uint32_t sampledRight = static_cast<uint32_t>(*bitmapwidth) * inSampleSize;
+                    const uint32_t sampledBottom = static_cast<uint32_t>(*bitmapheight) * inSampleSize;
+                    for (uint32_t sourceY = ((row + inSampleSize - 1) / inSampleSize) * inSampleSize;
+                         sourceY < bottom && sourceY < sampledBottom; sourceY += inSampleSize) {
+                        if (checkStop()) return NULL;
+                        const uint32_t pixY = sourceY / inSampleSize;
+                        for (uint32_t sourceX = ((column + inSampleSize - 1) / inSampleSize) * inSampleSize;
+                             sourceX < right && sourceX < sampledRight; sourceX += inSampleSize) {
+                            const uint32_t pixX = sourceX / inSampleSize;
+                            const jint pixel = rasterTile[(sourceY - row) * tileWidth + sourceX - column];
+                            const uint32_t position = origorientation <= 4
+                                    ? pixY * *bitmapwidth + pixX
+                                    : pixX * *bitmapheight + pixY;
+                            pixels[position] = pixel;
+                        }
+                    }
+                    continue;
                 }
 
                 if (inSampleSize > 1 )
@@ -1928,18 +1971,18 @@ jint * NativeDecoder::getSampledRasterFromTile(int inSampleSize, int *bitmapwidt
                         }
 
                         if (tileStartDataY != -1 && globalProcessedY % inSampleSize != 0) {
-                            if (tileStartDataY != -1) {
-                                globalProcessedY++;
-                            }
+                            const uint32_t skip = inSampleSize - globalProcessedY % inSampleSize;
+                            origTileY += skip - 1;
+                            globalProcessedY += skip;
                         }
                         else
                         {
                             for (int origTileX = 0, pixX = column/inSampleSize; origTileX < tileWidth && pixX < *bitmapwidth; origTileX++) {
                                 if (tileStartDataX != -1 && globalProcessedX % inSampleSize != 0)
                                 {
-                                    if (tileStartDataX != -1) {
-                                        globalProcessedX++;
-                                    }
+                                    const uint32_t skip = inSampleSize - globalProcessedX % inSampleSize;
+                                    origTileX += skip - 1;
+                                    globalProcessedX += skip;
                                 }
                                 else
                                 {
@@ -2351,7 +2394,7 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
                 sendProgress(processedProgress, progressTotal);
 
                 bool currentTileAlreadyOriented = false;
-                if (rightTileExists) {
+                if (!useSinglePixelSample && rightTileExists) {
                     uint32_t *reusableTile = rasterTileLeft;
                     rasterTileLeft = rasterTile;
                     rasterTile = rasterTileRight;
@@ -2364,7 +2407,7 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
                 }
 
                 rightTileExists = 0;
-                if (column + tileWidth < origwidth &&
+                if (!useSinglePixelSample && column + tileWidth < origwidth &&
                     column + tileWidth < lastTileX * tileWidth) {
                     TIFFReadRGBATile(image, column + tileWidth, row, rasterTileRight);
                     rightTileExists = 1;
@@ -2373,8 +2416,31 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
                 if (!currentTileAlreadyOriented) {
                     orientDecodedTile(tileHeight, tileWidth, rasterTile, work_line_buf);
                 }
-                if (rightTileExists) {
+                if (!useSinglePixelSample && rightTileExists) {
                     orientDecodedTile(tileHeight, tileWidth, rasterTileRight, work_line_buf);
+                }
+
+                if (inSampleSize > 1 && useSinglePixelSample) {
+                    const uint32_t destRight = std::min(columnDest + tileWidth,
+                            static_cast<uint32_t>(*bitmapwidth) * inSampleSize);
+                    const uint32_t destBottom = std::min(rowDest + tileHeight,
+                            static_cast<uint32_t>(*bitmapheight) * inSampleSize);
+                    for (uint32_t destY = ((rowDest + inSampleSize - 1) / inSampleSize) * inSampleSize;
+                         destY < destBottom; destY += inSampleSize) {
+                        if (checkStop()) return NULL;
+                        const uint32_t pixY = destY / inSampleSize;
+                        for (uint32_t destX = ((columnDest + inSampleSize - 1) / inSampleSize) * inSampleSize;
+                             destX < destRight; destX += inSampleSize) {
+                            const uint32_t pixX = destX / inSampleSize;
+                            const jint pixel = rasterTile[(destY - rowDest) * tileWidth + destX - columnDest];
+                            const uint32_t position = origorientation <= 4
+                                    ? pixY * *bitmapwidth + pixX
+                                    : pixX * *bitmapheight + pixY;
+                            pixels[position] = pixel;
+                        }
+                    }
+                    columnDest += tileWidth;
+                    continue;
                 }
 
                     //Tile could begin from not filled pixel(pixel[x,y] == 0). This variables allow to calculate begining of filled pixels
@@ -2404,9 +2470,9 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
                         }
 
                         if (tileStartDataY != -1 && globalProcessedY % inSampleSize != 0) {
-                            if (tileStartDataY != -1) {
-                                globalProcessedY++;
-                            }
+                            const uint32_t skip = inSampleSize - globalProcessedY % inSampleSize;
+                            origTileY += skip - 1;
+                            globalProcessedY += skip;
                         }
                         else
                         {
@@ -2416,9 +2482,9 @@ jint * NativeDecoder::getSampledRasterFromTileWithBounds(int inSampleSize, int *
 
                                 if (tileStartDataX != -1 && globalProcessedX % inSampleSize != 0)
                                 {
-                                    if (tileStartDataX != -1) {
-                                        globalProcessedX++;
-                                    }
+                                    const uint32_t skip = inSampleSize - globalProcessedX % inSampleSize;
+                                    origTileX += skip - 1;
+                                    globalProcessedX += skip;
                                 }
                                 else
                                 {
@@ -3502,9 +3568,11 @@ unsigned short * NativeDecoder::createBitmapRGB565(jint *buffer, int bitmapwidth
 
 int NativeDecoder::getDyrectoryCount()
 {
+    TIFFSetDirectory(image, 0);
     int dircount = 0;
     do {
         dircount++;
+        if (checkStop()) break;
     } while (TIFFReadDirectory(image));
     return dircount;
 }
@@ -3819,8 +3887,8 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
         env->SetIntField(optionsObject, gOptions_outStripMaxFieldID, stripMax);
 
         //photometric
-        int photometric = 0;
-        TIFFGetField(image, TIFFTAG_PHOTOMETRIC, &photometric);
+        uint16_t photometric = PHOTOMETRIC_MINISWHITE;
+        TIFFGetFieldDefaulted(image, TIFFTAG_PHOTOMETRIC, &photometric);
         LOGII("photometric", photometric);
         jclass gOptions_PhotometricClass = env->FindClass("org/beyka/tiffbitmapfactory/Photometric");
         jfieldID gOptions_PhotometricFieldId = NULL;
@@ -3834,50 +3902,62 @@ void NativeDecoder::writeDataToOptions(int directoryNumber)
                         gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
                         "MINISBLACK",
                         "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                        break;
                     case PHOTOMETRIC_RGB:
                          gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
                          "RGB",
                          "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                         break;
                     case PHOTOMETRIC_PALETTE:
                          gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
                          "PALETTE",
                          "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                         break;
                     case PHOTOMETRIC_MASK:
                          gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
                          "MASK",
                          "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                         break;
                     case PHOTOMETRIC_SEPARATED:
                          gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
                          "SEPARATED",
                          "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                         break;
                     case PHOTOMETRIC_YCBCR:
                          gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
                          "YCBCR",
                          "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                         break;
                     case PHOTOMETRIC_CIELAB:
                          gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
                          "CIELAB",
                          "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                         break;
                     case PHOTOMETRIC_ICCLAB:
                          gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
                          "ICCLAB",
                          "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                         break;
                     case PHOTOMETRIC_ITULAB:
                          gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
                          "ITULAB",
                          "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                         break;
                     case PHOTOMETRIC_LOGL:
                          gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
                          "LOGL",
                          "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                         break;
                     case PHOTOMETRIC_LOGLUV:
                          gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
                          "LOGLUV",
                          "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                         break;
                     default:
                         gOptions_PhotometricFieldId = env->GetStaticFieldID(gOptions_PhotometricClass,
                         "OTHER",
                         "Lorg/beyka/tiffbitmapfactory/Photometric;");
+                        break;
                 }
         if (gOptions_PhotometricFieldId != NULL) {
                     jobject gOptions_PhotometricObj = env->GetStaticObjectField(
