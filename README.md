@@ -194,10 +194,13 @@ IProgressListener progressListener = new IProgressListener() {
 };
 ```
 
-### Proguard
-If you use proguard add this to you config file:
-```Gradle
--keep class org.beyka.tiffbitmapfactory.**{ *; }
+### R8 / ProGuard
+The library uses name-based JNI entry points and native field lookups. If R8 or
+ProGuard minification is enabled, add this rule to the application's rules file
+(usually `proguard-rules.pro`):
+
+```proguard
+-keep class org.beyka.tiffbitmapfactory.** { *; }
 ```
 
 ### 
