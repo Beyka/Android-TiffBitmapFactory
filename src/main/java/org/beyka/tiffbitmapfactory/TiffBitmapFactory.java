@@ -44,9 +44,10 @@ public class TiffBitmapFactory {
          */
         RGB_565 (4),
         /**
-         * Each pixel is stored as a single translucency (alpha) channel.
-         * This is very useful to efficiently store masks for instance.
-         * No color information is stored.
+         * Each pixel is stored as a single byte.
+         * For images with an alpha channel this stores translucency, which is
+         * useful for masks. For grayscale and bilevel sources this stores the
+         * gray/ink value instead of a fully opaque mask.
          * With this configuration, each pixel requires 1 byte of memory.
          */
         ALPHA_8 (8);
@@ -386,16 +387,37 @@ public class TiffBitmapFactory {
         public long inAvailableMemory;
 
         /**
-         * If this is non-null, the decoder will try to decode into this
-         * internal configuration. If it is null, or the request cannot be met,
-         * the decoder will use {@link ImageConfig#ARGB_8888} configuration.
+         * Output pixel format for the streaming decoder.
          *
-         * <p>Numeration starts with 0</p>
+         * <p>When this field is set, the regular decoder writes pixels directly
+         * into a bitmap of the requested config instead of materializing a
+         * full-frame ARGB scratch buffer. If it is null, or the request cannot
+         * be met, the decoder uses {@link ImageConfig#ARGB_8888}.</p>
          *
-         * <p>Image are loaded with the {@link ImageConfig#ARGB_8888} config by
-         * default.</p>
+         * <p>Supported values are {@link ImageConfig#ARGB_8888} (default),
+         * {@link ImageConfig#RGB_565} and {@link ImageConfig#ALPHA_8}.</p>
          *
-         * <p>In current version supported are {@link ImageConfig#ARGB_8888}, {@link ImageConfig#ALPHA_8} and {@link ImageConfig#RGB_565}</p>
+         * <p>Choose the config from the TIFF color scheme, not from a fixed
+         * preference. Use {@link #inJustDecodeBounds} first and read
+         * {@link #outPhotometric}, {@link #outBitsPerSample} and
+         * {@link #outSamplePerPixel}:</p>
+         * <ul>
+         *   <li>bilevel or grayscale without extra samples &rarr;
+         *   {@link ImageConfig#ALPHA_8} stores the gray/ink value</li>
+         *   <li>opaque 8-bit RGB without extra samples &rarr;
+         *   {@link ImageConfig#RGB_565}</li>
+         *   <li>alpha, palette, YCbCr or unknown photometric &rarr;
+         *   {@link ImageConfig#ARGB_8888}</li>
+         * </ul>
+         *
+         * <p>A mismatched config is still decoded, but the result is wrong or
+         * useless: {@link ImageConfig#ALPHA_8} on RGB/RGBA keeps only alpha
+         * (often fully opaque), and {@link ImageConfig#RGB_565} drops
+         * translucency.</p>
+         *
+         * <p>{@link #inUseRawCoordinates} honors this field the same way. If it
+         * is left at the default, raw decoding still returns
+         * {@link ImageConfig#ARGB_8888}.</p>
          */
         public ImageConfig inPreferredConfig = ImageConfig.ARGB_8888;
 
@@ -414,7 +436,8 @@ public class TiffBitmapFactory {
          * TIFF coordinates, with an exclusive right/bottom edge; orientation is
          * reported but not applied, even when inUseOrientationTag is true.
          * The caller applies the orientation when displaying the image.
-         * Output uses ARGB_8888 and nearest source-pixel sampling, with dimensions
+         * Output uses {@link #inPreferredConfig} (default
+         * {@link ImageConfig#ARGB_8888}) and nearest source-pixel sampling, with dimensions
          * ceil(areaSize / inSampleSize). Each output pixel spans inSampleSize
          * source pixels; clip the last cell at the source boundary when drawing.
          * A positive integer is required. Memory includes the output bitmap

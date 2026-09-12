@@ -357,24 +357,22 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
     }
 
     const int decodeMethod = getDecodeMethod();
-    const bool useBilevelStreaming = canDecodeBilevelCcittStreaming();
     int newBitmapWidth = 0;
     int newBitmapHeight = 0;
     jint *raster = NULL;
 
-    if (useBilevelStreaming) {
-        raster = getSampledBilevelRaster(inSampleSize, &newBitmapWidth,
-                                         &newBitmapHeight);
-        if (raster == NULL) {
-            return NULL;
-        }
+    if (canDecodeNativeBilevel() || canDecodeNativeGray8() || canDecodeNativeRgb8()) {
+        return createStreamingBitmap(inSampleSize, configInt);
     }
 
     if (!hasBounds && inSampleSize == 1 && configInt == ARGB_8888 &&
         !invertRedAndBlue && origorientation == ORIENTATION_TOPLEFT &&
-        decodeMethod == DECODE_METHOD_IMAGE && raster == NULL &&
-        !useBilevelStreaming) {
+        decodeMethod == DECODE_METHOD_IMAGE) {
         return createDirectArgbBitmap(origwidth, origheight);
+    }
+
+    if (canStreamToBitmap(inSampleSize)) {
+        return createStreamingBitmap(inSampleSize, configInt);
     }
 
     if (raster == NULL && !hasBounds) {
@@ -433,92 +431,41 @@ jobject NativeDecoder::createBitmap(int inSampleSize, int directoryNumber)
         return NULL;
     }
 
-    //Class and field for Bitmap.Config
-    jclass bitmapConfigClass = env->FindClass("android/graphics/Bitmap$Config");
-    jfieldID bitmapConfigField = NULL;
-    void *processedBuffer = NULL;
-    if (configInt == ARGB_8888) {
-        processedBuffer = raster;
-        bitmapConfigField = env->GetStaticFieldID(bitmapConfigClass, "ARGB_8888",
-                                                  "Landroid/graphics/Bitmap$Config;");
-    } else if (configInt == ALPHA_8) {
-        processedBuffer = createBitmapAlpha8(raster, newBitmapWidth,
-                                             newBitmapHeight);
-        bitmapConfigField = env->GetStaticFieldID(bitmapConfigClass, "ALPHA_8",
-                                                  "Landroid/graphics/Bitmap$Config;");
-    } else if (configInt == RGB_565) {
-        processedBuffer = createBitmapRGB565(raster, newBitmapWidth,
-                                             newBitmapHeight);
-        bitmapConfigField = env->GetStaticFieldID(bitmapConfigClass, "RGB_565",
-                                                  "Landroid/graphics/Bitmap$Config;");
+    int destWidth = newBitmapWidth;
+    int destHeight = newBitmapHeight;
+    if (useOrientationTag && origorientation > 4) {
+        destWidth = newBitmapHeight;
+        destHeight = newBitmapWidth;
     }
 
-    if (processedBuffer == NULL) {
+    jobject java_bitmap = createConfiguredBitmap(destWidth, destHeight, configInt);
+    if (java_bitmap == NULL) {
+        if (raster) {
+            free(raster);
+        }
         LOGE("Error while decoding image");
         return NULL;
     }
 
-    //Create mutable bitmap
-    jclass bitmapClass = env->FindClass("android/graphics/Bitmap");
-    jmethodID methodid = env->GetStaticMethodID(bitmapClass, "createBitmap",
-                                                "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
-
-    //BitmapConfig
-    jobject config = env->GetStaticObjectField(bitmapConfigClass, bitmapConfigField);
-
-    env->DeleteLocalRef(bitmapConfigClass);
-
-    jobject java_bitmap = NULL;
-
     if(checkStop()) {
-        env->DeleteLocalRef(config);
-        env->DeleteLocalRef(bitmapClass);
-        if (processedBuffer) {
-            free(processedBuffer);
+        if (raster) {
+            free(raster);
         }
+        env->DeleteLocalRef(java_bitmap);
         LOGI("Thread stopped");
         return NULL;
     }
 
-    if (!useOrientationTag) {
-        java_bitmap = env->CallStaticObjectMethod(bitmapClass, methodid, newBitmapWidth,
-                                                      newBitmapHeight, config);
-    } else if (origorientation > 4) {
-        java_bitmap = env->CallStaticObjectMethod(bitmapClass, methodid, newBitmapHeight,
-                                                  newBitmapWidth, config);
-    } else {
-        java_bitmap = env->CallStaticObjectMethod(bitmapClass, methodid, newBitmapWidth,
-                                                  newBitmapHeight, config);
-    }
-
-    //remove not used references
-    env->DeleteLocalRef(config);
-    env->DeleteLocalRef(bitmapClass);
-
-    //Copy data to bitmap
-    int ret;
-    void *bitmapPixels;
-    if ((ret = AndroidBitmap_lockPixels(env, java_bitmap, &bitmapPixels)) < 0) {
-        //error
+    if (!packRasterToBitmap(raster, destWidth, destHeight, java_bitmap, configInt)) {
         LOGE("Lock pixels failed");
+        if (raster) {
+            free(raster);
+        }
+        env->DeleteLocalRef(java_bitmap);
         return NULL;
     }
-    int pixelsCount = newBitmapWidth * newBitmapHeight;
 
-    if (configInt == ARGB_8888) {
-        memcpy(bitmapPixels, (jint *) processedBuffer, sizeof(jint) * pixelsCount);
-    } else if (configInt == ALPHA_8) {
-        memcpy(bitmapPixels, (jbyte *) processedBuffer, sizeof(jbyte) * pixelsCount);
-    } else if (configInt == RGB_565) {
-        memcpy(bitmapPixels, (unsigned short *) processedBuffer,
-               sizeof(unsigned short) * pixelsCount);
-    }
-
-    AndroidBitmap_unlockPixels(env, java_bitmap);
-
-    //remove array
-    free(processedBuffer);
-
+    free(raster);
     return java_bitmap;
 }
 

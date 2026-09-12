@@ -103,6 +103,13 @@ class NativeDecoder
         void writeDataToOptions(int);
         jobject createBitmap(int, int);
         jobject createDirectArgbBitmap(int, int);
+        jobject createConfiguredBitmap(int, int, int);
+        jobject createStreamingBitmap(int, int);
+        bool canStreamToBitmap(int);
+        bool canDecodeNativeGray8();
+        bool canDecodeNativeRgb8();
+        bool canDecodeNativeBilevel();
+        bool packRasterToBitmap(jint *, int, int, jobject, int);
         bool canDecodeBilevelCcittStreaming();
         jint *getSampledBilevelRaster(int, int *, int *);
         jint *getSampledRasterFromImage(int, int *, int *);

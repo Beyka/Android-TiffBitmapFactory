@@ -15,6 +15,7 @@ import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -28,7 +29,9 @@ import java.util.Locale;
 import java.util.zip.CRC32;
 
 @RunWith(AndroidJUnit4.class)
-public class TiffDecoderCorpusTest {
+public class
+
+TiffDecoderCorpusTest {
     private static final int METADATA_WARM_RUNS = 7;
 
     private final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
@@ -42,14 +45,42 @@ public class TiffDecoderCorpusTest {
         TiffBitmapFactory.Options options = new TiffBitmapFactory.Options();
         options.inThrowException = true;
         options.inUseOrientationTag = true;
-        options.inAvailableMemory = (long) bounds[0] * bounds[1] * 4 +
-                (bounds[0] + 7) / 8 + 4096;
+        options.inAvailableMemory = (bounds[0] + 7) / 8 + 4096;
 
         Bitmap bitmap = TiffBitmapFactory.decodeFile(file, options);
         assertNotNull(bitmap);
         assertEquals(bounds[0], bitmap.getWidth());
         assertEquals(bounds[1], bitmap.getHeight());
         bitmap.recycle();
+    }
+
+    @Test
+    public void decodesPreferredConfigsFromBilevel() throws IOException {
+        File file = copyToCache("raw/fax2d.tif");
+        int[] bounds = readBounds(file);
+
+        TiffBitmapFactory.Options alphaOptions = new TiffBitmapFactory.Options();
+        alphaOptions.inThrowException = true;
+        alphaOptions.inPreferredConfig = TiffBitmapFactory.ImageConfig.ALPHA_8;
+        alphaOptions.inAvailableMemory = (bounds[0] + 7) / 8 + 4096;
+        Bitmap alpha = TiffBitmapFactory.decodeFile(file, alphaOptions);
+        assertNotNull(alpha);
+        assertEquals(Bitmap.Config.ALPHA_8, alpha.getConfig());
+        assertEquals(bounds[0], alpha.getWidth());
+        assertEquals(bounds[1], alpha.getHeight());
+        assertBilevelAlphaUsesInkMask(alpha);
+        alpha.recycle();
+
+        TiffBitmapFactory.Options rgbOptions = new TiffBitmapFactory.Options();
+        rgbOptions.inThrowException = true;
+        rgbOptions.inPreferredConfig = TiffBitmapFactory.ImageConfig.RGB_565;
+        rgbOptions.inAvailableMemory = (bounds[0] + 7) / 8 + 4096;
+        Bitmap rgb = TiffBitmapFactory.decodeFile(file, rgbOptions);
+        assertNotNull(rgb);
+        assertEquals(Bitmap.Config.RGB_565, rgb.getConfig());
+        assertEquals(bounds[0], rgb.getWidth());
+        assertEquals(bounds[1], rgb.getHeight());
+        rgb.recycle();
     }
 
     @Test
@@ -162,6 +193,24 @@ public class TiffDecoderCorpusTest {
                 + " warmMeanNs=" + total / warmElapsed.length
                 + " warmMaxNs=" + warmElapsed[warmElapsed.length - 1]
                 + " warmRuns=" + warmElapsed.length);
+    }
+
+    private void assertBilevelAlphaUsesInkMask(Bitmap bitmap) {
+        boolean sawInk = false;
+        boolean sawPaper = false;
+        int[] row = new int[bitmap.getWidth()];
+        for (int y = 0; y < bitmap.getHeight() && !(sawInk && sawPaper); y++) {
+            bitmap.getPixels(row, 0, bitmap.getWidth(), 0, y, bitmap.getWidth(), 1);
+            for (int pixel : row) {
+                int alpha = (pixel >>> 24) & 0xFF;
+                if (alpha == 0xFF) {
+                    sawInk = true;
+                } else if (alpha == 0) {
+                    sawPaper = true;
+                }
+            }
+        }
+        assertTrue("expected both ink and paper in bilevel ALPHA_8", sawInk && sawPaper);
     }
 
     private int[] readBounds(File file) {
